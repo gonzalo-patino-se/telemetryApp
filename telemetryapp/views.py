@@ -9,7 +9,7 @@ from .serializers import TelemetrySerializer
 
 @api_view(['GET'])
 def adx_telemetry(request):
-    kql_query = "TelemetryData | take 10"  # Example KQL query
+    kql_query = "DevInfo | limit 2"  # Example KQL query
     data = query_adx(kql_query)
     return Response(data)
 
