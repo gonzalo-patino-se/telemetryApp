@@ -1,6 +1,8 @@
 import os
 from azure.kusto.data import KustoConnectionStringBuilder, KustoClient
 from dotenv import load_dotenv
+import logging
+logger = logging
 
 load_dotenv()
 
@@ -18,8 +20,10 @@ kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(
 client = KustoClient(kcsb)
 
 def query_adx(kql_query):
-    response = client.execute(database, kql_query)
-    rows = []
-    for row in response.primary_results[0]:
-        rows.append(dict(row))
-    return rows
+    try:
+        response = client.execute(database, kql_query)
+        rows = response.primary_results[0].to_dict()
+        return rows
+    except Exception as e:
+        logger.error(f"ADX query failed: {e}")
+        return {"error": "ADX query failed"}
