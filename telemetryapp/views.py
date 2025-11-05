@@ -5,15 +5,17 @@ from .adx_service import query_adx
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from .permissions import IsAdminGroup
+
 
 from rest_framework import viewsets
 from .models import Telemetry
 from .serializers import TelemetrySerializer
 
 
-#JWT-protected ADX endpoints
+#JWT-protected ADX endpoints: authentication plus roled-based authorization
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsAdminGroup])
 def adx_telemetry(request):
     kql_query = "DevInfo | limit 2"  # Example KQL query
     data = query_adx(kql_query)

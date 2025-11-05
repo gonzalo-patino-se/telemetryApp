@@ -52,6 +52,10 @@ INSTALLED_APPS = [
     'telemetryapp',
 ]
 
+SECURE_SSL_REDIRECT = False #change for production
+SESSION_COOKIE_SECURE = False #change for production
+CSRF_COOKIE_SECURE = False #change for production
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -117,13 +121,13 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny', #fixme: adjust later
+        'rest_framework.permissions.IsAuthenticated', 
     ),# Adjust later
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     
