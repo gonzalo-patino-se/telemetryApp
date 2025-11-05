@@ -18,12 +18,13 @@ from rest_framework import status
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework.permissions import AllowAny
 
 
 #Registration endpoint
 
 @api_view(['POST'])
+@permission_classes([AllowAny]) 
 def register_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
@@ -34,6 +35,7 @@ def register_view(request):
 
 #Custom Login is provided by SimpleJWT package
 @api_view(['POST'])
+@permission_classes([AllowAny]) 
 def login_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
@@ -41,8 +43,11 @@ def login_view(request):
     user = authenticate(username=username, password=password)
     if user is not None:
         # Delegate to simple JWT for token generation
-        token_view = TokenObtainPairView.as_view()
-        return token_view(request._request) # Pass the raw WSGI request
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
     else:
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
