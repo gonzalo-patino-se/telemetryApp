@@ -6,6 +6,7 @@ from .adx_service import query_adx
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .permissions import IsAdminGroup
+from django.contrib.auth import authenticate
 
 
 from rest_framework import viewsets
@@ -28,7 +29,7 @@ def register_view(request):
         return Response({"detail": "User registered"}, status=status.HTTP_201_CREATED)
     return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
 
-#Login endpoint is provided by SimpleJWT package
+#Custom Login is provided by SimpleJWT package
 @api_view(['POST'])
 def login_view(request):
     username = request.data.get('username')
@@ -40,7 +41,19 @@ def login_view(request):
         token_view = TokenObtainPairView.as_view()
         return token_view(request._request) # Pass the raw WSGI request
     else:
-        return Response({"error": "Invalid credentials"}), status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+# Logout (blacklist refresh token)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    try:
+        refresh_token = request.data["refresh"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -53,7 +66,7 @@ def adx_telemetry(request):
     return Response(data)
 
 
-
+# Telemetry ViewSet
 class TelemetryViewSet(viewsets.ModelViewSet):
     queryset = Telemetry.objects.all().order_by('-created_at')
     serializer_class = TelemetrySerializer
