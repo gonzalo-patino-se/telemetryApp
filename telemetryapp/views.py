@@ -28,6 +28,20 @@ def register_view(request):
         return Response({"detail": "User registered"}, status=status.HTTP_201_CREATED)
     return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
 
+#Login endpoint is provided by SimpleJWT package
+@api_view(['POST'])
+def login_view(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        # Delegate to simple JWT for token generation
+        token_view = TokenObtainPairView.as_view()
+        return token_view(request._request) # Pass the raw WSGI request
+    else:
+        return Response({"error": "Invalid credentials"}), status=status.HTTP_401_UNAUTHORIZED)
+
 
 
 #JWT-protected ADX endpoints: authentication plus roled-based authorization
