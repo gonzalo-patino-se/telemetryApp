@@ -12,6 +12,23 @@ from rest_framework import viewsets
 from .models import Telemetry
 from .serializers import TelemetrySerializer
 
+from django.contrib.auth.models import User
+from rest_framework import status
+
+
+
+#Registration endpoint
+
+@api_view(['POST'])
+def register_view(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    if username and password:
+        user = User.objects.create_user(username=username, password=password)
+        return Response({"detail": "User registered"}, status=status.HTTP_201_CREATED)
+    return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 #JWT-protected ADX endpoints: authentication plus roled-based authorization
 @api_view(['GET'])
