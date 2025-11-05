@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from .adx_service import query_adx
 
 
@@ -11,6 +10,8 @@ from rest_framework import viewsets
 from .models import Telemetry
 from .serializers import TelemetrySerializer
 
+
+#JWT-protected ADX endpoints
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def adx_telemetry(request):
@@ -23,4 +24,5 @@ def adx_telemetry(request):
 class TelemetryViewSet(viewsets.ModelViewSet):
     queryset = Telemetry.objects.all().order_by('-created_at')
     serializer_class = TelemetrySerializer
+    permission_classes = [IsAuthenticated]
 
