@@ -16,6 +16,9 @@ from .serializers import TelemetrySerializer
 from django.contrib.auth.models import User
 from rest_framework import status
 
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 
 #Registration endpoint
