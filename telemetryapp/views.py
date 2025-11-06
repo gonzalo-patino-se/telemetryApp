@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework import viewsets
 from .models import Telemetry
-from .serializers import TelemetrySerializer
+from .serializers import TelemetrySerializer, RegisterSerializer
 
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -21,17 +21,18 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 
 
+
+
 #Registration endpoint
 
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
 def register_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    if username and password:
-        user = User.objects.create_user(username=username, password=password)
-        return Response({"detail": "User registered"}, status=status.HTTP_201_CREATED)
-    return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"detail": "User registered successfully"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #Custom Login is provided by SimpleJWT package
 @api_view(['POST'])
