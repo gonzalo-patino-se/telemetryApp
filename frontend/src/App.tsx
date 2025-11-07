@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { useAuth } from './context/AuthContext'
 import api from './services/api'
+import LoginForm from './components/LoginForm'
 
 function App() {
   const { accessToken, login, logout } = useAuth();
@@ -21,7 +22,7 @@ function App() {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
       <h1 className="text-4xl font-bold text-blue-600">Tailwind is Working!</h1>
-
+      <LoginForm />
       {/* Auth Test Section*/}
       <p className="text-gray-700">Access Token: {accessToken || 'None'}</p>
       <div className="space-x-4 mt-4">
