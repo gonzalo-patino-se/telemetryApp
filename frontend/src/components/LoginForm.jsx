@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
 
 const LoginForm = () => {
     const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
     e.preventDefault();
@@ -15,6 +18,7 @@ const LoginForm = () => {
         const response = await api.post('/login/', { username, password });
         const { access, refresh } = response.data;
         login(access, refresh);
+        navigate('/dashboard'); //Redirect after login
     } catch (err) {
         setError('Invalid credentials');
         console.error('Login error:', err);
