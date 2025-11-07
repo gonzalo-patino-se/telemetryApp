@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { accessToken } = useAuth();
+    console.log('ProtectedRoute check:', accessToken);
     return accessToken ? children : <Navigate to="/login" replace />;
 };
 
