@@ -31,14 +31,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     // Logout function: clears tokens from state and localStorage
-    const logout = () => {
-        setAccessToken(null);
-        setRefreshToken(null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+    const logout = async() => {
+        try {
+            if (refreshToken) {
+                await api.post('/logout/', { refresh: refreshToken });
+            }    
+        } catch (err){
+            console.error('Logout error:', err);
+        } finally {
+            setAccessToken(null);
+            setRefreshToken(null);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            // Remove Authorization header
+            delete api.defaults.headers.common['Authorization'];
+        }
 
-        // Remove Authorization header
-        delete api.defaults.headers.common['Authorization'];
+
+        
     };
 
     // Provide the authentication context to child components
