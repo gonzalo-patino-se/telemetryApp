@@ -2,6 +2,7 @@ import React, { use, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 
 const LoginForm = () => {
@@ -20,7 +21,11 @@ const LoginForm = () => {
         login(access, refresh);
         navigate('/dashboard'); //Redirect after login
     } catch (err) {
-        setError('Invalid credentials');
+        if (err.response && err.response.status === 401) {
+        setError('Invalid username or password.');
+        } else {
+        setError('Something went wrong. Please try again.');
+        }
         console.error('Login error:', err);
     }
     };
@@ -44,6 +49,7 @@ const LoginForm = () => {
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
         Login
         </button>
+        <Link to="/register" className="text-blue-600 text-sm text-center"> Not registered? Sign up here. </Link>
         {error && <p className="text-red-500">{error}</p>}
     </form>
     );
