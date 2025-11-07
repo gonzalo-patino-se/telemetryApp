@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const RegisterForm = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
+
+    const navigate = useNavigate();
 
     const handleRegister = async (e) => {
     e.preventDefault();
@@ -15,7 +18,8 @@ const RegisterForm = () => {
         username,
         password,
         });
-        setMessage('Registration successful! You can now log in.');
+        setMessage('Registration successful! Redirecting to login...');
+        setTimeout(() => navigate('/login'), 1500);
     } 
     catch (err) {
         if (err.response && err.response.data) {
