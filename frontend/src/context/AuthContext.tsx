@@ -1,5 +1,6 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useState, useContext } from 'react';
+import api from '../services/api';
 
 // Define the shape of the authentication context
 interface AuthContextType {
@@ -24,6 +25,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRefreshToken(refresh);
         localStorage.setItem('accessToken', access);
         localStorage.setItem('refreshToken', refresh);
+
+        //Set Authorization header for Axios
+        api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
     };
 
     // Logout function: clears tokens from state and localStorage
@@ -32,6 +36,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRefreshToken(null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+
+        // Remove Authorization header
+        delete api.defaults.headers.common['Authorization'];
     };
 
     // Provide the authentication context to child components
