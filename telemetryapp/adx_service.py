@@ -22,8 +22,14 @@ client = KustoClient(kcsb)
 def query_adx(kql_query):
     try:
         response = client.execute(database, kql_query)
-        rows = response.primary_results[0].to_dict()
-        return rows
+        logger.info(f"Query executed successfully: {kql_query}")
+        table = response.primary_results[0]
+        rows = table.to_dict()
+        
+        for row in rows:
+            print(row)
+        return rows # Return all rows to the caller
     except Exception as e:
-        logger.error(f"ADX query failed: {e}")
-        return {"error": "ADX query failed"}
+        logger.error(f"ADX query failed {e}. Query: {kql_query}")
+        return []
+        
