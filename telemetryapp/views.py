@@ -21,8 +21,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 
 
-
-
 #Registration endpoint
 
 @api_view(['POST'])
@@ -81,3 +79,30 @@ class TelemetryViewSet(viewsets.ModelViewSet):
     serializer_class = TelemetrySerializer
     permission_classes = [IsAuthenticated]
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def search_serial(request):
+    serial = request.data.get('serial')
+    
+    if not serial:
+        return Response ({"error": "Serial number is required"}, status=400)
+
+    # Call ADX query
+    serial = request.data.get('serial').strip()
+    
+
+    kql_query = f"DevInfo | where comms_serial contains '{serial}' | limit 1"
+
+    
+    try:
+        print(f"Executing KQL Query: {kql_query}")
+        data = query_adx(kql_query)
+        print(f"Query Response: {data}")
+        if not data:
+            return Response({"message": "No serial number found"}, status=404)
+        return Response(data)
+        
+    except Exception as e:
+        return Response({"Error querying ADX": str(e)}, status=500)
+
+    
