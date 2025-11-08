@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function SearchBar({ onSearch }) {
     const [serial, setSerial] = useState('');
+    const { accessToken, logout } = useAuth();
 
     const handleSearch = async () => {
         try {
-            const token = localStorage.getItem('access'); // JWT
             const res = await axios.post('/api/search_serial/', { serial }, {
                 headers: {
-                    Authorization: `Bearer ${token}` }
+                    Authorization: `Bearer ${token}` 
+                }
             });
             onSearch(res.data);
         } catch (error) {
+            if (error.response?.status === 401) {
+                await logout(); //Auto-logout if token invalid
+            }
+                
             alert(
                 error.response?.data?.error || 
                 error.response?.data?.message ||
