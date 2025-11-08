@@ -3,6 +3,7 @@
     "@types/react-datepicker": "^6.2.0",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "datepicker": "^0.0.0",
     "jwt-decode": "^4.0.0",
