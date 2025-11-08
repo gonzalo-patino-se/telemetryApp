@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../services/api';
+import LogoutButton from './LogoutButton';
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
@@ -48,7 +49,9 @@ const Dashboard = () => {
             <h2 className="font-bold">Search Result:</h2>
             <pre className="text-sm">{JSON.stringify(result, null, 2)}</pre>
         </div>
+        
         )}
+        <LogoutButton />
     </div>
     );
 };
