@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from .adx_service import query_adx
 
 
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .permissions import IsAdminGroup
@@ -19,6 +21,8 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
+
+from django.views.decorators.csrf import csrf_exempt
 
 
 #Registration endpoint
@@ -105,4 +109,19 @@ def search_serial(request):
     except Exception as e:
         return Response({"Error querying ADX": str(e)}, status=500)
 
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def query_adx_view(request):
+    kql_query = request.data.get('kql')
     
+    if not kql_query:
+        return Response({"error": "KQL query is required"}, status=400)
+
+    try:
+        print(f"Executing KQL Query 2: {kql_query}")
+        data = query_adx(kql_query)
+        return Response(data)
+    except Exception as e:
+        return Response({"error querying KQL": str(e)}, status=500)

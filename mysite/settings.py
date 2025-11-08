@@ -57,6 +57,15 @@ SECURE_SSL_REDIRECT = False #change for production
 SESSION_COOKIE_SECURE = False #change for production
 CSRF_COOKIE_SECURE = False #change for production
 
+#CSRF_TRUSTED_ORIGINS = [f"https://{h.strip()}" for h in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if h]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -131,7 +140,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'SIGNING_KEY': os.getenv('JWT_SIGNING_KEY', 'fallback-secret'),
     'ALGORITHM': 'HS256',
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=30), #Fixme, changed back to 5 min
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30), #Fixme, changed back to 5 min
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -139,6 +148,7 @@ SIMPLE_JWT = {
 
 #CORS
 CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if o]
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + ['authorization']
 
 
