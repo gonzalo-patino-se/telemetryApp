@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 import LogoutButton from './LogoutButton';
+import DeviceInfoWidget from './DeviceInfoWidget';
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
@@ -46,6 +47,10 @@ const Dashboard = () => {
                 </button>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DeviceInfoWidget serial={serial} />
+            </div>
+
             {/* Error Message */}
             {error && <p className="text-red-500">{error}</p>}
 
@@ -63,6 +68,7 @@ const Dashboard = () => {
                         </div>
                     ))}
                 </div>
+                
             )}
 
             {/* Logout Button */}
