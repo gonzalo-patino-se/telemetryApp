@@ -3,6 +3,7 @@ import api from '../services/api';
 import LogoutButton from './LogoutButton';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import DevicePV1Widget from './DevicePV1Widget';
+import DevicePV1Chart from './DevicePV1Chart';
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
@@ -54,6 +55,10 @@ const Dashboard = () => {
 
             <div className="h-1 bg-gray-300 w-full max-w-4xl">
                 <DevicePV1Widget serial={serial} />
+            </div>
+
+            <div className="h-1 bg-gray-300 w-full max-w-4xl">
+                <DevicePV1Chart serial={serial} />
             </div>
 
             {/* Error Message */}
