@@ -1,13 +1,14 @@
-    // src/components/AdxSearchWidget.tsx
-    import React, { useEffect, useMemo, useState } from 'react';
-    import api from '../services/api';
-    import { useAuth } from '../context/AuthContext';
-    import DatePicker from 'react-datepicker';
-    import 'react-datepicker/dist/react-datepicker.css';
+// src/components/AdxSearchWifiSignalWidget.tsx
 
-    // ---- Chart.js (typed) ----
-    import { Line } from 'react-chartjs-2';
-    import {
+import React, { useEffect, useMemo, useState } from 'react';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// ---- Chart.js (typed)
+import { Line } from 'react-chartjs-2';
+import {
     Chart as ChartJS,
     LineElement,
     PointElement,
@@ -21,7 +22,7 @@
     type ChartData,
     type ChartOptions,
     } from 'chart.js';
-    import 'chartjs-adapter-date-fns';
+import 'chartjs-adapter-date-fns';
 
     ChartJS.register(
     LineElement,
@@ -34,15 +35,16 @@
     CategoryScale
     );
 
-    // --------------------- Types & Helpers ---------------------
+    // ---------------------------- Types & Helpers
     interface AdxSearchWifiSignalWidgetProps {
-    serial: string; // Provided by Dashboard
+    /** Device serial provided by the Dashboard/Search */
+    serial: string;
     }
 
     // Shape returned from ADX rows (we only need two fields for the chart)
     type AdxRow = {
-    localtime?: string;    // ISO 8601 string
-    value_double?: number; // numeric PV voltage
+    localtime?: string;     // ISO 8601 string
+    value_double?: number;  // numeric Wi‑Fi signal (dBm)
     [k: string]: any;
     };
 
@@ -88,16 +90,16 @@
 
     // Even downsample to keep charts snappy with large series
     function evenDownsample<T>(arr: T[], maxPoints: number): T[] {
-    if (!Array.isArray(arr)) return [];
-    if (arr.length <= maxPoints) return arr;
-    const step = Math.ceil(arr.length / maxPoints);
-    const out: T[] = [];
-    for (let i = 0; i < arr.length; i += step) out.push(arr[i]);
-    if (out[out.length - 1] !== arr[arr.length - 1]) out.push(arr[arr.length - 1]);
-    return out;
-    }
+        if (!Array.isArray(arr)) return [];
+        if (arr.length <= maxPoints) return arr;
+        const step = Math.ceil(arr.length / maxPoints);
+        const out: T[] = [];
+        for (let i = 0; i < arr.length; i += step) out.push(arr[i]);
+        if (out[out.length - 1] !== arr[arr.length - 1]) out.push(arr[arr.length - 1]);
+        return out;
+        }
 
-    // --------------------- Component ---------------------
+    // ---------------------------- Component
     const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({ serial }) => {
     const { accessToken, logout } = useAuth();
 
@@ -150,7 +152,7 @@
     }
     }
 
-    // ---------- Build typed chart series ----------
+    // ---------- Build typed chart series
     // Use numeric timestamps to satisfy Chart.js ScatterDataPoint typing
     const points: ScatterDataPoint[] = useMemo(() => {
     const list = (rows ?? [])
@@ -167,7 +169,7 @@
     () => ({
         datasets: [
         {
-            label: 'Wifi Signal Strength (dBm',
+            label: 'Wi‑Fi Signal Strength (dBm)',
             data: points,
             // parsing can be left default (true) because data are {x,y}
             borderColor: '#2563eb',
@@ -198,7 +200,7 @@
         y: {
             beginAtZero: false,
             grid: { color: 'rgba(0,0,0,0.08)' },
-            title: { display: true, text: 'Wifi Signal Strength (dBm)' },
+            title: { display: true, text: 'Wi‑Fi Signal Strength (dBm)' },
         },
         },
         plugins: {
@@ -209,11 +211,9 @@
     []
     );
 
-    // --------------------- UI ---------------------
+    // ---------------------------- UI (no outer card container/title)
     return (
-    <div className="p-4 border rounded bg-white">
-        <h3 className="font-semibold mb-3">Wifi Signal Strength (ADX)</h3>
-
+    <>
         {/* Range selectors */}
         <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="flex flex-col">
@@ -289,7 +289,6 @@
             />
             Auto‑fetch on change
             </label>
-
             <button
             onClick={fetchData}
             disabled={!canFetch || loading}
@@ -316,6 +315,7 @@
 
         {/* Status / Results */}
         {error && <div className="text-red-600">{error}</div>}
+
         {!error && !loading && rows.length === 0 && (
         <div className="text-sm">No data was found</div>
         )}
@@ -325,6 +325,7 @@
             <div className="text-xs text-gray-600 mb-2">
             Returned rows: <b>{rows.length}</b>
             </div>
+
             <div style={{ height: 300 }} className="mb-3">
             <Line data={chartData} options={chartOptions} />
             </div>
@@ -335,13 +336,13 @@
                 Show first 5 rows (debug)
             </summary>
             <pre className="bg-gray-50 p-2 rounded max-h-64 overflow-auto text-xs">
-    {JSON.stringify(rows.slice(0, 5), null, 2)}
+                {JSON.stringify(rows.slice(0, 5), null, 2)}
             </pre>
             </details>
         </>
         )}
-    </div>
+    </>
     );
-    };
+};
 
-    export default AdxSearchWifiSignalWidget;
+export default AdxSearchWifiSignalWidget;
