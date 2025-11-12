@@ -1,11 +1,11 @@
-    // src/components/AdxSearchWidget.tsx
+    // src/components/AdxSearchPV1Widget.tsx
     import React, { useEffect, useMemo, useState } from 'react';
     import api from '../services/api';
     import { useAuth } from '../context/AuthContext';
     import DatePicker from 'react-datepicker';
     import 'react-datepicker/dist/react-datepicker.css';
 
-    // ---- Chart.js (typed) ----
+    // ---- Chart.js (typed)
     import { Line } from 'react-chartjs-2';
     import {
     Chart as ChartJS,
@@ -34,22 +34,32 @@
     CategoryScale
     );
 
-    // --------------------- Types & Helpers ---------------------
-    interface AdxSearchWidgetProps {
-    serial: string; // Provided by Dashboard
+    // ---------------------------- Types & Helpers
+    interface AdxSearchPV1WidgetProps {
+    /** Device serial provided by the Dashboard/Search */
+    serial: string;
+
+    /** Hide internal action controls when header hosts them */
+    showControls?: boolean;
+
+    /** Optional: controlled auto-fetch from parent */
+    autoFetchProp?: boolean;
+    onAutoFetchChange?: (value: boolean) => void;
+
+    /** Optional: increment to trigger a fetch from parent (e.g., header button) */
+    fetchSignal?: number;
     }
 
     // Shape returned from ADX rows (we only need two fields for the chart)
     type AdxRow = {
-    localtime?: string;    // ISO 8601 string
-    value_double?: number; // numeric PV voltage
+    localtime?: string;     // ISO 8601 string
+    value_double?: number;  // numeric PV voltage
     [k: string]: any;
     };
 
     const QUERY_PATH = '/query_adx/'; // Change to '/api/query_adx/' if your axios baseURL does NOT include '/api'.
 
     function escapeKqlString(s: string) {
-    // Escape single quotes for Kusto string literals
     return (s ?? '').replace(/'/g, "''");
     }
 
@@ -97,8 +107,14 @@
     return out;
     }
 
-    // --------------------- Component ---------------------
-    const AdxSearchPV1Widget: React.FC<AdxSearchWidgetProps> = ({ serial }) => {
+    // ---------------------------- Component
+    const AdxSearchPV1Widget: React.FC<AdxSearchPV1WidgetProps> = ({
+    serial,
+    showControls = true,
+    autoFetchProp,
+    onAutoFetchChange,
+    fetchSignal,
+    }) => {
     const { accessToken, logout } = useAuth();
 
     // Default range: Last 24 hours
@@ -110,7 +126,10 @@
     const [rows, setRows] = useState<AdxRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [autoFetch, setAutoFetch] = useState(false);
+
+    // Internal autoFetch if parent doesn't control it
+    const [autoFetchInternal, setAutoFetchInternal] = useState(false);
+    const autoFetch = autoFetchProp ?? autoFetchInternal;
 
     const canFetch = useMemo(() => {
     if (!serial || !fromDT || !toDT) return false;
@@ -122,11 +141,20 @@
     return buildKql(serial, fromDT, toDT);
     }, [canFetch, serial, fromDT, toDT]);
 
+    // Auto-fetch on input changes
     useEffect(() => {
     if (!autoFetch || !kql) return;
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [kql, autoFetch]);
+
+    // Parent-triggered fetch via fetchSignal bump
+    useEffect(() => {
+    if (fetchSignal === undefined) return;
+    if (!canFetch) return;
+    void fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchSignal]);
 
     async function fetchData() {
     if (!kql) return;
@@ -138,7 +166,6 @@
         { kql },
         { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-        // Backend returns { name, kind, data: [...] }
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
         setRows(dataArray);
     } catch (err: any) {
@@ -150,26 +177,23 @@
     }
     }
 
-    // ---------- Build typed chart series ----------
-    // Use numeric timestamps to satisfy Chart.js ScatterDataPoint typing
+    // ---------- Build typed chart series
     const points: ScatterDataPoint[] = useMemo(() => {
     const list = (rows ?? [])
         .filter(r => r && r.localtime && Number.isFinite(Number(r.value_double)))
         .map(r => ({
-        x: new Date(r.localtime as string).getTime(), // <-- number (ms) for TS typing
+        x: new Date(r.localtime as string).getTime(), // number (ms)
         y: Number(r.value_double),
         }));
     return evenDownsample(list, 5000);
     }, [rows]);
 
-    // Typed chart data & options
     const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(
     () => ({
         datasets: [
         {
             label: 'PV1 Voltage (V)',
             data: points,
-            // parsing can be left default (true) because data are {x,y}
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.15)',
             fill: true,
@@ -209,11 +233,9 @@
     []
     );
 
-    // --------------------- UI ---------------------
+    // ---------------------------- UI (no outer card container/title)
     return (
-    <div className="p-4 border rounded bg-white">
-        <h3 className="font-semibold mb-3">PV1 Voltage (ADX)</h3>
-
+    <>
         {/* Range selectors */}
         <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="flex flex-col">
@@ -279,27 +301,31 @@
             </button>
         </div>
 
-        {/* Fetch controls */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Fetch controls — hidden if parent renders them in header */}
+        {showControls && (
+            <div className="flex items-center gap-2 ml-auto">
             <label className="text-xs flex items-center gap-1">
-            <input
+                <input
                 type="checkbox"
                 checked={autoFetch}
-                onChange={e => setAutoFetch(e.target.checked)}
-            />
-            Auto‑fetch on change
+                onChange={e => {
+                    onAutoFetchChange?.(e.target.checked);
+                    if (autoFetchProp === undefined) setAutoFetchInternal(e.target.checked);
+                }}
+                />
+                Auto‑fetch on change
             </label>
-
             <button
-            onClick={fetchData}
-            disabled={!canFetch || loading}
-            className={`px-3 py-2 rounded ${
+                onClick={fetchData}
+                disabled={!canFetch || loading}
+                className={`px-3 py-2 rounded ${
                 canFetch && !loading ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-            }`}
+                }`}
             >
-            {loading ? 'Fetching…' : 'Fetch'}
+                {loading ? 'Fetching…' : 'Fetch'}
             </button>
-        </div>
+            </div>
+        )}
         </div>
 
         {/* Current selection summary */}
@@ -319,7 +345,6 @@
         {!error && !loading && rows.length === 0 && (
         <div className="text-sm">No data was found</div>
         )}
-
         {!error && rows.length > 0 && (
         <>
             <div className="text-xs text-gray-600 mb-2">
@@ -335,12 +360,12 @@
                 Show first 5 rows (debug)
             </summary>
             <pre className="bg-gray-50 p-2 rounded max-h-64 overflow-auto text-xs">
-    {JSON.stringify(rows.slice(0, 5), null, 2)}
+                {JSON.stringify(rows.slice(0, 5), null, 2)}
             </pre>
             </details>
         </>
         )}
-    </div>
+    </>
     );
     };
 
