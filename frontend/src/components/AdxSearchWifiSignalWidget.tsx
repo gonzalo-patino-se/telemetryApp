@@ -35,7 +35,7 @@
     );
 
     // --------------------- Types & Helpers ---------------------
-    interface AdxSearchWidgetProps {
+    interface AdxSearchWifiSignalWidgetProps {
     serial: string; // Provided by Dashboard
     }
 
@@ -63,7 +63,7 @@
     let finish = datetime(${endIso});
     Telemetry
     | where comms_serial contains s
-    | where name contains '/INV/DCPORT/STAT/PV1/V'
+    | where name contains '/SCC/WIFI/STAT/SIGNAL_STRENGTH'
     | where localtime between (start .. finish)
     | where isnotnull(value_double)
     | project localtime, value_double
@@ -98,7 +98,7 @@
     }
 
     // --------------------- Component ---------------------
-    const AdxSearchWidget: React.FC<AdxSearchWidgetProps> = ({ serial }) => {
+    const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({ serial }) => {
     const { accessToken, logout } = useAuth();
 
     // Default range: Last 24 hours
@@ -167,7 +167,7 @@
     () => ({
         datasets: [
         {
-            label: 'PV1 Voltage (V)',
+            label: 'Wifi Signal Strength (dBm',
             data: points,
             // parsing can be left default (true) because data are {x,y}
             borderColor: '#2563eb',
@@ -198,7 +198,7 @@
         y: {
             beginAtZero: false,
             grid: { color: 'rgba(0,0,0,0.08)' },
-            title: { display: true, text: 'Voltage (V)' },
+            title: { display: true, text: 'Wifi Signal Strength (dBm)' },
         },
         },
         plugins: {
@@ -212,7 +212,7 @@
     // --------------------- UI ---------------------
     return (
     <div className="p-4 border rounded bg-white">
-        <h3 className="font-semibold mb-3">PV1 Voltage (ADX)</h3>
+        <h3 className="font-semibold mb-3">Wifi Signal Strength (ADX)</h3>
 
         {/* Range selectors */}
         <div className="flex flex-wrap items-end gap-3 mb-3">
@@ -344,4 +344,4 @@
     );
     };
 
-    export default AdxSearchWidget;
+    export default AdxSearchWifiSignalWidget;

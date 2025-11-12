@@ -4,7 +4,8 @@ import LogoutButton from './LogoutButton';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import DevicePV1Widget from './DevicePV1Widget';
 import DevicePV1Chart from './DevicePV1Chart';
-import AdxSearchWidget from './AdxSearchWidget';
+import AdxSearchPV1Widget from './AdxSearchPV1Widget';
+import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
@@ -55,34 +56,15 @@ const Dashboard = () => {
             </div>
 
             <div className="h-1 bg-gray-300 w-full max-w-4xl">
-                <DevicePV1Widget serial={serial} />
+                <AdxSearchPV1Widget serial={serial} />
             </div>
 
-            
-
             <div className="h-1 bg-gray-300 w-full max-w-4xl">
-                <AdxSearchWidget serial={serial} />
+                <AdxSearchWifiSignalWidget serial={serial} />
             </div>
 
             {/* Error Message */}
             {error && <p className="text-red-500">{error}</p>}
-
-            {/* Result Widgets */}
-            {result && result.data && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
-                    {result.data.map((device, index) => (
-                        <div key={index} className="bg-white shadow rounded p-4">
-                            <h2 className="text-lg font-bold mb-2">{device.name} ({device.deviceType})</h2>
-                            <p><strong>Serial:</strong> {device.device_serial}</p>
-                            <p><strong>MAC:</strong> {device.mac_address}</p>
-                            <p><strong>Firmware:</strong> {device.firmware_version}</p>
-                            <p><strong>Local Time:</strong> {new Date(device.localtime).toLocaleString()}</p>
-                            <p><strong>Status:</strong> {device.status || 'Unknown'}</p>
-                        </div>
-                    ))}
-                </div>
-                
-            )}
 
             {/* Logout Button */}
             <LogoutButton />
