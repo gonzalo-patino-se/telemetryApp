@@ -6,7 +6,6 @@
     import DatePicker from 'react-datepicker';
     import 'react-datepicker/dist/react-datepicker.css';
 
-    // ---- Chart.js (typed)
     import { Line } from 'react-chartjs-2';
     import {
     Chart as ChartJS,
@@ -39,26 +38,34 @@
     interface AdxSearchWifiSignalWidgetProps {
     /** Device serial provided by the Dashboard/Search */
     serial: string;
+
+    /** Hide the internal action controls (Auto‑fetch + Fetch) when header hosts them */
+    showControls?: boolean;
+
+    /** Optional: controlled auto-fetch from parent (if provided, overrides internal state) */
+    autoFetchProp?: boolean;
+    onAutoFetchChange?: (value: boolean) => void;
+
+    /** Optional: increment to trigger a fetch from parent (e.g., header button click) */
+    fetchSignal?: number;
     }
 
-    // Shape returned from ADX rows (we only need two fields for the chart)
     type AdxRow = {
     localtime?: string;     // ISO 8601 string
     value_double?: number;  // numeric Wi‑Fi signal (dBm)
     [k: string]: any;
     };
 
-    const QUERY_PATH = '/query_adx/'; // Change to '/api/query_adx/' if your axios baseURL does NOT include '/api'.
+    const QUERY_PATH = '/query_adx/';
 
     function escapeKqlString(s: string) {
-    // Escape single quotes for Kusto string literals
     return (s ?? '').replace(/'/g, "''");
     }
 
     function buildKql(serial: string, from: Date, to: Date) {
     const s = escapeKqlString(serial);
-    const startIso = from.toISOString(); // UTC Z
-    const endIso = to.toISOString();     // UTC Z
+    const startIso = from.toISOString();
+    const endIso = to.toISOString();
     return `
     let s = '${s}';
     let start = datetime(${startIso});
@@ -88,7 +95,6 @@
     }
     }
 
-    // Even downsample to keep charts snappy with large series
     function evenDownsample<T>(arr: T[], maxPoints: number): T[] {
     if (!Array.isArray(arr)) return [];
     if (arr.length <= maxPoints) return arr;
@@ -100,7 +106,13 @@
     }
 
     // ---------------------------- Component
-    const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({ serial }) => {
+    const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({
+    serial,
+    showControls = true,
+    autoFetchProp,
+    onAutoFetchChange,
+    fetchSignal,
+    }) => {
     const { accessToken, logout } = useAuth();
 
     // Default range: Last 24 hours
@@ -112,7 +124,10 @@
     const [rows, setRows] = useState<AdxRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [autoFetch, setAutoFetch] = useState(false);
+
+    // Internal autoFetch if parent doesn't control it
+    const [autoFetchInternal, setAutoFetchInternal] = useState(false);
+    const autoFetch = autoFetchProp ?? autoFetchInternal;
 
     const canFetch = useMemo(() => {
     if (!serial || !fromDT || !toDT) return false;
@@ -124,11 +139,20 @@
     return buildKql(serial, fromDT, toDT);
     }, [canFetch, serial, fromDT, toDT]);
 
+    // Auto-fetch on range/serial changes (if enabled)
     useEffect(() => {
     if (!autoFetch || !kql) return;
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [kql, autoFetch]);
+
+    // Parent-triggered fetch via fetchSignal bump
+    useEffect(() => {
+    if (fetchSignal === undefined) return;
+    if (!canFetch) return;
+    void fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchSignal]);
 
     async function fetchData() {
     if (!kql) return;
@@ -140,7 +164,6 @@
         { kql },
         { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-        // Backend returns { name, kind, data: [...] }
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
         setRows(dataArray);
     } catch (err: any) {
@@ -152,26 +175,22 @@
     }
     }
 
-    // ---------- Build typed chart series
-    // Use numeric timestamps to satisfy Chart.js ScatterDataPoint typing
     const points: ScatterDataPoint[] = useMemo(() => {
     const list = (rows ?? [])
         .filter(r => r && r.localtime && Number.isFinite(Number(r.value_double)))
         .map(r => ({
-        x: new Date(r.localtime as string).getTime(), // <-- number (ms) for TS typing
+        x: new Date(r.localtime as string).getTime(),
         y: Number(r.value_double),
         }));
     return evenDownsample(list, 5000);
     }, [rows]);
 
-    // Typed chart data & options
     const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(
     () => ({
         datasets: [
         {
             label: 'Wi‑Fi Signal Strength (dBm)',
             data: points,
-            // parsing can be left default (true) because data are {x,y}
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.15)',
             fill: true,
@@ -279,26 +298,31 @@
             </button>
         </div>
 
-        {/* Fetch controls */}
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Fetch controls — hidden if parent renders them in header */}
+        {showControls && (
+            <div className="flex items-center gap-2 ml-auto">
             <label className="text-xs flex items-center gap-1">
-            <input
+                <input
                 type="checkbox"
                 checked={autoFetch}
-                onChange={e => setAutoFetch(e.target.checked)}
-            />
-            Auto‑fetch on change
+                onChange={e => {
+                    onAutoFetchChange?.(e.target.checked);
+                    if (autoFetchProp === undefined) setAutoFetchInternal(e.target.checked);
+                }}
+                />
+                Auto‑fetch on change
             </label>
             <button
-            onClick={fetchData}
-            disabled={!canFetch || loading}
-            className={`px-3 py-2 rounded ${
+                onClick={fetchData}
+                disabled={!canFetch || loading}
+                className={`px-3 py-2 rounded ${
                 canFetch && !loading ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-            }`}
+                }`}
             >
-            {loading ? 'Fetching…' : 'Fetch'}
+                {loading ? 'Fetching…' : 'Fetch'}
             </button>
-        </div>
+            </div>
+        )}
         </div>
 
         {/* Current selection summary */}
