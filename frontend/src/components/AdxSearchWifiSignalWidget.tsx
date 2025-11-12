@@ -1,14 +1,14 @@
-// src/components/AdxSearchWifiSignalWidget.tsx
+    // src/components/AdxSearchWifiSignalWidget.tsx
 
-import React, { useEffect, useMemo, useState } from 'react';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+    import React, { useEffect, useMemo, useState } from 'react';
+    import api from '../services/api';
+    import { useAuth } from '../context/AuthContext';
+    import DatePicker from 'react-datepicker';
+    import 'react-datepicker/dist/react-datepicker.css';
 
-// ---- Chart.js (typed)
-import { Line } from 'react-chartjs-2';
-import {
+    // ---- Chart.js (typed)
+    import { Line } from 'react-chartjs-2';
+    import {
     Chart as ChartJS,
     LineElement,
     PointElement,
@@ -22,7 +22,7 @@ import {
     type ChartData,
     type ChartOptions,
     } from 'chart.js';
-import 'chartjs-adapter-date-fns';
+    import 'chartjs-adapter-date-fns';
 
     ChartJS.register(
     LineElement,
@@ -90,14 +90,14 @@ import 'chartjs-adapter-date-fns';
 
     // Even downsample to keep charts snappy with large series
     function evenDownsample<T>(arr: T[], maxPoints: number): T[] {
-        if (!Array.isArray(arr)) return [];
-        if (arr.length <= maxPoints) return arr;
-        const step = Math.ceil(arr.length / maxPoints);
-        const out: T[] = [];
-        for (let i = 0; i < arr.length; i += step) out.push(arr[i]);
-        if (out[out.length - 1] !== arr[arr.length - 1]) out.push(arr[arr.length - 1]);
-        return out;
-        }
+    if (!Array.isArray(arr)) return [];
+    if (arr.length <= maxPoints) return arr;
+    const step = Math.ceil(arr.length / maxPoints);
+    const out: T[] = [];
+    for (let i = 0; i < arr.length; i += step) out.push(arr[i]);
+    if (out[out.length - 1] !== arr[arr.length - 1]) out.push(arr[arr.length - 1]);
+    return out;
+    }
 
     // ---------------------------- Component
     const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({ serial }) => {
@@ -343,6 +343,6 @@ import 'chartjs-adapter-date-fns';
         )}
     </>
     );
-};
+    };
 
-export default AdxSearchWifiSignalWidget;
+    export default AdxSearchWifiSignalWidget;
