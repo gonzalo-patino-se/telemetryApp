@@ -6,6 +6,7 @@ import DevicePV1Widget from './DevicePV1Widget';
 import DevicePV1Chart from './DevicePV1Chart';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
+//
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
