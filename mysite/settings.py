@@ -140,7 +140,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'SIGNING_KEY': os.getenv('JWT_SIGNING_KEY', 'fallback-secret'),
     'ALGORITHM': 'HS256',
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30), #Fixme, changed back to 5 min
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=60), #Fixme, changed back to 5 min
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
