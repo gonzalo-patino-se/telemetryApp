@@ -1,3 +1,4 @@
+// src/components/dashboard.jsx
 import React, { useState } from 'react';
 import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
@@ -8,6 +9,10 @@ const Dashboard = () => {
     const [serial, setSerial] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+
+  // ---- Wi‑Fi widget header controls (controlled by parent)
+    const [wifiAutoFetch, setWifiAutoFetch] = useState(false);
+    const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
 
     const handleSearch = async () => {
     setError('');
@@ -56,7 +61,6 @@ const Dashboard = () => {
             </div>
             )}
 
-            {/* Optional: show basic result preview if available */}
             {result && (
             <div className="mt-3">
                 <pre className="max-h-48 overflow-auto rounded bg-gray-50 p-3 text-xs">
@@ -69,17 +73,38 @@ const Dashboard = () => {
 
         {/* Responsive grid of widgets */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {/* Example widget card: ADX WiFi Signal */}
-        <WidgetCard title="Wi‑Fi Signal (ADX)">
-            {/* NOTE: The widget currently renders its own border/padding/bg. */}
-            {/* We'll keep it as-is for now to avoid behavior changes. */}
-            <AdxSearchWifiSignalWidget serial={serial} />
+        <WidgetCard
+            title="Wi‑Fi Signal (ADX)"
+            actions={
+            <div className="flex items-center gap-3">
+                <label className="text-xs flex items-center gap-1">
+                <input
+                    type="checkbox"
+                    checked={wifiAutoFetch}
+                    onChange={(e) => setWifiAutoFetch(e.target.checked)}
+                />
+                Auto‑fetch
+                </label>
+                <button
+                onClick={() => setWifiFetchSignal((n) => n + 1)}
+                className="px-3 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700"
+                >
+                Fetch
+                </button>
+            </div>
+            }
+        >
+            <AdxSearchWifiSignalWidget
+            serial={serial}
+            showControls={false}
+            autoFetchProp={wifiAutoFetch}
+            onAutoFetchChange={setWifiAutoFetch}
+            fetchSignal={wifiFetchSignal}
+            />
         </WidgetCard>
-
-        {/* Future: add more widgets here as <WidgetCard title="...">...</WidgetCard> */}
         </div>
     </DashboardLayout>
     );
-};
+    };
 
 export default Dashboard;
