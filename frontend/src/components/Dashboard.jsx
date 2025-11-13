@@ -75,7 +75,7 @@ const Dashboard = () => {
         </div>
 
         {/* Responsive grid of widgets */}
-        <div className="grid grid-cols-3 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-4 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {/* Wi‑Fi Signal (ADX) with header actions */}
         <WidgetCard
             title="Wi‑Fi Signal (ADX)"
