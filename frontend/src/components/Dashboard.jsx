@@ -5,6 +5,7 @@ import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
+import DeviceInfoWidget from './DeviceInfoWidget';
 
 const Dashboard = () => {
     const [serial, setSerial] = useState('');
@@ -12,11 +13,11 @@ const Dashboard = () => {
     const [error, setError] = useState('');
 
     // ---- Wi‑Fi widget header controls
-    const [wifiAutoFetch, setWifiAutoFetch] = useState(false);
+    const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
 
     // ---- PV1 widget header controls
-    const [pv1AutoFetch, setPv1AutoFetch] = useState(false);
+    const [pv1AutoFetch, setPv1AutoFetch] = useState(true);
     const [pv1FetchSignal, setPv1FetchSignal] = useState(0);
 
     //------Device info
@@ -144,9 +145,37 @@ const Dashboard = () => {
             />
         </WidgetCard>
 
-        
+        <WidgetCard
+            title="Device Info"
+            actions={
+                <div className= "flex items-center gap-3">
+                    <label className="text-xs flex items-center gap-1">
+                        <input
+                            type = "checkbox"
+                            checked= {devInfoAutoFetch}
+                            onChange={(e) => setDevInfoAutoFetch (e.target.checked)}
+                        />
+                        Auto-fetch
+                    </label>
+                    <button
+                        onClick={() => setDevInfoFetchSignal((n) => n + 1)}
+                        className="px-3 py-1.5 rounded bg-blue-600 text-white text-xs hover:bg-blue-700">
+                            Fetch
+                    </button>
+                </div>
+            }
+        >
+            <DeviceInfoWidget
+                serial = {serial}
+                showControls ={ false }
+                autoFetchProp = {devInfoAutoFetch}
+                onAutoFetchChange={setDevInfoAutoFetch}
+                fetchSignal={devInfoFetchSignal}
+            />
+        </WidgetCard>
 
-        {/* Add more widgets here with the same header-actions pattern */}
+
+        
         </div>
     </DashboardLayout>
     );
