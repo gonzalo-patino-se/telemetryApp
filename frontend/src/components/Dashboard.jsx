@@ -71,13 +71,6 @@ const Dashboard = () => {
             </div>
             )}
 
-            {result && (
-            <div className="mt-3">
-                <pre className="max-h-48 overflow-auto rounded bg-gray-50 p-3 text-xs">
-                {JSON.stringify(result, null, 2)}
-                </pre>
-            </div>
-            )}
         </WidgetCard>
         </div>
 
