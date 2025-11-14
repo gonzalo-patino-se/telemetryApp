@@ -1,4 +1,6 @@
+import Page from '../components/layout/Page';
+
 // src/pages/Firmware.jsx
 export default function Firmware() {
-    return <h1 className="text-xl font-semibold">Firmware</h1>;
+    return <Page title="Firmware">Firmware content</Page>;
 }

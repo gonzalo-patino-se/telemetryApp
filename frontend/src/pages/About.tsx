@@ -1,4 +1,6 @@
+import Page from '../components/layout/Page';
+
 // src/pages/About.jsx
 export default function About() {
-    return <h1 className="text-xl font-semibold">About</h1>;
+    return <Page title="About">About content</Page>;
 }
