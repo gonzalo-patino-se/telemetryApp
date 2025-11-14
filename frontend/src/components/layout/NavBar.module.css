@@ -1,0 +1,98 @@
+    /* ===== Header (modern dark) ===== */
+    .header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.85); /* slate-900-ish */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    box-shadow: 0 1px 0 rgba(148, 163, 184, 0.06), 0 8px 20px rgba(2, 6, 23, 0.25);
+    }
+
+    .container {
+    max-width: 80rem; /* ~1280px */
+    margin: 0 auto;
+    padding: 0 1rem;
+    }
+
+    .brandRow {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    }
+
+    .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+    color: #e5e7eb;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-size: 0.95rem;
+    }
+
+    .logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+    }
+
+    /* ===== Tabs row ===== */
+    .tabsNav {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    }
+    .tabsNav::-webkit-scrollbar { display: none; }
+
+    /* 💡 This is what makes them horizontal */
+    .tabs {
+    display: flex;              /* horizontal layout */
+    align-items: center;
+    gap: 24px;                  /* spacing between tabs (change here) */
+    list-style: none;           /* remove bullets */
+    margin: 0;
+    padding: 0.25rem 0 0.5rem;  /* row padding */
+    white-space: nowrap;        /* prevent wrapping */
+    }
+
+    .tabLink {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: #cbd5e1;             /* idle text */
+    text-decoration: none;      /* no underline */
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 8px 2px;           /* click target; adjust here if needed */
+    transition: color .15s ease, background-color .15s ease, opacity .15s ease;
+    border-radius: 8px;         /* for nicer focus ring, optional pill later */
+    }
+
+    .tabLink:hover { color: #ffffff; }
+
+    .active { color: #ffffff; }
+
+    .active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2px;
+    height: 3px;                /* underline thickness */
+    background: #34d399;        /* underline color (change here) */
+    border-radius: 2px;
+    }
+
+    .tabLink:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 3px;
+    border-radius: 10px;
+    }
