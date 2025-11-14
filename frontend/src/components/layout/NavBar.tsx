@@ -4,7 +4,6 @@ import { NavLink } from 'react-router-dom';
 import LogoutButton from '../LogoutButton';
 
 type Tab = { label: string; to: string; end?: boolean };
-
 const tabs: Tab[] = [
 { label: 'Dashboard', to: '/dashboard', end: true },
 { label: 'History',   to: '/history' },
@@ -15,10 +14,14 @@ const tabs: Tab[] = [
 ];
 
 const NavBar: React.FC = () => {
+const base =
+'px-3 py-2 text-sm font-medium rounded-t-md transition-colors text-gray-600 hover:text-gray-900';
+const active = 'text-blue-700';
+
 return (
 <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur">
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    {/* Top row: brand + actions */}
+    {/* Brand row */}
     <div className="h-14 flex items-center justify-between">
         <div className="flex items-center gap-3 shrink-0">
         <div className="h-6 w-6 rounded bg-blue-600" aria-hidden />
@@ -37,13 +40,7 @@ return (
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) =>
-                [
-                'px-3 py-2 text-sm font-medium rounded-t-md transition-colors',
-                'text-gray-600 hover:text-gray-900',
-                isActive ? 'text-blue-700' : '',
-                ].join(' ')
-            }
+            className={({ isActive }) => [base, isActive ? active : ''].join(' ')}
             >
             {({ isActive }) => (
                 <span className="relative inline-flex flex-col items-center">

@@ -1,3 +1,8 @@
+import Page from '../components/layout/Page';
+
 export default function Settings() {
-    return <h1 className="text-xl font-semibold">Settings</h1>;
+    return <Page title="Settings">Settings content</Page>;
 }
+
+
+
