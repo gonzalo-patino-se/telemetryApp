@@ -22,7 +22,7 @@
             <div className={s.brandRow}>
             <div className={s.brand}>
                 <div className={s.logo} aria-hidden />
-                <span>IoT Dashboard</span>
+                <span>Schneider Electric V1 Analytics</span>
             </div>
             <LogoutButton />
             </div>
