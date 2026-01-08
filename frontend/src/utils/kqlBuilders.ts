@@ -388,3 +388,29 @@ export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDa
 export function buildBattery4CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE4/STAT/I' });
 }
+
+// ============================================================================
+// Battery Main Relay Status Widget (Alarms table)
+// ============================================================================
+
+/**
+ * Build KQL query for Battery Main Relay Status
+ * Uses Alarms table and projects 'value' as 'value_double' for chart compatibility
+ */
+export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endDate: Date): string {
+  const escapedSerial = escapeKqlString(serial);
+  const startLocal = formatDateForKql(startDate);
+  const endLocal = formatDateForKql(endDate);
+
+  return `
+    let s = '${escapedSerial}';
+    let start = datetime(${startLocal});
+    let finish = datetime(${endLocal});
+    Alarms
+    | where comms_serial contains s
+    | where name contains 'MAIN_RELAY_STATUS'
+    | where localtime between (start .. finish)
+    | project localtime, value_double = value
+    | order by localtime asc
+  `.trim();
+}
