@@ -62,14 +62,27 @@
     return (s ?? '').replace(/'/g, "''");
     }
 
+    // Format date for KQL query - standard YYYY-MM-DD HH:MM:SS.0000 format
+    function toLocalKqlDatetime(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    // Standard format: YYYY-MM-DD
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.0000`;
+    }
+
     function buildKql(serial: string, from: Date, to: Date) {
     const s = escapeKqlString(serial);
-    const startIso = from.toISOString();
-    const endIso = to.toISOString();
+    const startLocal = toLocalKqlDatetime(from);
+    const endLocal = toLocalKqlDatetime(to);
+    // localtime is already a datetime column in ADX - query it directly
     return `
     let s = '${s}';
-    let start = datetime(${startIso});
-    let finish = datetime(${endIso});
+    let start = datetime(${startLocal});
+    let finish = datetime(${endLocal});
     Telemetry
     | where comms_serial contains s
     | where name contains '/SCC/WIFI/STAT/SIGNAL_STRENGTH'
@@ -105,6 +118,32 @@
     return out;
     }
 
+    // CSV export helper
+    function downloadCsv(rows: AdxRow[], filename: string) {
+    if (!rows.length) return;
+    const headers = ['localtime', 'value_double', 'signal_status'];
+    const OFFLINE_VAL = -127;
+    const csvRows = [
+        headers.join(','),
+        ...rows.map(r => {
+        const status = r.value_double === OFFLINE_VAL ? 'offline' : 'online';
+        return [
+            r.localtime ?? '',
+            r.value_double ?? '',
+            status
+        ].join(',');
+        })
+    ];
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    }
+
     // ---------------------------- Component
     const AdxSearchWifiSignalWidget: React.FC<AdxSearchWifiSignalWidgetProps> = ({
     serial,
@@ -125,8 +164,8 @@
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Internal autoFetch if parent doesn't control it
-    const [autoFetchInternal, setAutoFetchInternal] = useState(false);
+    // Internal autoFetch if parent doesn't control it - default to TRUE for better UX
+    const [autoFetchInternal, setAutoFetchInternal] = useState(true);
     const autoFetch = autoFetchProp ?? autoFetchInternal;
 
     const canFetch = useMemo(() => {
@@ -141,10 +180,35 @@
 
     // Auto-fetch on range/serial changes (if enabled)
     useEffect(() => {
-    if (!autoFetch || !kql) return;
-    void fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [kql, autoFetch]);
+    if (!autoFetch) return;
+    if (!canFetch || !fromDT || !toDT || !serial) return;
+    
+    const currentKql = buildKql(serial, fromDT, toDT);
+    
+    const doFetch = async () => {
+        setLoading(true);
+        setError('');
+        console.log('WiFi Signal KQL Query:', currentKql);
+        try {
+        const res = await api.post(
+            QUERY_PATH,
+            { kql: currentKql },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
+        console.log('WiFi Signal Response:', dataArray.length, 'rows');
+        setRows(dataArray);
+        } catch (err: any) {
+        if (err?.response?.status === 401) await logout();
+        setError(err?.response?.data?.error ?? 'Error fetching data');
+        setRows([]);
+        } finally {
+        setLoading(false);
+        }
+    };
+    
+    void doFetch();
+    }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout]);
 
     // Parent-triggered fetch via fetchSignal bump
     useEffect(() => {
@@ -158,6 +222,7 @@
     if (!kql) return;
     setLoading(true);
     setError('');
+    console.log('WiFi Signal KQL Query (manual):', kql);
     try {
         const res = await api.post(
         QUERY_PATH,
@@ -165,6 +230,7 @@
         { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
+        console.log('WiFi Signal Response:', dataArray.length, 'rows');
         setRows(dataArray);
     } catch (err: any) {
         if (err?.response?.status === 401) await logout();
@@ -175,15 +241,69 @@
     }
     }
 
+    // -127 dBm indicates inverter offline
+    const OFFLINE_VALUE = -127;
+
+    // Parse localtime from Azure - handles multiple formats:
+    // - ISO format: "2025-03-06T15:44:33.000Z"
+    // - US locale: "3/11/2025, 10:45:01 AM"
+    function parseLocalTimeAsIs(localtime: string): number {
+    if (!localtime) return 0;
+    
+    // Check if it's US locale format: "M/D/YYYY, H:MM:SS AM/PM"
+    if (localtime.includes('/') && localtime.includes(',')) {
+        const [datePart, timeWithAmPm] = localtime.split(', ');
+        const [month, day, year] = datePart.split('/').map(Number);
+        
+        // Parse time with AM/PM
+        const timeMatch = timeWithAmPm?.match(/(\d+):(\d+):(\d+)\s*(AM|PM)?/i);
+        if (timeMatch) {
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const seconds = parseInt(timeMatch[3], 10);
+        const ampm = timeMatch[4]?.toUpperCase();
+        
+        // Convert to 24-hour format
+        if (ampm === 'PM' && hours !== 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+        
+        return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
+        }
+        return new Date(year, month - 1, day).getTime();
+    }
+    
+    // ISO format: "2025-03-06T15:44:33.000Z"
+    // Remove Z suffix to prevent UTC interpretation
+    const cleaned = localtime.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+    const [datePart, timePart] = cleaned.split('T');
+    if (!datePart) return 0;
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours = 0, minutes = 0, seconds = 0] = (timePart || '00:00:00').split(':').map(s => parseFloat(s) || 0);
+    return new Date(year, month - 1, day, Math.floor(hours), Math.floor(minutes), Math.floor(seconds)).getTime();
+    }
+
     const points: ScatterDataPoint[] = useMemo(() => {
     const list = (rows ?? [])
         .filter(r => r && r.localtime && Number.isFinite(Number(r.value_double)))
         .map(r => ({
-        x: new Date(r.localtime as string).getTime(),
+        x: parseLocalTimeAsIs(r.localtime as string),
         y: Number(r.value_double),
         }));
     return evenDownsample(list, 5000);
     }, [rows]);
+
+    // Dynamic point styles: X marker for offline (-127), circle for normal
+    const pointStyles = useMemo(() => {
+    return points.map(p => p.y === OFFLINE_VALUE ? 'crossRot' : 'circle');
+    }, [points]);
+
+    const pointColors = useMemo(() => {
+    return points.map(p => p.y === OFFLINE_VALUE ? '#ef4444' : '#2563eb'); // red for offline, blue for normal
+    }, [points]);
+
+    const pointRadii = useMemo(() => {
+    return points.map(p => p.y === OFFLINE_VALUE ? 6 : 4); // larger X for offline
+    }, [points]);
 
     const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(
     () => ({
@@ -194,13 +314,21 @@
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.15)',
             fill: true,
-            pointRadius: 0,
+            pointStyle: pointStyles,
+            pointRadius: pointRadii,
+            pointBackgroundColor: pointColors,
+            pointBorderColor: points.map(p => p.y === OFFLINE_VALUE ? '#ef4444' : '#ffffff'),
+            pointBorderWidth: points.map(p => p.y === OFFLINE_VALUE ? 2 : 1.5),
+            pointHoverRadius: points.map(p => p.y === OFFLINE_VALUE ? 8 : 6),
+            pointHoverBackgroundColor: points.map(p => p.y === OFFLINE_VALUE ? '#dc2626' : '#1d4ed8'),
+            pointHoverBorderColor: points.map(p => p.y === OFFLINE_VALUE ? '#dc2626' : '#ffffff'),
+            pointHoverBorderWidth: 2,
             borderWidth: 1.5,
             tension: 0.2,
         },
         ],
     }),
-    [points]
+    [points, pointStyles, pointRadii, pointColors]
     );
 
     const chartOptions: ChartOptions<'line'> = useMemo(
@@ -237,14 +365,37 @@
         legend: { display: false },
         tooltip: { 
             mode: 'nearest', 
-            intersect: false,
-            backgroundColor: 'var(--bg-surface)',
-            titleColor: 'var(--text-primary)',
-            bodyColor: 'var(--text-secondary)',
-            borderColor: 'var(--border-default)',
+            intersect: true,
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(148, 163, 184, 0.3)',
             borderWidth: 1,
-            padding: 10,
-            cornerRadius: 8
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+            title: (context) => {
+                if (!context.length || context[0].parsed.x === null) return '';
+                const date = new Date(context[0].parsed.x as number);
+                return date.toLocaleString(undefined, {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+                });
+            },
+            label: (context) => {
+                const value = context.parsed.y;
+                if (value === OFFLINE_VALUE) {
+                return ['⛔ Device Offline', `Signal: ${value} dBm`];
+                }
+                return `Signal: ${value} dBm`;
+            }
+            }
         },
         },
     }),
@@ -267,6 +418,7 @@
             timeIntervals={15}
             dateFormat="yyyy-MM-dd HH:mm"
             isClearable={false}
+            portalId="root"
             />
         </div>
 
@@ -282,6 +434,7 @@
             dateFormat="yyyy-MM-dd HH:mm"
             isClearable={false}
             minDate={fromDT ?? undefined}
+            portalId="root"
             />
         </div>
 
@@ -361,6 +514,18 @@
         )}
         </div>
 
+        {/* Debug: Show KQL query */}
+        {kql && (
+        <details className="mb-2">
+            <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-secondary">
+            Show KQL Query (debug)
+            </summary>
+            <pre className="bg-bg-primary border border-border-subtle p-2 rounded-lg max-h-40 overflow-auto text-xs text-text-secondary mt-2 whitespace-pre-wrap">
+            {kql}
+            </pre>
+        </details>
+        )}
+
         {/* Status / Results */}
         {error && <div className="text-status-critical text-sm">{error}</div>}
 
@@ -370,8 +535,22 @@
 
         {!error && rows.length > 0 && (
         <>
-            <div className="text-xs text-text-secondary mb-2">
-            Returned rows: <span className="font-semibold text-text-primary">{rows.length}</span>
+            <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-text-secondary">
+                Returned rows: <span className="font-semibold text-text-primary">{rows.length}</span>
+            </div>
+            <button
+                onClick={() => downloadCsv(rows, `wifi_signal_${serial}_${new Date().toISOString().slice(0,10)}.csv`)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                title="Download data as CSV"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                CSV
+            </button>
             </div>
 
             <div className="h-[180px] sm:h-[220px] mb-3">

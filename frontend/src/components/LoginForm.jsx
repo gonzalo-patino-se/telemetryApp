@@ -1,7 +1,11 @@
-﻿import React, { useState } from 'react';
+﻿// src/components/LoginForm.jsx
+import React, { useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import Logo from './common/Logo';
+import { colors, spacing, borderRadius, typography } from '../styles/tokens';
+import { glassCardStyles, formStyles, buttonStyles } from '../styles/components';
 
 const LoginForm = () => {
     const { login } = useAuth();
@@ -31,126 +35,129 @@ const LoginForm = () => {
         }
     };
 
+    const styles = {
+        page: {
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: colors.gradients.background,
+            padding: spacing.lg,
+        },
+        card: {
+            ...glassCardStyles.container,
+            width: '100%',
+            maxWidth: '400px',
+            padding: '40px 32px',
+        },
+        header: {
+            textAlign: 'center',
+            marginBottom: '32px',
+        },
+        title: {
+            fontSize: typography.fontSize.xxl,
+            fontWeight: typography.fontWeight.bold,
+            color: colors.textPrimary,
+            margin: '16px 0 8px',
+            letterSpacing: '-0.025em',
+        },
+        subtitle: {
+            fontSize: typography.fontSize.base,
+            color: colors.textTertiary,
+            margin: 0,
+        },
+        errorBox: {
+            padding: '12px 16px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: borderRadius.lg,
+            marginBottom: '20px',
+        },
+        errorText: {
+            fontSize: typography.fontSize.sm,
+            color: '#f87171',
+            margin: 0,
+        },
+        inputGroup: {
+            marginBottom: '20px',
+        },
+        input: {
+            ...formStyles.input,
+            padding: '14px 16px',
+        },
+        submitButton: {
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            width: '100%',
+            padding: '14px 20px',
+            fontSize: typography.fontSize.base,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        footer: {
+            textAlign: 'center',
+            marginTop: '24px',
+        },
+        footerText: {
+            fontSize: typography.fontSize.sm,
+            color: colors.textTertiary,
+        },
+        link: {
+            color: colors.accentPrimary,
+            textDecoration: 'none',
+            fontWeight: typography.fontWeight.medium,
+        },
+    };
+
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '16px' }}>
-            <div style={{ width: '100%', maxWidth: '400px' }}>
-                {/* Glass card */}
-                <div style={{ 
-                    background: 'rgba(30, 41, 59, 0.8)', 
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: '24px', 
-                    border: '1px solid rgba(148, 163, 184, 0.1)',
-                    padding: '40px 32px',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-                }}>
-                    {/* Logo */}
-                    <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                        <div style={{ 
-                            width: '56px', 
-                            height: '56px', 
-                            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                            borderRadius: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 16px',
-                            boxShadow: '0 10px 40px -10px rgba(59, 130, 246, 0.5)'
-                        }}>
-                            <svg style={{ width: '28px', height: '28px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
+        <div style={styles.page}>
+            <div style={styles.card}>
+                <div style={styles.header}>
+                    <Logo size="lg" showText={false} />
+                    <h1 style={styles.title}>Welcome back</h1>
+                    <p style={styles.subtitle}>Sign in to your dashboard</p>
+                </div>
+
+                <form onSubmit={handleLogin}>
+                    {error && (
+                        <div style={styles.errorBox}>
+                            <p style={styles.errorText}>{error}</p>
                         </div>
-                        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#f1f5f9', margin: '0 0 8px', letterSpacing: '-0.025em' }}>Welcome back</h1>
-                        <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0' }}>Sign in to your dashboard</p>
+                    )}
+
+                    <div style={styles.inputGroup}>
+                        <label style={formStyles.label}>Username</label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter your username"
+                            required
+                            style={styles.input}
+                        />
                     </div>
 
-                    <form onSubmit={handleLogin}>
-                        {error && (
-                            <div style={{ 
-                                padding: '12px 16px', 
-                                background: 'rgba(239, 68, 68, 0.1)', 
-                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                borderRadius: '12px',
-                                marginBottom: '20px'
-                            }}>
-                                <p style={{ fontSize: '13px', color: '#f87171', margin: '0' }}>{error}</p>
-                            </div>
-                        )}
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#cbd5e1', marginBottom: '8px' }}>Username</label>
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter your username"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '14px 16px',
-                                    fontSize: '14px',
-                                    background: 'rgba(15, 23, 42, 0.6)',
-                                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                                    borderRadius: '12px',
-                                    color: '#f1f5f9',
-                                    outline: 'none',
-                                    transition: 'all 0.2s',
-                                    boxSizing: 'border-box'
-                                }}
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#cbd5e1', marginBottom: '8px' }}>Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '14px 16px',
-                                    fontSize: '14px',
-                                    background: 'rgba(15, 23, 42, 0.6)',
-                                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                                    borderRadius: '12px',
-                                    color: '#f1f5f9',
-                                    outline: 'none',
-                                    transition: 'all 0.2s',
-                                    boxSizing: 'border-box'
-                                }}
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '14px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                color: 'white',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                opacity: loading ? 0.7 : 1,
-                                transition: 'all 0.2s',
-                                boxShadow: '0 10px 40px -10px rgba(59, 130, 246, 0.5)'
-                            }}
-                        >
-                            {loading ? 'Signing in...' : 'Sign in'}
-                        </button>
-                    </form>
-
-                    <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(148, 163, 184, 0.1)', textAlign: 'center' }}>
-                        <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0' }}>
-                            Do not have an account?{' '}
-                            <Link to="/register" style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: '500' }}>Create one</Link>
-                        </p>
+                    <div style={styles.inputGroup}>
+                        <label style={formStyles.label}>Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            required
+                            style={styles.input}
+                        />
                     </div>
+
+                    <button type="submit" disabled={loading} style={{...styles.submitButton, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}}>
+                        {loading ? 'Signing in...' : 'Sign in'}
+                    </button>
+                </form>
+
+                <div style={styles.footer}>
+                    <p style={styles.footerText}>
+                        Do not have an account?{' '}
+                        <Link to="/register" style={styles.link}>Create one</Link>
+                    </p>
                 </div>
             </div>
         </div>

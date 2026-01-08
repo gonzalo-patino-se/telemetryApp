@@ -1,26 +1,82 @@
-    // src/pages/History.jsx
-    import React from 'react';
-    import DashboardLayout from '../components/layout/DashboardLayout';
-    import WidgetCard from '../components/layout/WidgetCard';
+﻿// src/pages/History.jsx
+import React, { useState } from 'react';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import WidgetCard from '../components/layout/WidgetCard';
+import { colors, spacing, borderRadius } from '../styles/tokens';
+import { useSerial } from '../context/SerialContext';
 
-    export default function History() {
-    return (
+const styles = {
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '24px',
+  },
+  buttonGroup: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
+  button: (isActive) => ({
+    padding: '8px 16px',
+    fontSize: '13px',
+    fontWeight: 500,
+    borderRadius: '8px',
+    border: '1px solid ' + (isActive ? colors.accentPrimary : colors.borderSubtle),
+    background: isActive ? colors.accentPrimary : colors.bgInput,
+    color: isActive ? '#ffffff' : colors.textPrimary,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  }),
+};
+
+export default function History() {
+  const [activeRange, setActiveRange] = useState('24h');
+  const { serial, hasSerial } = useSerial();
+
+  const ranges = [
+    { id: '24h', label: 'Last 24h' },
+    { id: '7d', label: 'Last 7 days' },
+    { id: '30d', label: 'Last 30 days' },
+    { id: 'custom', label: 'Custom' },
+  ];
+
+  return (
     <DashboardLayout title="History">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={styles.grid}>
         <WidgetCard title="Time Range Filters">
-            <div className="space-y-4">
-            <p className="text-text-secondary text-sm">Select a time range to view historical data</p>
-            <div className="flex flex-wrap gap-2">
-                <button className="px-3 py-1.5 rounded-lg bg-accent-primary text-text-inverse text-sm">Last 24h</button>
-                <button className="px-3 py-1.5 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-sm hover:bg-bg-surface-hover transition-colors">Last 7 days</button>
-                <button className="px-3 py-1.5 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-sm hover:bg-bg-surface-hover transition-colors">Last 30 days</button>
-                <button className="px-3 py-1.5 rounded-lg bg-bg-input border border-border-subtle text-text-primary text-sm hover:bg-bg-surface-hover transition-colors">Custom</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ color: colors.textSecondary, fontSize: '14px', margin: 0 }}>
+              {hasSerial 
+                ? `Viewing historical data for device: ${serial}` 
+                : 'Enter a serial number to view historical data'}
+            </p>
+            <div style={styles.buttonGroup}>
+              {ranges.map(range => (
+                <button
+                  key={range.id}
+                  onClick={() => setActiveRange(range.id)}
+                  style={styles.button(activeRange === range.id)}
+                  disabled={!hasSerial}
+                >
+                  {range.label}
+                </button>
+              ))}
             </div>
-            </div>
+          </div>
         </WidgetCard>
-        <WidgetCard title="Historical Data" isEmpty={true} emptyMessage="Select a time range and device to view historical telemetry data">
+        
+        <WidgetCard 
+          title="Historical Data" 
+          isEmpty={!hasSerial} 
+          emptyMessage={!hasSerial ? "Enter a serial number to view historical telemetry data" : "No historical data available"}
+        >
+          {hasSerial && (
+            <p style={{ color: colors.textTertiary, fontSize: '14px', margin: 0 }}>
+              Historical data will be loaded from Azure for the selected time range.
+            </p>
+          )}
         </WidgetCard>
-        </div>
+      </div>
     </DashboardLayout>
-    );
-    }
+  );
+}

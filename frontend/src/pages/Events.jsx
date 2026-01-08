@@ -1,66 +1,130 @@
-    // src/pages/Events.jsx
-    import React from 'react';
-    import DashboardLayout from '../components/layout/DashboardLayout';
-    import WidgetCard from '../components/layout/WidgetCard';
+﻿// src/pages/Events.jsx
+import React, { useState } from 'react';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import WidgetCard from '../components/layout/WidgetCard';
+import { colors, spacing, borderRadius, typography } from '../styles/tokens';
+import { useSerial } from '../context/SerialContext';
 
-    export default function Events() {
-    // Sample events data
-    const events = [
-        { id: 1, type: 'info', message: 'Device connected', time: '2 min ago', device: '5957226631' },
-        { id: 2, type: 'warning', message: 'Low signal strength detected', time: '15 min ago', device: '5957226631' },
-        { id: 3, type: 'healthy', message: 'Firmware update completed', time: '1 hour ago', device: '5957226632' },
-        { id: 4, type: 'critical', message: 'Connection lost', time: '2 hours ago', device: '5957226633' },
-    ];
+const styles = {
+  gridTwoCols: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+    gap: '24px',
+  },
+  listItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '14px 16px',
+    borderRadius: '12px',
+    background: colors.bgInput,
+    border: '1px solid ' + colors.borderSubtle,
+    transition: 'all 0.2s ease',
+    cursor: 'default',
+  },
+  label: {
+    display: 'block',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: '8px',
+  },
+  select: {
+    width: '100%',
+    padding: '10px 14px',
+    fontSize: '13px',
+    color: colors.textPrimary,
+    background: colors.bgInput,
+    border: '1px solid ' + colors.borderMedium,
+    borderRadius: '8px',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+};
 
-    const typeStyles = {
-        info: 'bg-status-info',
-        warning: 'bg-status-warning',
-        healthy: 'bg-status-healthy',
-        critical: 'bg-status-critical',
-    };
+const getStatusDot = (type) => ({
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  marginTop: '6px',
+  flexShrink: 0,
+  background: type === 'info' ? colors.statusInfo
+    : type === 'warning' ? colors.statusWarning
+    : type === 'healthy' ? colors.statusHealthy
+    : type === 'critical' ? colors.statusCritical
+    : colors.statusInfo,
+});
 
-    return (
+export default function Events() {
+  const [hoveredId, setHoveredId] = useState(null);
+  const { serial, hasSerial } = useSerial();
+
+  // Events will be fetched from Azure based on serial number
+  // Empty array when no serial is provided
+  const events = hasSerial ? [] : [];
+
+  return (
     <DashboardLayout title="Events">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-            <WidgetCard title="Recent Events">
-            <div className="space-y-3">
-                {events.map(event => (
-                <div key={event.id} className="flex items-start gap-3 p-3 rounded-lg bg-bg-primary border border-border-subtle hover:border-border-medium transition-colors">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${typeStyles[event.type]}`}></div>
-                    <div className="flex-1 min-w-0">
-                    <p className="text-text-primary text-sm">{event.message}</p>
-                    <p className="text-text-tertiary text-xs mt-1">Device: {event.device} • {event.time}</p>
-                    </div>
+      <div style={styles.gridTwoCols}>
+        <WidgetCard 
+          title="Recent Events" 
+          isEmpty={!hasSerial || events.length === 0}
+          emptyMessage={!hasSerial ? "Enter a serial number to view device events" : "No events found for this device"}
+        >
+          {hasSerial && events.length > 0 && (
+            <div style={styles.stack}>
+              {events.map(event => (
+                <div 
+                  key={event.id} 
+                  style={{
+                    ...styles.listItem,
+                    ...(hoveredId === event.id ? { borderColor: colors.borderMedium, background: 'rgba(15, 23, 42, 0.6)' } : {})
+                  }}
+                  onMouseEnter={() => setHoveredId(event.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  <div style={getStatusDot(event.type)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: colors.textPrimary, fontSize: '14px', margin: 0 }}>{event.message}</p>
+                    <p style={{ color: colors.textTertiary, fontSize: '12px', marginTop: '4px' }}>
+                      Device: {event.device} - {event.time}
+                    </p>
+                  </div>
                 </div>
-                ))}
+              ))}
             </div>
-            </WidgetCard>
-        </div>
-        <div>
-            <WidgetCard title="Event Filters">
-            <div className="space-y-4">
-                <div>
-                <label className="text-text-tertiary text-xs uppercase tracking-wide block mb-2">Event Type</label>
-                <select className="w-full bg-bg-input border border-border-subtle rounded-lg px-3 py-2 text-text-primary text-sm focus:border-border-focus focus:outline-none">
-                    <option>All Events</option>
-                    <option>Info</option>
-                    <option>Warning</option>
-                    <option>Critical</option>
-                </select>
-                </div>
-                <div>
-                <label className="text-text-tertiary text-xs uppercase tracking-wide block mb-2">Time Range</label>
-                <select className="w-full bg-bg-input border border-border-subtle rounded-lg px-3 py-2 text-text-primary text-sm focus:border-border-focus focus:outline-none">
-                    <option>Last 24 hours</option>
-                    <option>Last 7 days</option>
-                    <option>Last 30 days</option>
-                </select>
-                </div>
+          )}
+        </WidgetCard>
+        
+        <WidgetCard title="Event Filters">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <label style={styles.label}>Event Type</label>
+              <select style={styles.select} disabled={!hasSerial}>
+                <option>All Events</option>
+                <option>Info</option>
+                <option>Warning</option>
+                <option>Critical</option>
+              </select>
             </div>
-            </WidgetCard>
-        </div>
-        </div>
+            <div>
+              <label style={styles.label}>Time Range</label>
+              <select style={styles.select} disabled={!hasSerial}>
+                <option>Last 24 hours</option>
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+              </select>
+            </div>
+          </div>
+        </WidgetCard>
+      </div>
     </DashboardLayout>
-    );
-    }
+  );
+}

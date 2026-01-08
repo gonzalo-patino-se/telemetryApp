@@ -1,5 +1,8 @@
 // src/components/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
+// Dashboard component - displays device telemetry data from Azure ADX
+// All data is fetched from cloud - no mock/hardcoded values
+
+import React, { useState } from 'react';
 import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
@@ -7,48 +10,75 @@ import KpiCard from './KpiCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
 import DeviceInfoWidget from './DeviceInfoWidget';
+import { colors, spacing, borderRadius, typography } from '../styles/tokens';
+import { formStyles, buttonStyles } from '../styles/components';
+import { useSerial } from '../context/SerialContext';
 
 const Dashboard = () => {
-    const [serial, setSerial] = useState('');
-    const [result, setResult] = useState(null);
-    const [error, setError] = useState('');
+    // Use global serial context - persists across all tabs
+    const { 
+        serial: globalSerial, 
+        setSerialDirect, 
+        clearSerial, 
+        hasSerial,
+    } = useSerial();
+    
+    // Local input state for the search field
+    const [serialInput, setSerialInput] = useState(globalSerial || '');
+    // Active serial - the one we're currently displaying data for
+    const [activeSerial, setActiveSerial] = useState(globalSerial || '');
+    const [localError, setLocalError] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [result, setResult] = useState(null);
 
-    // Wi‑Fi widget controls
+    // Widget refresh controls
     const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
-
-    // PV1 widget controls
     const [pv1AutoFetch, setPv1AutoFetch] = useState(true);
     const [pv1FetchSignal, setPv1FetchSignal] = useState(0);
-
-    // Device info controls
     const [devInfoAutoFetch, setDevInfoAutoFetch] = useState(true);
     const [devInfoFetchSignal, setDevInfoFetchSignal] = useState(0);
 
-    // Mock KPI data - replace with real API calls
-    const kpiData = {
-        activeDevices: { value: '1,247', trend: { value: 12, direction: 'up' }, sparkline: [45, 52, 48, 61, 55, 67, 72, 68, 75] },
-        healthyDevices: { value: '98.2%', status: 'healthy', sparkline: [95, 96, 97, 96, 98, 97, 99, 98, 98] },
-        avgRSSI: { value: '-52 dBm', sparkline: [-55, -53, -54, -51, -52, -50, -51, -52, -52] },
-        avgVoltage: { value: '240.8V', sparkline: [238, 239, 240, 241, 240, 241, 240, 241, 241] }
-    };
+    // KPI data will come from Azure ADX - null until fetched
+    // These will be populated by KQL queries when serial is provided
+    const [kpiData, setKpiData] = useState(null);
+    
+    // Computed: do we have an active serial to display?
+    const hasActiveSerial = Boolean(activeSerial);
 
     const handleSearch = async () => {
-        setError('');
+        setLocalError('');
         setResult(null);
         setIsSearching(true);
 
         try {
-            const response = await api.post('/search_serial/', { serial });
+            const response = await api.post('/search_serial/', { serial: serialInput });
             setResult(response.data);
+            
+            // Set the active serial immediately (local state updates synchronously)
+            setActiveSerial(serialInput);
+            
+            // Update global context directly (no API call since we already validated)
+            // This makes the serial available to other tabs
+            setSerialDirect(serialInput);
+            
+            // Trigger all widgets to fetch data for the new serial
+            // Use setTimeout to ensure state has updated before triggering
+            setTimeout(() => {
+                setWifiFetchSignal((n) => n + 1);
+                setPv1FetchSignal((n) => n + 1);
+                setDevInfoFetchSignal((n) => n + 1);
+            }, 100);
+            
+            // KPI data will be fetched from separate ADX endpoints
+            // TODO: Add KQL queries for KPI metrics when provided
         } catch (err) {
             if (err.response && err.response.status === 404) {
-                setError('Serial number not found.');
+                setLocalError('Serial number not found.');
             } else if (err.response && err.response.status === 401) {
-                setError('Unauthorized. Please log in.');
+                setLocalError('Unauthorized. Please log in.');
             } else {
-                setError('Error searching serial.');
+                setLocalError('Error searching serial.');
             }
             console.error('Search error:', err);
         } finally {
@@ -56,78 +86,193 @@ const Dashboard = () => {
         }
     };
 
+    const handleClearSerial = () => {
+        setSerialInput('');
+        setActiveSerial('');
+        setResult(null);
+        setLocalError('');
+        setKpiData(null);
+        clearSerial(); // Clear global context - resets all tabs
+    };
+
     const handleKeyPress = (e) => {
-        if (e.key === 'Enter' && serial) {
+        if (e.key === 'Enter' && serialInput) {
             handleSearch();
         }
     };
 
+    // Sync local input and active serial with global serial when it changes externally
+    React.useEffect(() => {
+        if (globalSerial && globalSerial !== serialInput) {
+            setSerialInput(globalSerial);
+            setActiveSerial(globalSerial);
+        }
+    }, [globalSerial]);
+
+    // Styles using design tokens
+    const styles = {
+        kpiGrid: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: spacing.lg,
+            marginBottom: spacing.xxl,
+        },
+        searchSection: {
+            marginBottom: spacing.xxl,
+        },
+        searchRow: {
+            display: 'flex',
+            flexDirection: 'row',
+            gap: spacing.md,
+            flexWrap: 'wrap',
+        },
+        searchInput: {
+            ...formStyles.input,
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+        },
+        searchButton: {
+            ...buttonStyles.base,
+            ...buttonStyles.primary,
+            padding: '12px 20px',
+        },
+        chartsGrid: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            gap: spacing.xxl,
+            marginBottom: spacing.xxl,
+        },
+        chartContainer: {
+            minHeight: '300px',
+        },
+        widgetActions: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+        },
+        autoLabel: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: typography.fontSize.xs,
+            color: colors.textTertiary,
+            cursor: 'pointer',
+        },
+        refreshButton: {
+            padding: '6px 10px',
+            borderRadius: borderRadius.md,
+            background: colors.bgHover,
+            border: 'none',
+            color: colors.textTertiary,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            cursor: 'pointer',
+        },
+        errorBox: {
+            marginTop: spacing.md,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+            padding: spacing.md,
+            borderRadius: borderRadius.lg,
+            background: 'rgba(239, 68, 68, 0.1)',
+            fontSize: typography.fontSize.sm,
+            color: '#f87171',
+        },
+        successBox: {
+            marginTop: spacing.md,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+            padding: spacing.md,
+            borderRadius: borderRadius.lg,
+            background: 'rgba(16, 185, 129, 0.1)',
+            fontSize: typography.fontSize.sm,
+            color: '#34d399',
+        },
+    };
+
     return (
         <DashboardLayout title="Device Telemetry">
-            {/* KPI Summary Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            {/* KPI Summary Section - Shows empty state until serial is provided and data fetched */}
+            <div style={styles.kpiGrid}>
                 <KpiCard
                     label="Active Devices"
-                    value={kpiData.activeDevices.value}
-                    trend={kpiData.activeDevices.trend}
-                    sparklineData={kpiData.activeDevices.sparkline}
+                    value={kpiData?.activeDevices?.value || '--'}
+                    trend={kpiData?.activeDevices?.trend}
+                    sparklineData={kpiData?.activeDevices?.sparkline}
+                    isEmpty={!hasActiveSerial || !kpiData}
                 />
                 <KpiCard
                     label="Healthy Status"
-                    value={kpiData.healthyDevices.value}
-                    status={kpiData.healthyDevices.status}
-                    sparklineData={kpiData.healthyDevices.sparkline}
+                    value={kpiData?.healthyDevices?.value || '--'}
+                    status={kpiData?.healthyDevices?.status}
+                    sparklineData={kpiData?.healthyDevices?.sparkline}
+                    isEmpty={!hasActiveSerial || !kpiData}
                 />
                 <KpiCard
                     label="Avg Wi-Fi Signal"
-                    value={kpiData.avgRSSI.value}
-                    sparklineData={kpiData.avgRSSI.sparkline}
+                    value={kpiData?.avgRSSI?.value || '--'}
+                    sparklineData={kpiData?.avgRSSI?.sparkline}
+                    isEmpty={!hasActiveSerial || !kpiData}
                 />
                 <KpiCard
                     label="Avg Voltage"
-                    value={kpiData.avgVoltage.value}
-                    sparklineData={kpiData.avgVoltage.sparkline}
+                    value={kpiData?.avgVoltage?.value || '--'}
+                    sparklineData={kpiData?.avgVoltage?.sparkline}
+                    isEmpty={!hasActiveSerial || !kpiData}
                 />
             </div>
 
             {/* Device Search Section */}
-            <div style={{ marginBottom: '24px' }}>
+            <div style={styles.searchSection}>
                 <WidgetCard title="Device Finder">
-                    <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', flexWrap: 'wrap' }}>
+                    {hasActiveSerial && (
+                        <div style={{ 
+                            marginBottom: spacing.md, 
+                            padding: spacing.sm, 
+                            background: 'rgba(61, 205, 88, 0.1)', 
+                            borderRadius: borderRadius.md,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span style={{ color: colors.schneiderGreen, fontSize: typography.fontSize.sm }}>
+                                <strong>Active Device:</strong> {activeSerial}
+                            </span>
+                            <button
+                                onClick={handleClearSerial}
+                                style={{
+                                    padding: '4px 12px',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    borderRadius: borderRadius.sm,
+                                    color: colors.statusCritical,
+                                    fontSize: typography.fontSize.xs,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    )}
+                    <div style={styles.searchRow}>
                         <input
                             type="text"
-                            value={serial}
-                            onChange={(e) => setSerial(e.target.value)}
+                            value={serialInput}
+                            onChange={(e) => setSerialInput(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder="Enter device serial number..."
-                            style={{
-                                flex: 1,
-                                minWidth: '200px',
-                                padding: '12px 16px',
-                                fontSize: '14px',
-                                background: 'rgba(15, 23, 42, 0.6)',
-                                border: '1px solid rgba(148, 163, 184, 0.2)',
-                                borderRadius: '12px',
-                                color: '#f1f5f9',
-                                outline: 'none'
-                            }}
+                            style={styles.searchInput}
                         />
                         <button
                             onClick={handleSearch}
-                            disabled={!serial || isSearching}
+                            disabled={!serialInput || isSearching}
                             style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '12px 20px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                color: 'white',
-                                cursor: !serial || isSearching ? 'not-allowed' : 'pointer',
-                                opacity: !serial || isSearching ? 0.5 : 1
+                                ...styles.searchButton,
+                                cursor: !serialInput || isSearching ? 'not-allowed' : 'pointer',
+                                opacity: !serialInput || isSearching ? 0.5 : 1
                             }}
                         >
                             {isSearching ? (
@@ -149,17 +294,17 @@ const Dashboard = () => {
                         </button>
                     </div>
 
-                    {error && (
-                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', fontSize: '13px', color: '#f87171' }}>
+                    {localError && (
+                        <div style={styles.errorBox}>
                             <svg style={{ width: '16px', height: '16px', flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
-                            <span>{error}</span>
+                            <span>{localError}</span>
                         </div>
                     )}
 
                     {result && (
-                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', fontSize: '13px', color: '#34d399' }}>
+                        <div style={styles.successBox}>
                             <svg style={{ width: '16px', height: '16px', flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
@@ -170,16 +315,16 @@ const Dashboard = () => {
             </div>
 
             {/* Telemetry Visualization Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-                {/* Wi‑Fi Signal */}
+            <div style={styles.chartsGrid}>
+                {/* Wi-Fi Signal */}
                 <WidgetCard
-                    title="Wi‑Fi Signal Strength"
-                    isEmpty={!serial}
+                    title="Wi-Fi Signal Strength"
+                    isEmpty={!hasActiveSerial}
                     emptyMessage="Enter a device serial to view Wi-Fi data"
                     actions={
-                        serial && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
+                        hasActiveSerial && (
+                            <div style={styles.widgetActions}>
+                                <label style={styles.autoLabel}>
                                     <input
                                         type="checkbox"
                                         checked={wifiAutoFetch}
@@ -190,18 +335,18 @@ const Dashboard = () => {
                                 </label>
                                 <button
                                     onClick={() => setWifiFetchSignal((n) => n + 1)}
-                                    style={{ padding: '6px 10px', borderRadius: '8px', background: 'rgba(148, 163, 184, 0.1)', border: 'none', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}
+                                    style={styles.refreshButton}
                                 >
-                                    ⟳ Refresh
+                                    Refresh
                                 </button>
                             </div>
                         )
                     }
                 >
-                    {serial && (
-                        <div style={{ minHeight: '300px' }}>
+                    {hasActiveSerial && (
+                        <div style={styles.chartContainer}>
                             <AdxSearchWifiSignalWidget
-                                serial={serial}
+                                serial={activeSerial}
                                 showControls={false}
                                 autoFetchProp={wifiAutoFetch}
                                 onAutoFetchChange={setWifiAutoFetch}
@@ -214,12 +359,12 @@ const Dashboard = () => {
                 {/* PV1 Voltage */}
                 <WidgetCard
                     title="PV1 Voltage"
-                    isEmpty={!serial}
+                    isEmpty={!hasActiveSerial}
                     emptyMessage="Enter a device serial to view voltage data"
                     actions={
-                        serial && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
+                        hasActiveSerial && (
+                            <div style={styles.widgetActions}>
+                                <label style={styles.autoLabel}>
                                     <input
                                         type="checkbox"
                                         checked={pv1AutoFetch}
@@ -230,18 +375,18 @@ const Dashboard = () => {
                                 </label>
                                 <button
                                     onClick={() => setPv1FetchSignal((n) => n + 1)}
-                                    style={{ padding: '6px 10px', borderRadius: '8px', background: 'rgba(148, 163, 184, 0.1)', border: 'none', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}
+                                    style={styles.refreshButton}
                                 >
-                                    ⟳ Refresh
+                                    Refresh
                                 </button>
                             </div>
                         )
                     }
                 >
-                    {serial && (
-                        <div style={{ minHeight: '300px' }}>
+                    {hasActiveSerial && (
+                        <div style={styles.chartContainer}>
                             <AdxSearchPV1Widget
-                                serial={serial}
+                                serial={activeSerial}
                                 showControls={false}
                                 autoFetchProp={pv1AutoFetch}
                                 onAutoFetchChange={setPv1AutoFetch}
@@ -255,12 +400,12 @@ const Dashboard = () => {
             {/* Device Info Section */}
             <WidgetCard
                 title="Device Information"
-                isEmpty={!serial}
+                isEmpty={!hasActiveSerial}
                 emptyMessage="Enter a device serial to view device details"
                 actions={
-                    serial && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
+                    hasActiveSerial && (
+                        <div style={styles.widgetActions}>
+                            <label style={styles.autoLabel}>
                                 <input
                                     type="checkbox"
                                     checked={devInfoAutoFetch}
@@ -271,17 +416,17 @@ const Dashboard = () => {
                             </label>
                             <button
                                 onClick={() => setDevInfoFetchSignal((n) => n + 1)}
-                                style={{ padding: '6px 10px', borderRadius: '8px', background: 'rgba(148, 163, 184, 0.1)', border: 'none', color: '#94a3b8', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }}
+                                style={styles.refreshButton}
                             >
-                                ⟳ Refresh
+                                Refresh
                             </button>
                         </div>
                     )
                 }
             >
-                {serial && (
+                {hasActiveSerial && (
                     <DeviceInfoWidget
-                        serial={serial}
+                        serial={activeSerial}
                         showControls={false}
                         autoFetchProp={devInfoAutoFetch}
                         onAutoFetchChange={setDevInfoAutoFetch}
