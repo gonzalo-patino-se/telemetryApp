@@ -12,7 +12,7 @@ import {
   buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery,
   buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery,
   buildBatteryMainRelayQuery,
-  buildLoadVoltageL1Query
+  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -297,6 +297,22 @@ export const loadVoltageL1Config: WidgetConfig = {
   buildQuery: buildLoadVoltageL1Query,
 };
 
+export const loadVoltageL2Config: WidgetConfig = {
+  label: 'Load Voltage L2 RMS',
+  unit: 'V',
+  colorScheme: 'purple',
+  csvPrefix: 'load_voltage_l2',
+  buildQuery: buildLoadVoltageL2Query,
+};
+
+export const loadFrequencyTotalConfig: WidgetConfig = {
+  label: 'Load Frequency Total',
+  unit: 'Hz',
+  colorScheme: 'blue',
+  csvPrefix: 'load_frequency_total',
+  buildQuery: buildLoadFrequencyTotalQuery,
+};
+
 // ============================================================================
 // All Widget Configs (for dynamic rendering)
 // ============================================================================
@@ -335,6 +351,8 @@ export const allWidgetConfigs = {
   batteryMainRelay: batteryMainRelayConfig,
   // Load Measurements (Fast Telemetry)
   loadVoltageL1: loadVoltageL1Config,
+  loadVoltageL2: loadVoltageL2Config,
+  loadFrequencyTotal: loadFrequencyTotalConfig,
 } as const;
 
 export type WidgetType = keyof typeof allWidgetConfigs;

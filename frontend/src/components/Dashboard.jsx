@@ -9,7 +9,7 @@ import WidgetCard from './layout/WidgetCard';
 import KpiCard from './KpiCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
-import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget } from './widgets';
+import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
@@ -86,6 +86,10 @@ const Dashboard = () => {
     // Load Measurements (Fast Telemetry)
     const [loadVoltageL1AutoFetch, setLoadVoltageL1AutoFetch] = useState(true);
     const [loadVoltageL1FetchSignal, setLoadVoltageL1FetchSignal] = useState(0);
+    const [loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch] = useState(true);
+    const [loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal] = useState(0);
+    const [loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch] = useState(true);
+    const [loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal] = useState(0);
     const [devInfoAutoFetch, setDevInfoAutoFetch] = useState(true);
     const [devInfoFetchSignal, setDevInfoFetchSignal] = useState(0);
 
@@ -144,6 +148,8 @@ const Dashboard = () => {
                 setBatteryMainRelayFetchSignal((n) => n + 1);
                 // Load Measurements (Fast Telemetry)
                 setLoadVoltageL1FetchSignal((n) => n + 1);
+                setLoadVoltageL2FetchSignal((n) => n + 1);
+                setLoadFrequencyTotalFetchSignal((n) => n + 1);
                 setDevInfoFetchSignal((n) => n + 1);
             }, 100);
             
@@ -867,6 +873,16 @@ const Dashboard = () => {
                 <WidgetCard title="Load Voltage L1 RMS (Fast Telemetry)" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
                     actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={loadVoltageL1AutoFetch} onChange={(e) => setLoadVoltageL1AutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setLoadVoltageL1FetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
                     {hasActiveSerial && (<div style={styles.chartContainer}><LoadVoltageL1Widget serial={activeSerial} showControls={false} autoFetchProp={loadVoltageL1AutoFetch} onAutoFetchChange={setLoadVoltageL1AutoFetch} fetchSignal={loadVoltageL1FetchSignal} /></div>)}
+                </WidgetCard>
+
+                <WidgetCard title="Load Voltage L2 RMS (Fast Telemetry)" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
+                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={loadVoltageL2AutoFetch} onChange={(e) => setLoadVoltageL2AutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setLoadVoltageL2FetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
+                    {hasActiveSerial && (<div style={styles.chartContainer}><LoadVoltageL2Widget serial={activeSerial} showControls={false} autoFetchProp={loadVoltageL2AutoFetch} onAutoFetchChange={setLoadVoltageL2AutoFetch} fetchSignal={loadVoltageL2FetchSignal} /></div>)}
+                </WidgetCard>
+
+                <WidgetCard title="Load Frequency Total (Fast Telemetry)" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
+                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={loadFrequencyTotalAutoFetch} onChange={(e) => setLoadFrequencyTotalAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setLoadFrequencyTotalFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
+                    {hasActiveSerial && (<div style={styles.chartContainer}><LoadFrequencyTotalWidget serial={activeSerial} showControls={false} autoFetchProp={loadFrequencyTotalAutoFetch} onAutoFetchChange={setLoadFrequencyTotalAutoFetch} fetchSignal={loadFrequencyTotalFetchSignal} /></div>)}
                 </WidgetCard>
             </div>
 

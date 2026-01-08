@@ -450,3 +450,27 @@ export function buildLoadVoltageL1Query(serial: string, startDate: Date, endDate
     telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N',
   });
 }
+
+/**
+ * Build query for L2 RMS Voltage Load from Inverter (fast-telemetry)
+ */
+export function buildLoadVoltageL2Query(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N',
+  });
+}
+
+/**
+ * Build query for Load Frequency Total from Inverter (fast-telemetry)
+ */
+export function buildLoadFrequencyTotalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL',
+  });
+}
