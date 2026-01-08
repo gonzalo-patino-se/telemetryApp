@@ -7,6 +7,57 @@ import type { AdxRow, ChartColorScheme, PointStyle } from '../types';
 import { parseAdxLocaltime, formatTooltipDate } from './dateHelpers';
 
 // ============================================================================
+// Statistics Types & Helpers
+// ============================================================================
+
+export interface DataStatistics {
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  stdDev: number;
+}
+
+/**
+ * Calculate statistics from an array of numeric values
+ * Returns min, max, average, and standard deviation
+ */
+export function calculateStatistics(values: number[]): DataStatistics | null {
+  if (!values || values.length === 0) return null;
+  
+  const count = values.length;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const sum = values.reduce((acc, val) => acc + val, 0);
+  const avg = sum / count;
+  
+  // Calculate standard deviation
+  const squaredDiffs = values.map(val => Math.pow(val - avg, 2));
+  const avgSquaredDiff = squaredDiffs.reduce((acc, val) => acc + val, 0) / count;
+  const stdDev = Math.sqrt(avgSquaredDiff);
+  
+  return { count, min, max, avg, stdDev };
+}
+
+/**
+ * Calculate statistics from chart scatter points
+ */
+export function calculatePointStatistics(points: ScatterDataPoint[]): DataStatistics | null {
+  const values = points
+    .map(p => p.y as number)
+    .filter(v => Number.isFinite(v));
+  return calculateStatistics(values);
+}
+
+/**
+ * Format a statistic value with appropriate precision
+ */
+export function formatStatValue(value: number, decimals: number = 2): string {
+  if (!Number.isFinite(value)) return '—';
+  return value.toFixed(decimals);
+}
+
+// ============================================================================
 // Default Color Schemes
 // ============================================================================
 

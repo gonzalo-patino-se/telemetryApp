@@ -4,6 +4,7 @@
     import { useAuth } from '../context/AuthContext';
     import DatePicker from 'react-datepicker';
     import 'react-datepicker/dist/react-datepicker.css';
+    import { calculatePointStatistics, formatStatValue } from '../utils/chartHelpers';
 
     // ---- Chart.js (typed)
     import { Line } from 'react-chartjs-2';
@@ -286,6 +287,9 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
+    // Calculate statistics from points
+    const stats = useMemo(() => calculatePointStatistics(points), [points]);
+
     // Dynamic point styles to highlight zero values with a star
     const pointStyles = useMemo(() => {
     return {
@@ -533,6 +537,33 @@
                 CSV
             </button>
             </div>
+
+            {/* Statistics Panel */}
+            {stats && (
+            <div className="grid grid-cols-4 gap-2 mb-3 p-2 bg-bg-primary rounded-lg border border-border-subtle">
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Min</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.min)}</div>
+                <div className="text-[10px] text-text-tertiary">V</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Max</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.max)}</div>
+                <div className="text-[10px] text-text-tertiary">V</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Avg</div>
+                <div className="text-sm font-semibold text-accent-primary">{formatStatValue(stats.avg)}</div>
+                <div className="text-[10px] text-text-tertiary">V</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Std Dev</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.stdDev)}</div>
+                <div className="text-[10px] text-text-tertiary">V</div>
+              </div>
+            </div>
+            )}
+
             <div className="h-[180px] sm:h-[220px] mb-3">
             <Line data={chartData} options={chartOptions} />
             </div>
