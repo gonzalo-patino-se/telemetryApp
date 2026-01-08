@@ -1,3 +1,71 @@
+// ============================================================================
+// Grid Widgets Query Builders
+// ============================================================================
+
+export function buildGridVoltageL1Query(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N',
+  });
+}
+
+export function buildGridVoltageL2Query(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N',
+  });
+}
+
+export function buildGridCurrentL1Query(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L1',
+  });
+}
+
+export function buildGridCurrentL2Query(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L2',
+  });
+}
+
+export function buildGridFrequencyTotalQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
+  });
+}
 // src/utils/kqlBuilders.ts
 // KQL Query Builder utilities
 // Factory functions for building Azure Data Explorer queries
@@ -107,6 +175,38 @@ export function buildPV2VoltageQuery(
 }
 
 /**
+ * Build query specifically for PV3 voltage
+ */
+export function buildPV3VoltageQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV3/V',
+  });
+}
+
+/**
+ * Build query specifically for PV4 voltage
+ */
+export function buildPV4VoltageQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV4/V',
+  });
+}
+
+/**
  * Build query specifically for battery voltage
  */
 export function buildBatteryVoltageQuery(
@@ -174,6 +274,8 @@ export type TelemetryType =
   | 'wifi_signal'
   | 'pv1_voltage'
   | 'pv2_voltage'
+  | 'pv3_voltage'
+  | 'pv4_voltage'
   | 'battery_voltage'
   | 'grid_power'
   | 'load_power';
@@ -182,6 +284,8 @@ const telemetryNameMap: Record<TelemetryType, string> = {
   wifi_signal: '/SCC/WIFI/STAT/SIGNAL_STRENGTH',
   pv1_voltage: '/INV/DCPORT/STAT/PV1/V',
   pv2_voltage: '/INV/DCPORT/STAT/PV2/V',
+  pv3_voltage: '/INV/DCPORT/STAT/PV3/V',
+  pv4_voltage: '/INV/DCPORT/STAT/PV4/V',
   battery_voltage: '/INV/DCPORT/STAT/BATTERY/V',
   grid_power: '/INV/ACPORT/STAT/GRID/P',
   load_power: '/INV/ACPORT/STAT/LOAD/P',
