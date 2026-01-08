@@ -144,7 +144,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 
   // State
   const [{ fromDT, toDT }, setRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
-    const { start, end } = getLastHours(24);
+    const { start, end } = getLastHours(6); // Default to 6 hours for faster loading
     return { fromDT: start, toDT: end };
   });
 
@@ -165,11 +165,12 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     return buildQuery(serial, fromDT, toDT);
   }, [canFetch, serial, fromDT, toDT, buildQuery]);
 
-  // Auto-fetch effect
+  // Auto-fetch effect with abort controller
   useEffect(() => {
     if (!autoFetch) return;
     if (!canFetch || !fromDT || !toDT || !serial) return;
     
+    const abortController = new AbortController();
     const currentKql = buildQuery(serial, fromDT, toDT);
     
     const doFetch = async () => {
@@ -179,11 +180,16 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         const res = await api.post(
           QUERY_PATH,
           { kql: currentKql },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          { 
+            headers: { Authorization: `Bearer ${accessToken}` },
+            signal: abortController.signal
+          }
         );
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
         setRows(dataArray);
       } catch (err: any) {
+        // Ignore aborted requests
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         if (err?.response?.status === 401) await logout();
         setError(err?.response?.data?.error ?? 'Error fetching data');
         setRows([]);
@@ -193,16 +199,50 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     };
     
     void doFetch();
+    
+    // Cleanup: abort pending request when dependencies change
+    return () => abortController.abort();
   }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout, buildQuery]);
 
-  // Parent-triggered fetch
+  // Parent-triggered fetch with abort controller
   useEffect(() => {
     if (fetchSignal === undefined) return;
-    if (!canFetch) return;
-    void fetchData();
+    if (!canFetch || !kql) return;
+    
+    const abortController = new AbortController();
+    
+    const doFetch = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await api.post(
+          QUERY_PATH,
+          { kql },
+          { 
+            headers: { Authorization: `Bearer ${accessToken}` },
+            signal: abortController.signal
+          }
+        );
+        const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
+        setRows(dataArray);
+      } catch (err: any) {
+        // Ignore aborted requests
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
+        if (err?.response?.status === 401) await logout();
+        setError(err?.response?.data?.error ?? 'Error fetching data');
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    void doFetch();
+    
+    return () => abortController.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchSignal]);
 
+  // Manual fetch function for button click
   async function fetchData() {
     if (!kql) return;
     setLoading(true);
@@ -216,6 +256,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
       setRows(dataArray);
     } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
       if (err?.response?.status === 401) await logout();
       setError(err?.response?.data?.error ?? 'Error fetching data');
       setRows([]);
