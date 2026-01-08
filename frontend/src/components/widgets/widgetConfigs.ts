@@ -10,7 +10,8 @@ import {
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery, buildBattery4VoltageQuery,
   buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery, buildBattery4TempQuery,
   buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery, buildBattery4SoCQuery,
-  buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery, buildBattery4CurrentQuery
+  buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery, buildBattery4CurrentQuery,
+  buildBatteryMainRelayQuery
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -307,6 +308,18 @@ export const battery4CurrentConfig: WidgetConfig = {
 };
 
 // ============================================================================
+// Battery Main Relay Status Widget
+// ============================================================================
+
+export const batteryMainRelayConfig: WidgetConfig = {
+  label: 'Battery Main Relay Status',
+  unit: '',
+  colorScheme: 'orange',
+  csvPrefix: 'battery_main_relay',
+  buildQuery: buildBatteryMainRelayQuery,
+};
+
+// ============================================================================
 // All Widget Configs (for dynamic rendering)
 // ============================================================================
 
@@ -345,6 +358,8 @@ export const allWidgetConfigs = {
   battery4Temp: battery4TempConfig,
   battery4SoC: battery4SoCConfig,
   battery4Current: battery4CurrentConfig,
+  // Battery Main Relay
+  batteryMainRelay: batteryMainRelayConfig,
 } as const;
 
 export type WidgetType = keyof typeof allWidgetConfigs;
