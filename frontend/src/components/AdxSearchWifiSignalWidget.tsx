@@ -87,7 +87,6 @@
     | where comms_serial contains s
     | where name contains '/SCC/WIFI/STAT/SIGNAL_STRENGTH'
     | where localtime between (start .. finish)
-    | where isnotnull(value_double)
     | project localtime, value_double
     | order by localtime asc
     `.trim();
@@ -292,17 +291,38 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
-    // Dynamic point styles: X marker for offline (-127), circle for normal
+    // Helper to determine point type: offline, zero, or normal
+    const getPointType = (value: number): 'offline' | 'zero' | 'normal' => {
+    if (value === OFFLINE_VALUE) return 'offline';
+    if (value === 0) return 'zero';
+    return 'normal';
+    };
+
+    // Dynamic point styles: X marker for offline (-127), star for zero, circle for normal
     const pointStyles = useMemo(() => {
-    return points.map(p => p.y === OFFLINE_VALUE ? 'crossRot' : 'circle');
+    return points.map(p => {
+        const type = getPointType(p.y as number);
+        if (type === 'offline') return 'crossRot';
+        if (type === 'zero') return 'star';
+        return 'circle';
+    }) as ('circle' | 'crossRot' | 'star')[];
     }, [points]);
 
     const pointColors = useMemo(() => {
-    return points.map(p => p.y === OFFLINE_VALUE ? '#ef4444' : '#2563eb'); // red for offline, blue for normal
+    return points.map(p => {
+        const type = getPointType(p.y as number);
+        if (type === 'offline') return '#ef4444'; // red
+        if (type === 'zero') return '#fbbf24'; // yellow
+        return '#2563eb'; // blue
+    });
     }, [points]);
 
     const pointRadii = useMemo(() => {
-    return points.map(p => p.y === OFFLINE_VALUE ? 6 : 4); // larger X for offline
+    return points.map(p => {
+        const type = getPointType(p.y as number);
+        if (type === 'offline' || type === 'zero') return 6;
+        return 4;
+    });
     }, [points]);
 
     const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(
@@ -317,11 +337,33 @@
             pointStyle: pointStyles,
             pointRadius: pointRadii,
             pointBackgroundColor: pointColors,
-            pointBorderColor: points.map(p => p.y === OFFLINE_VALUE ? '#ef4444' : '#ffffff'),
-            pointBorderWidth: points.map(p => p.y === OFFLINE_VALUE ? 2 : 1.5),
-            pointHoverRadius: points.map(p => p.y === OFFLINE_VALUE ? 8 : 6),
-            pointHoverBackgroundColor: points.map(p => p.y === OFFLINE_VALUE ? '#dc2626' : '#1d4ed8'),
-            pointHoverBorderColor: points.map(p => p.y === OFFLINE_VALUE ? '#dc2626' : '#ffffff'),
+            pointBorderColor: points.map(p => {
+                const type = getPointType(p.y as number);
+                if (type === 'offline') return '#ef4444';
+                if (type === 'zero') return '#ffffff';
+                return '#ffffff';
+            }),
+            pointBorderWidth: points.map(p => {
+                const type = getPointType(p.y as number);
+                if (type === 'offline' || type === 'zero') return 2;
+                return 1.5;
+            }),
+            pointHoverRadius: points.map(p => {
+                const type = getPointType(p.y as number);
+                if (type === 'offline' || type === 'zero') return 8;
+                return 6;
+            }),
+            pointHoverBackgroundColor: points.map(p => {
+                const type = getPointType(p.y as number);
+                if (type === 'offline') return '#dc2626';
+                if (type === 'zero') return '#f59e0b';
+                return '#1d4ed8';
+            }),
+            pointHoverBorderColor: points.map(p => {
+                const type = getPointType(p.y as number);
+                if (type === 'offline') return '#dc2626';
+                return '#ffffff';
+            }),
             pointHoverBorderWidth: 2,
             borderWidth: 1.5,
             tension: 0.2,
@@ -392,6 +434,9 @@
                 const value = context.parsed.y;
                 if (value === OFFLINE_VALUE) {
                 return ['⛔ Device Offline', `Signal: ${value} dBm`];
+                }
+                if (value === 0) {
+                return [`★ Zero Value Detected`, `Signal: ${value} dBm`];
                 }
                 return `Signal: ${value} dBm`;
             }
