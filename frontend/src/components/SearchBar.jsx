@@ -39,11 +39,11 @@ export default function SearchBar({ onSearch }) {
                 placeholder="Enter Serial Number"
                 value={serial}
                 onChange={(e) => setSerial(e.target.value)}
-                className="border p-2 rounded"
+                className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent placeholder:text-text-tertiary"
                 />
             <button
                 onClick={handleSearch}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
+                className="bg-accent-primary text-white px-4 py-2 rounded-md hover:bg-accent-hover transition-colors font-medium"
                 >
                     Search
             </button>

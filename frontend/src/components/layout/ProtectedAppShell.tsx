@@ -6,7 +6,7 @@ import Footer from './Footer';
 
 const ProtectedAppShell: React.FC = () => {
     return (
-    <div className="min-h-dvh flex flex-col bg-gray-50">
+    <div className="min-h-dvh flex flex-col bg-bg-primary theme-transition">
       {/* Global header */}
         <NavBar />
 

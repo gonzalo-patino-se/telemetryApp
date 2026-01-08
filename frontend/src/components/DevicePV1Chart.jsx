@@ -118,37 +118,54 @@ const DevicePV1Chart = ({ serial }) => {
     ), [points]);
 
     return (
-    <div className="bg-white shadow rounded p-4">
-        <h2 className="text-lg font-bold mb-2">PV1 Voltage (Last {WINDOW_MINUTES} min)</h2>
+    <div className="bg-bg-surface border border-border-default rounded-lg p-4">
+        <h2 className="text-lg font-semibold text-text-primary mb-3">PV1 Voltage (Last {WINDOW_MINUTES} min)</h2>
 
-        {loading && points.length === 0 && <p>Loading…</p>}
-        {!loading && error && <p className="text-red-500">{error}</p>}
+        {loading && points.length === 0 && (
+            <div className="flex items-center gap-2 text-text-secondary">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading…</span>
+            </div>
+        )}
+        {!loading && error && <p className="text-status-critical text-sm">{error}</p>}
 
         {chartData.length > 0 ? (
         <div style={{ width: '100%', height: 260 }}>
             <ResponsiveContainer>
             <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
                 <XAxis
                 dataKey="time"
                 tickFormatter={(t) => new Date(t).toLocaleTimeString()}
                 type="number"
                 domain={['dataMin', 'dataMax']}
                 scale="time"
+                tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
                 />
                 <YAxis
                 dataKey="pv1"
                 unit=" V"
                 tickFormatter={(v) => v.toFixed(1)}
+                tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
                 />
                 <Tooltip
                 labelFormatter={(label) => new Date(label).toLocaleString()}
                 formatter={(val) => [`${Number(val).toFixed(2)} V`, 'PV1']}
+                contentStyle={{ 
+                    backgroundColor: 'var(--bg-surface)', 
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+                labelStyle={{ color: 'var(--text-primary)' }}
                 />
                 <Line
                 type="monotone"
                 dataKey="pv1"
-                stroke="#2563eb"
+                stroke="var(--accent-primary)"
                 strokeWidth={2}
                 dot={false}
                 isAnimationActive={false}
@@ -157,7 +174,7 @@ const DevicePV1Chart = ({ serial }) => {
             </ResponsiveContainer>
         </div>
         ) : (
-        !loading && !error && <p>No data in the last {WINDOW_MINUTES} minutes.</p>
+        !loading && !error && <p className="text-text-tertiary text-sm">No data in the last {WINDOW_MINUTES} minutes.</p>
         )}
     </div>
     );
