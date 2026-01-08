@@ -397,3 +397,56 @@ export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endD
     | order by localtime asc
   `.trim();
 }
+
+// ============================================================================
+// Fast Telemetry Widgets (Load Measurements)
+// Uses sourcedatastreamingfornam table with fast-telemetry msgType
+// ============================================================================
+
+interface FastTelemetryQueryParams {
+  serial: string;
+  startDate: Date;
+  endDate: Date;
+  telemetryName: string;
+}
+
+/**
+ * Build KQL query for fast telemetry data
+ * Uses sourcedatastreamingfornam table with fast-telemetry message type
+ */
+export function buildFastTelemetryQuery(params: FastTelemetryQueryParams): string {
+  const { serial, startDate, endDate, telemetryName } = params;
+  
+  const escapedSerial = escapeKqlString(serial);
+  const startLocal = formatDateForKql(startDate);
+  const endLocal = formatDateForKql(endDate);
+
+  return `
+    let start = datetime(${startLocal});
+    let finish = datetime(${endLocal});
+    let s = '${escapedSerial}';
+    sourcedatastreamingfornam
+    | where timestamp between (start .. finish)
+    | extend telemetryArray = parse_json(data)
+    | where header has s
+    | mv-expand telemetry = telemetryArray
+    | where telemetry.msgType == "fast-telemetry"
+    | mv-expand item = telemetry.payload
+    | extend name = tostring(item.name), value = item.value
+    | where name contains "${telemetryName}"
+    | project localtime = timestamp, name, value_double = todouble(value)
+    | order by localtime asc
+  `.trim();
+}
+
+/**
+ * Build query for L1 RMS Voltage Load from Inverter (fast-telemetry)
+ */
+export function buildLoadVoltageL1Query(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N',
+  });
+}

@@ -42,3 +42,6 @@ export { Battery3CurrentWidget } from './Battery3CurrentWidget';
 
 // Battery Main Relay (Alarms table)
 export { default as BatteryMainRelayWidget } from './BatteryMainRelayWidget';
+
+// Load Measurements (Fast Telemetry)
+export { LoadVoltageL1Widget } from './LoadVoltageL1Widget';
