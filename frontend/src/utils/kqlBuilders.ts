@@ -316,3 +316,75 @@ export function createCustomTelemetryQueryBuilder(telemetryName: string) {
       telemetryName,
     });
 }
+
+// ============================================================================
+// Battery Widgets Query Builders
+// ============================================================================
+
+// Battery Voltage (Modules 1-4)
+export function buildBattery1VoltageQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/V' });
+}
+
+export function buildBattery2VoltageQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/V' });
+}
+
+export function buildBattery3VoltageQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/V' });
+}
+
+export function buildBattery4VoltageQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE4/STAT/V' });
+}
+
+// Battery Temperature (Modules 1-4)
+export function buildBattery1TempQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/TEMP' });
+}
+
+export function buildBattery2TempQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/TEMP' });
+}
+
+export function buildBattery3TempQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/TEMP' });
+}
+
+export function buildBattery4TempQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE4/STAT/TEMP' });
+}
+
+// Battery State of Charge (Modules 1-4)
+export function buildBattery1SoCQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/USER_SOC' });
+}
+
+export function buildBattery2SoCQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/USER_SOC' });
+}
+
+export function buildBattery3SoCQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/USER_SOC' });
+}
+
+export function buildBattery4SoCQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE4/STAT/USER_SOC' });
+}
+
+// Battery Current (Modules 1-4)
+export function buildBattery1CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/I' });
+}
+
+export function buildBattery2CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/I' });
+}
+
+export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/I' });
+}
+
+export function buildBattery4CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE4/STAT/I' });
+}
