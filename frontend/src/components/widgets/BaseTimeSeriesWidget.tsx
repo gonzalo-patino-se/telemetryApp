@@ -30,6 +30,8 @@ import {
   chartColorSchemes, 
   getPointStyles, 
   downsampleData,
+  calculatePointStatistics,
+  formatStatValue,
 } from '../../utils/chartHelpers';
 import type { AdxRow } from '../../types';
 
@@ -232,6 +234,9 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       }));
     return downsampleData(list, 5000);
   }, [rows]);
+
+  // Calculate statistics from points
+  const stats = useMemo(() => calculatePointStatistics(points), [points]);
 
   // Point styles for offline values
   const isSpecialValue = offlineValue !== undefined 
@@ -477,6 +482,32 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
               CSV
             </button>
           </div>
+
+          {/* Statistics Panel */}
+          {stats && (
+            <div className="grid grid-cols-4 gap-2 mb-3 p-2 bg-bg-primary rounded-lg border border-border-subtle">
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Min</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.min)}</div>
+                <div className="text-[10px] text-text-tertiary">{unit}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Max</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.max)}</div>
+                <div className="text-[10px] text-text-tertiary">{unit}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Avg</div>
+                <div className="text-sm font-semibold text-accent-primary">{formatStatValue(stats.avg)}</div>
+                <div className="text-[10px] text-text-tertiary">{unit}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Std Dev</div>
+                <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.stdDev)}</div>
+                <div className="text-[10px] text-text-tertiary">{unit}</div>
+              </div>
+            </div>
+          )}
 
           <div className="h-[180px] sm:h-[220px] mb-3">
             <Line data={chartData} options={chartOptions} />
