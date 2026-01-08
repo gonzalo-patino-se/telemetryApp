@@ -40,11 +40,5 @@ export { Battery3TempWidget } from './Battery3TempWidget';
 export { Battery3SoCWidget } from './Battery3SoCWidget';
 export { Battery3CurrentWidget } from './Battery3CurrentWidget';
 
-// Battery Module 4
-export { Battery4VoltageWidget } from './Battery4VoltageWidget';
-export { Battery4TempWidget } from './Battery4TempWidget';
-export { Battery4SoCWidget } from './Battery4SoCWidget';
-export { Battery4CurrentWidget } from './Battery4CurrentWidget';
-
 // Battery Main Relay (Alarms table)
 export { default as BatteryMainRelayWidget } from './BatteryMainRelayWidget';
