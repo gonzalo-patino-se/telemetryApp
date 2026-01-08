@@ -21,3 +21,27 @@ export { GridVoltageL2Widget } from './GridVoltageL2Widget';
 export { GridCurrentL1Widget } from './GridCurrentL1Widget';
 export { GridCurrentL2Widget } from './GridCurrentL2Widget';
 export { GridFrequencyTotalWidget } from './GridFrequencyTotalWidget';
+
+// Battery Module 1
+export { Battery1VoltageWidget } from './Battery1VoltageWidget';
+export { Battery1TempWidget } from './Battery1TempWidget';
+export { Battery1SoCWidget } from './Battery1SoCWidget';
+export { Battery1CurrentWidget } from './Battery1CurrentWidget';
+
+// Battery Module 2
+export { Battery2VoltageWidget } from './Battery2VoltageWidget';
+export { Battery2TempWidget } from './Battery2TempWidget';
+export { Battery2SoCWidget } from './Battery2SoCWidget';
+export { Battery2CurrentWidget } from './Battery2CurrentWidget';
+
+// Battery Module 3
+export { Battery3VoltageWidget } from './Battery3VoltageWidget';
+export { Battery3TempWidget } from './Battery3TempWidget';
+export { Battery3SoCWidget } from './Battery3SoCWidget';
+export { Battery3CurrentWidget } from './Battery3CurrentWidget';
+
+// Battery Module 4
+export { Battery4VoltageWidget } from './Battery4VoltageWidget';
+export { Battery4TempWidget } from './Battery4TempWidget';
+export { Battery4SoCWidget } from './Battery4SoCWidget';
+export { Battery4CurrentWidget } from './Battery4CurrentWidget';

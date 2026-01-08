@@ -2,7 +2,16 @@
 // Widget configuration definitions for all telemetry widgets
 // Each config provides the settings for BaseTimeSeriesWidget
 
-import { buildWifiSignalQuery, buildPV1VoltageQuery, buildPV2VoltageQuery, buildPV3VoltageQuery, buildPV4VoltageQuery, buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery } from '../../utils/kqlBuilders';
+import { 
+  buildWifiSignalQuery, 
+  buildPV1VoltageQuery, buildPV2VoltageQuery, buildPV3VoltageQuery, buildPV4VoltageQuery, 
+  buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
+  buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
+  buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery, buildBattery4VoltageQuery,
+  buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery, buildBattery4TempQuery,
+  buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery, buildBattery4SoCQuery,
+  buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery, buildBattery4CurrentQuery
+} from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
 // ============================================================================
@@ -158,6 +167,146 @@ export const loadPowerConfig: WidgetConfig = {
 };
 
 // ============================================================================
+// Battery Module 1 Widgets
+// ============================================================================
+export const battery1VoltageConfig: WidgetConfig = {
+  label: 'Battery 1 Voltage',
+  unit: 'V',
+  colorScheme: 'purple',
+  csvPrefix: 'battery1_voltage',
+  buildQuery: buildBattery1VoltageQuery,
+};
+
+export const battery1TempConfig: WidgetConfig = {
+  label: 'Battery 1 Temperature',
+  unit: '°C',
+  colorScheme: 'red',
+  csvPrefix: 'battery1_temp',
+  buildQuery: buildBattery1TempQuery,
+};
+
+export const battery1SoCConfig: WidgetConfig = {
+  label: 'Battery 1 SoC',
+  unit: '%',
+  colorScheme: 'green',
+  csvPrefix: 'battery1_soc',
+  buildQuery: buildBattery1SoCQuery,
+};
+
+export const battery1CurrentConfig: WidgetConfig = {
+  label: 'Battery 1 Current',
+  unit: 'A',
+  colorScheme: 'blue',
+  csvPrefix: 'battery1_current',
+  buildQuery: buildBattery1CurrentQuery,
+};
+
+// ============================================================================
+// Battery Module 2 Widgets
+// ============================================================================
+export const battery2VoltageConfig: WidgetConfig = {
+  label: 'Battery 2 Voltage',
+  unit: 'V',
+  colorScheme: 'purple',
+  csvPrefix: 'battery2_voltage',
+  buildQuery: buildBattery2VoltageQuery,
+};
+
+export const battery2TempConfig: WidgetConfig = {
+  label: 'Battery 2 Temperature',
+  unit: '°C',
+  colorScheme: 'red',
+  csvPrefix: 'battery2_temp',
+  buildQuery: buildBattery2TempQuery,
+};
+
+export const battery2SoCConfig: WidgetConfig = {
+  label: 'Battery 2 SoC',
+  unit: '%',
+  colorScheme: 'green',
+  csvPrefix: 'battery2_soc',
+  buildQuery: buildBattery2SoCQuery,
+};
+
+export const battery2CurrentConfig: WidgetConfig = {
+  label: 'Battery 2 Current',
+  unit: 'A',
+  colorScheme: 'blue',
+  csvPrefix: 'battery2_current',
+  buildQuery: buildBattery2CurrentQuery,
+};
+
+// ============================================================================
+// Battery Module 3 Widgets
+// ============================================================================
+export const battery3VoltageConfig: WidgetConfig = {
+  label: 'Battery 3 Voltage',
+  unit: 'V',
+  colorScheme: 'purple',
+  csvPrefix: 'battery3_voltage',
+  buildQuery: buildBattery3VoltageQuery,
+};
+
+export const battery3TempConfig: WidgetConfig = {
+  label: 'Battery 3 Temperature',
+  unit: '°C',
+  colorScheme: 'red',
+  csvPrefix: 'battery3_temp',
+  buildQuery: buildBattery3TempQuery,
+};
+
+export const battery3SoCConfig: WidgetConfig = {
+  label: 'Battery 3 SoC',
+  unit: '%',
+  colorScheme: 'green',
+  csvPrefix: 'battery3_soc',
+  buildQuery: buildBattery3SoCQuery,
+};
+
+export const battery3CurrentConfig: WidgetConfig = {
+  label: 'Battery 3 Current',
+  unit: 'A',
+  colorScheme: 'blue',
+  csvPrefix: 'battery3_current',
+  buildQuery: buildBattery3CurrentQuery,
+};
+
+// ============================================================================
+// Battery Module 4 Widgets
+// ============================================================================
+export const battery4VoltageConfig: WidgetConfig = {
+  label: 'Battery 4 Voltage',
+  unit: 'V',
+  colorScheme: 'purple',
+  csvPrefix: 'battery4_voltage',
+  buildQuery: buildBattery4VoltageQuery,
+};
+
+export const battery4TempConfig: WidgetConfig = {
+  label: 'Battery 4 Temperature',
+  unit: '°C',
+  colorScheme: 'red',
+  csvPrefix: 'battery4_temp',
+  buildQuery: buildBattery4TempQuery,
+};
+
+export const battery4SoCConfig: WidgetConfig = {
+  label: 'Battery 4 SoC',
+  unit: '%',
+  colorScheme: 'green',
+  csvPrefix: 'battery4_soc',
+  buildQuery: buildBattery4SoCQuery,
+};
+
+export const battery4CurrentConfig: WidgetConfig = {
+  label: 'Battery 4 Current',
+  unit: 'A',
+  colorScheme: 'blue',
+  csvPrefix: 'battery4_current',
+  buildQuery: buildBattery4CurrentQuery,
+};
+
+// ============================================================================
 // All Widget Configs (for dynamic rendering)
 // ============================================================================
 
@@ -176,6 +325,26 @@ export const allWidgetConfigs = {
   batteryVoltage: batteryVoltageConfig,
   gridPower: gridPowerConfig,
   loadPower: loadPowerConfig,
+  // Battery Module 1
+  battery1Voltage: battery1VoltageConfig,
+  battery1Temp: battery1TempConfig,
+  battery1SoC: battery1SoCConfig,
+  battery1Current: battery1CurrentConfig,
+  // Battery Module 2
+  battery2Voltage: battery2VoltageConfig,
+  battery2Temp: battery2TempConfig,
+  battery2SoC: battery2SoCConfig,
+  battery2Current: battery2CurrentConfig,
+  // Battery Module 3
+  battery3Voltage: battery3VoltageConfig,
+  battery3Temp: battery3TempConfig,
+  battery3SoC: battery3SoCConfig,
+  battery3Current: battery3CurrentConfig,
+  // Battery Module 4
+  battery4Voltage: battery4VoltageConfig,
+  battery4Temp: battery4TempConfig,
+  battery4SoC: battery4SoCConfig,
+  battery4Current: battery4CurrentConfig,
 } as const;
 
 export type WidgetType = keyof typeof allWidgetConfigs;
