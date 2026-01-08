@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
-import KpiCard from './KpiCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
 import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
@@ -92,10 +91,6 @@ const Dashboard = () => {
     const [loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal] = useState(0);
     const [devInfoAutoFetch, setDevInfoAutoFetch] = useState(true);
     const [devInfoFetchSignal, setDevInfoFetchSignal] = useState(0);
-
-    // KPI data will come from Azure ADX - null until fetched
-    // These will be populated by KQL queries when serial is provided
-    const [kpiData, setKpiData] = useState(null);
     
     // Computed: do we have an active serial to display?
     const hasActiveSerial = Boolean(activeSerial);
@@ -193,7 +188,6 @@ const Dashboard = () => {
         setActiveSerial('');
         setResult(null);
         setLocalError('');
-        setKpiData(null);
         clearSerial(); // Clear global context - resets all tabs
     };
 
@@ -365,36 +359,6 @@ const Dashboard = () => {
 
     return (
         <DashboardLayout title="Device Telemetry">
-            {/* KPI Summary Section - Shows empty state until serial is provided and data fetched */}
-            <div style={styles.kpiGrid}>
-                <KpiCard
-                    label="Active Devices"
-                    value={kpiData?.activeDevices?.value || '--'}
-                    trend={kpiData?.activeDevices?.trend}
-                    sparklineData={kpiData?.activeDevices?.sparkline}
-                    isEmpty={!hasActiveSerial || !kpiData}
-                />
-                <KpiCard
-                    label="Healthy Status"
-                    value={kpiData?.healthyDevices?.value || '--'}
-                    status={kpiData?.healthyDevices?.status}
-                    sparklineData={kpiData?.healthyDevices?.sparkline}
-                    isEmpty={!hasActiveSerial || !kpiData}
-                />
-                <KpiCard
-                    label="Avg Wi-Fi Signal"
-                    value={kpiData?.avgRSSI?.value || '--'}
-                    sparklineData={kpiData?.avgRSSI?.sparkline}
-                    isEmpty={!hasActiveSerial || !kpiData}
-                />
-                <KpiCard
-                    label="Avg Voltage"
-                    value={kpiData?.avgVoltage?.value || '--'}
-                    sparklineData={kpiData?.avgVoltage?.sparkline}
-                    isEmpty={!hasActiveSerial || !kpiData}
-                />
-            </div>
-
             {/* Device Search Section */}
             <div style={styles.searchSection}>
                 <WidgetCard title="Device Finder">
