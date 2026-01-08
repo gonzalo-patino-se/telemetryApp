@@ -1,6 +1,9 @@
 ﻿import React, { useState } from 'react';
 import api from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
+import { colors, borderRadius, spacing, transitions } from '../styles/tokens';
+import { glassCardStyles, formStyles, buttonStyles } from '../styles/components';
+import Logo from './common/Logo';
 
 const RegisterForm = () => {
     const [username, setUsername] = useState('');
@@ -31,43 +34,90 @@ const RegisterForm = () => {
         }
     };
 
-    const msgClass = isSuccess ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20';
-    const textClass = isSuccess ? 'text-green-400' : 'text-red-400';
-
     return (
-        <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm">
-                <div className="text-center mb-8">
-                    <div className="w-10 h-10 bg-[var(--accent-primary)] rounded-lg flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
+        <div style={{ 
+            minHeight: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 
+            padding: spacing.md 
+        }}>
+            <div style={{ width: '100%', maxWidth: '400px' }}>
+                <div style={glassCardStyles.container}>
+                    <div style={{ textAlign: 'center', marginBottom: spacing.xl }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: spacing.md }}>
+                            <Logo size="md" showText={false} />
+                        </div>
+                        <h1 style={{ 
+                            fontSize: '24px', 
+                            fontWeight: '700', 
+                            color: colors.textPrimary, 
+                            margin: `0 0 ${spacing.sm}`, 
+                            letterSpacing: '-0.025em' 
+                        }}>Create account</h1>
+                        <p style={{ fontSize: '14px', color: colors.textTertiary, margin: '0' }}>Get started with your free account</p>
                     </div>
-                    <h1 className="text-xl font-semibold text-[var(--text-primary)]">Create account</h1>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">Get started with your free account</p>
-                </div>
-                <div className="bg-[var(--bg-surface)] border border-[var(--border-primary)] rounded-xl p-6">
-                    <form onSubmit={handleRegister} className="space-y-4">
+
+                    <form onSubmit={handleRegister}>
                         {message && (
-                            <div className={`p-3 rounded-lg border ${msgClass}`}>
-                                <p className={`text-sm ${textClass}`}>{message}</p>
+                            <div style={{ 
+                                padding: `${spacing.sm} ${spacing.md}`, 
+                                background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                                border: isSuccess ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                borderRadius: borderRadius.md,
+                                marginBottom: spacing.lg
+                            }}>
+                                <p style={{ fontSize: '13px', color: isSuccess ? colors.statusHealthy : colors.statusCritical, margin: '0' }}>{message}</p>
                             </div>
                         )}
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Username</label>
-                            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:border-transparent transition-all" placeholder="Choose a username" required />
+
+                        <div style={{ marginBottom: spacing.lg }}>
+                            <label style={formStyles.label}>Username</label>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Choose a username"
+                                required
+                                style={formStyles.input}
+                            />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Password</label>
-                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2.5 bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:border-transparent transition-all" placeholder="Create a password" required />
+
+                        <div style={{ marginBottom: spacing.xl }}>
+                            <label style={formStyles.label}>Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Create a password"
+                                required
+                                style={formStyles.input}
+                            />
                         </div>
-                        <button type="submit" disabled={loading} className="w-full py-2.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                ...buttonStyles.primary,
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                opacity: loading ? 0.7 : 1,
+                            }}
+                        >
                             {loading ? 'Creating account...' : 'Create account'}
                         </button>
                     </form>
-                    <div className="mt-4 pt-4 border-t border-[var(--border-primary)] text-center">
-                        <p className="text-sm text-[var(--text-secondary)]">
-                            Already have an account? <Link to="/login" className="text-[var(--accent-primary)] hover:underline font-medium">Sign in</Link>
+
+                    <div style={{ 
+                        marginTop: spacing.xl, 
+                        paddingTop: spacing.xl, 
+                        borderTop: `1px solid ${colors.borderSubtle}`, 
+                        textAlign: 'center' 
+                    }}>
+                        <p style={{ fontSize: '13px', color: colors.textTertiary, margin: '0' }}>
+                            Already have an account?{' '}
+                            <Link to="/login" style={{ color: colors.accentPrimary, textDecoration: 'none', fontWeight: '500' }}>Sign in</Link>
                         </p>
                     </div>
                 </div>
