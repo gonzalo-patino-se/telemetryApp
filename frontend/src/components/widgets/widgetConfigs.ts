@@ -7,10 +7,10 @@ import {
   buildPV1VoltageQuery, buildPV2VoltageQuery, buildPV3VoltageQuery, buildPV4VoltageQuery, 
   buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
-  buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery, buildBattery4VoltageQuery,
-  buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery, buildBattery4TempQuery,
-  buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery, buildBattery4SoCQuery,
-  buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery, buildBattery4CurrentQuery,
+  buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
+  buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery,
+  buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery,
+  buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery,
   buildBatteryMainRelayQuery
 } from '../../utils/kqlBuilders';
 // ============================================================================
@@ -273,41 +273,6 @@ export const battery3CurrentConfig: WidgetConfig = {
 };
 
 // ============================================================================
-// Battery Module 4 Widgets
-// ============================================================================
-export const battery4VoltageConfig: WidgetConfig = {
-  label: 'Battery 4 Voltage',
-  unit: 'V',
-  colorScheme: 'purple',
-  csvPrefix: 'battery4_voltage',
-  buildQuery: buildBattery4VoltageQuery,
-};
-
-export const battery4TempConfig: WidgetConfig = {
-  label: 'Battery 4 Temperature',
-  unit: '°C',
-  colorScheme: 'red',
-  csvPrefix: 'battery4_temp',
-  buildQuery: buildBattery4TempQuery,
-};
-
-export const battery4SoCConfig: WidgetConfig = {
-  label: 'Battery 4 SoC',
-  unit: '%',
-  colorScheme: 'green',
-  csvPrefix: 'battery4_soc',
-  buildQuery: buildBattery4SoCQuery,
-};
-
-export const battery4CurrentConfig: WidgetConfig = {
-  label: 'Battery 4 Current',
-  unit: 'A',
-  colorScheme: 'blue',
-  csvPrefix: 'battery4_current',
-  buildQuery: buildBattery4CurrentQuery,
-};
-
-// ============================================================================
 // Battery Main Relay Status Widget
 // ============================================================================
 
@@ -353,11 +318,6 @@ export const allWidgetConfigs = {
   battery3Temp: battery3TempConfig,
   battery3SoC: battery3SoCConfig,
   battery3Current: battery3CurrentConfig,
-  // Battery Module 4
-  battery4Voltage: battery4VoltageConfig,
-  battery4Temp: battery4TempConfig,
-  battery4SoC: battery4SoCConfig,
-  battery4Current: battery4CurrentConfig,
   // Battery Main Relay
   batteryMainRelay: batteryMainRelayConfig,
 } as const;

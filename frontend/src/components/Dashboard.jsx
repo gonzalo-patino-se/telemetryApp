@@ -9,7 +9,7 @@ import WidgetCard from './layout/WidgetCard';
 import KpiCard from './KpiCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import AdxSearchPV1Widget from './AdxSearchPV1Widget';
-import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, Battery4VoltageWidget, Battery4TempWidget, Battery4SoCWidget, Battery4CurrentWidget, BatteryMainRelayWidget } from './widgets';
+import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
@@ -80,15 +80,6 @@ const Dashboard = () => {
     const [battery3SoCFetchSignal, setBattery3SoCFetchSignal] = useState(0);
     const [battery3CurrentAutoFetch, setBattery3CurrentAutoFetch] = useState(true);
     const [battery3CurrentFetchSignal, setBattery3CurrentFetchSignal] = useState(0);
-    // Battery Module 4
-    const [battery4VoltageAutoFetch, setBattery4VoltageAutoFetch] = useState(true);
-    const [battery4VoltageFetchSignal, setBattery4VoltageFetchSignal] = useState(0);
-    const [battery4TempAutoFetch, setBattery4TempAutoFetch] = useState(true);
-    const [battery4TempFetchSignal, setBattery4TempFetchSignal] = useState(0);
-    const [battery4SoCAutoFetch, setBattery4SoCAutoFetch] = useState(true);
-    const [battery4SoCFetchSignal, setBattery4SoCFetchSignal] = useState(0);
-    const [battery4CurrentAutoFetch, setBattery4CurrentAutoFetch] = useState(true);
-    const [battery4CurrentFetchSignal, setBattery4CurrentFetchSignal] = useState(0);
     // Battery Main Relay
     const [batteryMainRelayAutoFetch, setBatteryMainRelayAutoFetch] = useState(true);
     const [batteryMainRelayFetchSignal, setBatteryMainRelayFetchSignal] = useState(0);
@@ -146,11 +137,6 @@ const Dashboard = () => {
                 setBattery3TempFetchSignal((n) => n + 1);
                 setBattery3SoCFetchSignal((n) => n + 1);
                 setBattery3CurrentFetchSignal((n) => n + 1);
-                // Battery Module 4
-                setBattery4VoltageFetchSignal((n) => n + 1);
-                setBattery4TempFetchSignal((n) => n + 1);
-                setBattery4SoCFetchSignal((n) => n + 1);
-                setBattery4CurrentFetchSignal((n) => n + 1);
                 // Battery Main Relay
                 setBatteryMainRelayFetchSignal((n) => n + 1);
                 setDevInfoFetchSignal((n) => n + 1);
@@ -864,27 +850,6 @@ const Dashboard = () => {
                 <WidgetCard title="Battery 3 Current" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
                     actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={battery3CurrentAutoFetch} onChange={(e) => setBattery3CurrentAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setBattery3CurrentFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
                     {hasActiveSerial && (<div style={styles.chartContainer}><Battery3CurrentWidget serial={activeSerial} showControls={false} autoFetchProp={battery3CurrentAutoFetch} onAutoFetchChange={setBattery3CurrentAutoFetch} fetchSignal={battery3CurrentFetchSignal} /></div>)}
-                </WidgetCard>
-
-                {/* ==================== Battery Module 4 ==================== */}
-                <WidgetCard title="Battery 4 Voltage" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
-                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={battery4VoltageAutoFetch} onChange={(e) => setBattery4VoltageAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setBattery4VoltageFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
-                    {hasActiveSerial && (<div style={styles.chartContainer}><Battery4VoltageWidget serial={activeSerial} showControls={false} autoFetchProp={battery4VoltageAutoFetch} onAutoFetchChange={setBattery4VoltageAutoFetch} fetchSignal={battery4VoltageFetchSignal} /></div>)}
-                </WidgetCard>
-
-                <WidgetCard title="Battery 4 Temperature" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
-                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={battery4TempAutoFetch} onChange={(e) => setBattery4TempAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setBattery4TempFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
-                    {hasActiveSerial && (<div style={styles.chartContainer}><Battery4TempWidget serial={activeSerial} showControls={false} autoFetchProp={battery4TempAutoFetch} onAutoFetchChange={setBattery4TempAutoFetch} fetchSignal={battery4TempFetchSignal} /></div>)}
-                </WidgetCard>
-
-                <WidgetCard title="Battery 4 SoC" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
-                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={battery4SoCAutoFetch} onChange={(e) => setBattery4SoCAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setBattery4SoCFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
-                    {hasActiveSerial && (<div style={styles.chartContainer}><Battery4SoCWidget serial={activeSerial} showControls={false} autoFetchProp={battery4SoCAutoFetch} onAutoFetchChange={setBattery4SoCAutoFetch} fetchSignal={battery4SoCFetchSignal} /></div>)}
-                </WidgetCard>
-
-                <WidgetCard title="Battery 4 Current" isEmpty={!hasActiveSerial} emptyMessage="Enter a device serial"
-                    actions={hasActiveSerial && (<div style={styles.widgetActions}><label style={styles.autoLabel}><input type="checkbox" checked={battery4CurrentAutoFetch} onChange={(e) => setBattery4CurrentAutoFetch(e.target.checked)} style={{ width: '14px', height: '14px' }} />Auto</label><button onClick={() => setBattery4CurrentFetchSignal((n) => n + 1)} style={styles.refreshButton}>Refresh</button></div>)}>
-                    {hasActiveSerial && (<div style={styles.chartContainer}><Battery4CurrentWidget serial={activeSerial} showControls={false} autoFetchProp={battery4CurrentAutoFetch} onAutoFetchChange={setBattery4CurrentAutoFetch} fetchSignal={battery4CurrentFetchSignal} /></div>)}
                 </WidgetCard>
 
                 {/* Battery Main Relay Status (from Alarms table) */}
