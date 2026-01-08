@@ -2,6 +2,7 @@
     import React from 'react';
     import { NavLink } from 'react-router-dom';
     import LogoutButton from '../LogoutButton';
+    import ThemeToggle from '../ThemeToggle';
     import s from './NavBar.module.css';
 
     const tabs = [
@@ -24,7 +25,10 @@
                 <div className={s.logo} aria-hidden />
                 <span>Schneider Electric V1 Analytics</span>
             </div>
-            <LogoutButton />
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <ThemeToggle />
+                <LogoutButton />
+            </div>
             </div>
 
             {/* Tabs row (centered to same width as page) */}

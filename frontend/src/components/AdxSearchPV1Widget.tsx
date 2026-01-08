@@ -215,19 +215,40 @@
         x: {
             type: 'time',
             time: { tooltipFormat: 'Pp' },
-            ticks: { maxRotation: 0, autoSkip: true },
+            ticks: { 
+                maxRotation: 0, 
+                autoSkip: true,
+                color: 'var(--text-tertiary)',
+                font: { size: 10 }
+            },
             grid: { display: false },
-            title: { display: true, text: 'Time (local)' },
+            title: { display: false },
+            border: { display: false }
         },
         y: {
             beginAtZero: false,
-            grid: { color: 'rgba(0,0,0,0.08)' },
-            title: { display: true, text: 'Voltage (V)' },
+            grid: { color: 'var(--border-subtle)' },
+            title: { display: false },
+            ticks: { 
+                color: 'var(--text-tertiary)',
+                font: { size: 10 }
+            },
+            border: { display: false }
         },
         },
         plugins: {
-        legend: { display: true },
-        tooltip: { mode: 'nearest', intersect: false },
+        legend: { display: false },
+        tooltip: { 
+            mode: 'nearest', 
+            intersect: false,
+            backgroundColor: 'var(--bg-surface)',
+            titleColor: 'var(--text-primary)',
+            bodyColor: 'var(--text-secondary)',
+            borderColor: 'var(--border-default)',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 8
+        },
         },
     }),
     []
@@ -239,12 +260,12 @@
         {/* Range selectors */}
         <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">From (local)</span>
+            <span className="text-xs text-text-tertiary mb-1">From (local)</span>
             <DatePicker
             selected={fromDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
             placeholderText="Start date & time"
-            className="border p-2 rounded"
+            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
             showTimeSelect
             timeIntervals={15}
             dateFormat="yyyy-MM-dd HH:mm"
@@ -253,12 +274,12 @@
         </div>
 
         <div className="flex flex-col">
-            <span className="text-xs text-gray-500 mb-1">To (local)</span>
+            <span className="text-xs text-text-tertiary mb-1">To (local)</span>
             <DatePicker
             selected={toDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
             placeholderText="End date & time"
-            className="border p-2 rounded"
+            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
             showTimeSelect
             timeIntervals={15}
             dateFormat="yyyy-MM-dd HH:mm"
@@ -271,7 +292,7 @@
         <div className="flex items-center gap-2">
             <button
             type="button"
-            className="px-2 py-1 text-xs border rounded"
+            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
             onClick={() => {
                 const { start, end } = lastHours(6);
                 setRange({ fromDT: start, toDT: end });
@@ -281,7 +302,7 @@
             </button>
             <button
             type="button"
-            className="px-2 py-1 text-xs border rounded"
+            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
             onClick={() => {
                 const { start, end } = lastHours(24);
                 setRange({ fromDT: start, toDT: end });
@@ -291,7 +312,7 @@
             </button>
             <button
             type="button"
-            className="px-2 py-1 text-xs border rounded"
+            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
             onClick={() => {
                 const { start, end } = lastHours(24 * 7);
                 setRange({ fromDT: start, toDT: end });
@@ -304,7 +325,7 @@
         {/* Fetch controls — hidden if parent renders them in header */}
         {showControls && (
             <div className="flex items-center gap-2 ml-auto">
-            <label className="text-xs flex items-center gap-1">
+            <label className="text-xs text-text-secondary flex items-center gap-1.5 cursor-pointer">
                 <input
                 type="checkbox"
                 checked={autoFetch}
@@ -312,14 +333,17 @@
                     onAutoFetchChange?.(e.target.checked);
                     if (autoFetchProp === undefined) setAutoFetchInternal(e.target.checked);
                 }}
+                className="w-3.5 h-3.5 rounded border-border-default bg-bg-input accent-accent-primary"
                 />
                 Auto‑fetch on change
             </label>
             <button
                 onClick={fetchData}
                 disabled={!canFetch || loading}
-                className={`px-3 py-2 rounded ${
-                canFetch && !loading ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                canFetch && !loading 
+                    ? 'bg-accent-primary text-white hover:bg-accent-hover' 
+                    : 'bg-bg-input text-text-tertiary cursor-not-allowed'
                 }`}
             >
                 {loading ? 'Fetching…' : 'Fetch'}
@@ -329,11 +353,11 @@
         </div>
 
         {/* Current selection summary */}
-        <div className="text-xs text-gray-600 mb-2">
+        <div className="text-xs text-text-secondary mb-2">
         {fromDT && toDT ? (
             <>
-            Selected (local): <code>{toLocalLabel(fromDT)}</code> →{' '}
-            <code>{toLocalLabel(toDT)}</code>
+            Selected (local): <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(fromDT)}</code> →{' '}
+            <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(toDT)}</code>
             </>
         ) : (
             'Pick start & end, then click Fetch.'
@@ -341,25 +365,25 @@
         </div>
 
         {/* Status / Results */}
-        {error && <div className="text-red-600">{error}</div>}
+        {error && <div className="text-status-critical text-sm">{error}</div>}
         {!error && !loading && rows.length === 0 && (
-        <div className="text-sm">No data was found</div>
+        <div className="text-sm text-text-tertiary">No data was found</div>
         )}
         {!error && rows.length > 0 && (
         <>
-            <div className="text-xs text-gray-600 mb-2">
-            Returned rows: <b>{rows.length}</b>
+            <div className="text-xs text-text-secondary mb-2">
+            Returned rows: <span className="font-semibold text-text-primary">{rows.length}</span>
             </div>
-            <div style={{ height: 300 }} className="mb-3">
+            <div className="h-[180px] sm:h-[220px] mb-3">
             <Line data={chartData} options={chartOptions} />
             </div>
 
             {/* Debug preview (first 5 rows) */}
             <details>
-            <summary className="cursor-pointer text-xs text-gray-500">
+            <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-secondary">
                 Show first 5 rows (debug)
             </summary>
-            <pre className="bg-gray-50 p-2 rounded max-h-64 overflow-auto text-xs">
+            <pre className="bg-bg-primary border border-border-subtle p-2 rounded-lg max-h-40 overflow-auto text-xs text-text-secondary mt-2">
                 {JSON.stringify(rows.slice(0, 5), null, 2)}
             </pre>
             </details>
