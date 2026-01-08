@@ -86,6 +86,22 @@ export const chartColorSchemes = {
       style: 'crossRot' as const,
     },
   },
+  // Special style for zero values - uses star marker
+  zeroValue: {
+    line: '#fbbf24',
+    fill: 'rgba(251, 191, 36, 0.15)',
+    point: {
+      radius: 6,
+      backgroundColor: '#fbbf24',
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      hoverRadius: 8,
+      hoverBackgroundColor: '#f59e0b',
+      hoverBorderColor: '#ffffff',
+      hoverBorderWidth: 2,
+      style: 'star' as const,
+    },
+  },
 } as const;
 
 // ============================================================================
@@ -94,7 +110,9 @@ export const chartColorSchemes = {
 
 /**
  * Get point style arrays for dynamic styling based on values
- * Used for special indicators (e.g., offline status)
+ * Used for special indicators (e.g., offline status, zero values)
+ * - Zero values are marked with a star (★)
+ * - Special values (e.g., offline) are marked with a cross (✕)
  */
 export function getPointStyles(
   points: ScatterDataPoint[],
@@ -102,7 +120,7 @@ export function getPointStyles(
   isSpecialValue?: (value: number) => boolean,
   specialStyle?: PointStyle
 ): {
-  pointStyle: ('circle' | 'crossRot')[];
+  pointStyle: ('circle' | 'crossRot' | 'star')[];
   pointRadius: number[];
   pointBackgroundColor: string[];
   pointBorderColor: string[];
@@ -113,32 +131,64 @@ export function getPointStyles(
 } {
   const defaultStyle = colorScheme.point;
   const special = specialStyle || chartColorSchemes.red.point;
+  const zeroStyle = chartColorSchemes.zeroValue.point;
+
+  // Helper to determine point style type
+  const getStyleType = (value: number): 'special' | 'zero' | 'normal' => {
+    if (isSpecialValue?.(value)) return 'special';
+    if (value === 0) return 'zero';
+    return 'normal';
+  };
 
   return {
-    pointStyle: points.map(p => 
-      isSpecialValue?.(p.y as number) ? 'crossRot' : 'circle'
-    ),
-    pointRadius: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.radius : defaultStyle.radius
-    ),
-    pointBackgroundColor: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.backgroundColor : defaultStyle.backgroundColor
-    ),
-    pointBorderColor: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.borderColor : defaultStyle.borderColor
-    ),
-    pointBorderWidth: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.borderWidth : defaultStyle.borderWidth
-    ),
-    pointHoverRadius: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.hoverRadius : defaultStyle.hoverRadius
-    ),
-    pointHoverBackgroundColor: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.hoverBackgroundColor : defaultStyle.hoverBackgroundColor
-    ),
-    pointHoverBorderColor: points.map(p =>
-      isSpecialValue?.(p.y as number) ? special.hoverBorderColor : defaultStyle.hoverBorderColor
-    ),
+    pointStyle: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return 'crossRot';
+      if (type === 'zero') return 'star';
+      return 'circle';
+    }),
+    pointRadius: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.radius;
+      if (type === 'zero') return zeroStyle.radius;
+      return defaultStyle.radius;
+    }),
+    pointBackgroundColor: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.backgroundColor;
+      if (type === 'zero') return zeroStyle.backgroundColor;
+      return defaultStyle.backgroundColor;
+    }),
+    pointBorderColor: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.borderColor;
+      if (type === 'zero') return zeroStyle.borderColor;
+      return defaultStyle.borderColor;
+    }),
+    pointBorderWidth: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.borderWidth;
+      if (type === 'zero') return zeroStyle.borderWidth;
+      return defaultStyle.borderWidth;
+    }),
+    pointHoverRadius: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.hoverRadius;
+      if (type === 'zero') return zeroStyle.hoverRadius;
+      return defaultStyle.hoverRadius;
+    }),
+    pointHoverBackgroundColor: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.hoverBackgroundColor;
+      if (type === 'zero') return zeroStyle.hoverBackgroundColor;
+      return defaultStyle.hoverBackgroundColor;
+    }),
+    pointHoverBorderColor: points.map(p => {
+      const type = getStyleType(p.y as number);
+      if (type === 'special') return special.hoverBorderColor;
+      if (type === 'zero') return zeroStyle.hoverBorderColor;
+      return defaultStyle.hoverBorderColor;
+    }),
   };
 }
 

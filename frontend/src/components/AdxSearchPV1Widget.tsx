@@ -88,7 +88,6 @@
     | where comms_serial contains s
     | where name contains '/INV/DCPORT/STAT/PV1/V'
     | where localtime between (start .. finish)
-    | where isnotnull(value_double)
     | project localtime, value_double
     | order by localtime asc
     `.trim();
@@ -287,6 +286,20 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
+    // Dynamic point styles to highlight zero values with a star
+    const pointStyles = useMemo(() => {
+    return {
+        pointStyle: points.map(p => p.y === 0 ? 'star' : 'circle') as ('circle' | 'star')[],
+        pointRadius: points.map(p => p.y === 0 ? 6 : 4),
+        pointBackgroundColor: points.map(p => p.y === 0 ? '#fbbf24' : '#10b981'),
+        pointBorderColor: points.map(p => p.y === 0 ? '#ffffff' : '#ffffff'),
+        pointBorderWidth: points.map(p => p.y === 0 ? 2 : 1.5),
+        pointHoverRadius: points.map(p => p.y === 0 ? 8 : 6),
+        pointHoverBackgroundColor: points.map(p => p.y === 0 ? '#f59e0b' : '#059669'),
+        pointHoverBorderColor: points.map(() => '#ffffff'),
+    };
+    }, [points]);
+
     const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(
     () => ({
         datasets: [
@@ -296,20 +309,21 @@
             borderColor: '#10b981',
             backgroundColor: 'rgba(16, 185, 129, 0.15)',
             fill: true,
-            pointRadius: 4,
-            pointBackgroundColor: '#10b981',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
-            pointHoverRadius: 6,
-            pointHoverBackgroundColor: '#059669',
-            pointHoverBorderColor: '#ffffff',
+            pointStyle: pointStyles.pointStyle,
+            pointRadius: pointStyles.pointRadius,
+            pointBackgroundColor: pointStyles.pointBackgroundColor,
+            pointBorderColor: pointStyles.pointBorderColor,
+            pointBorderWidth: pointStyles.pointBorderWidth,
+            pointHoverRadius: pointStyles.pointHoverRadius,
+            pointHoverBackgroundColor: pointStyles.pointHoverBackgroundColor,
+            pointHoverBorderColor: pointStyles.pointHoverBorderColor,
             pointHoverBorderWidth: 2,
             borderWidth: 1.5,
             tension: 0.2,
         },
         ],
     }),
-    [points]
+    [points, pointStyles]
     );
 
     const chartOptions: ChartOptions<'line'> = useMemo(
@@ -371,6 +385,9 @@
             },
             label: (context) => {
                 const value = context.parsed.y;
+                if (value === 0) {
+                return [`★ Zero Value Detected`, `PV1 Voltage: ${value?.toFixed(1) ?? '—'} V`];
+                }
                 return `PV1 Voltage: ${value?.toFixed(1) ?? '—'} V`;
             }
             }

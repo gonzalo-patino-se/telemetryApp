@@ -317,6 +317,9 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
             if (offlineValue !== undefined && value === offlineValue) {
               return [`⛔ ${offlineLabel ?? 'Device Offline'}`, `${label}: ${value} ${unit}`];
             }
+            if (value === 0) {
+              return [`★ Zero Value Detected`, `${label}: ${value} ${unit}`];
+            }
             return `${label}: ${value} ${unit}`;
           }
         }

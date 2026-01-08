@@ -119,7 +119,6 @@ export function buildTelemetryQuery(params: TelemetryQueryParams): string {
     | where comms_serial contains s
     | where name contains '${telemetryName}'
     | where localtime between (start .. finish)
-    | where isnotnull(value_double)
 ${additionalWheres}
     | project localtime, value_double
     | order by localtime asc

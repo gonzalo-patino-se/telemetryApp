@@ -77,7 +77,7 @@ export interface PointStyle {
   hoverBackgroundColor: string;
   hoverBorderColor: string;
   hoverBorderWidth: number;
-  style?: 'circle' | 'crossRot' | 'cross' | 'rect' | 'triangle';
+  style?: 'circle' | 'crossRot' | 'cross' | 'rect' | 'triangle' | 'star';
 }
 
 /** Chart color scheme */
