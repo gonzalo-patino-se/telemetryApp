@@ -4,15 +4,26 @@
 
 import { 
   buildWifiSignalQuery, 
+  // PV Voltage queries (normal + fast)
   buildPV1VoltageQuery, buildPV2VoltageQuery, buildPV3VoltageQuery, buildPV4VoltageQuery, 
-  buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
+  buildPV1VoltageFastQuery, buildPV2VoltageFastQuery, buildPV3VoltageFastQuery, buildPV4VoltageFastQuery,
+  // Grid queries (normal + fast)
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
+  buildGridVoltageL1FastQuery, buildGridVoltageL2FastQuery, buildGridCurrentL1FastQuery, buildGridCurrentL2FastQuery, buildGridFrequencyTotalFastQuery,
+  // Load queries (normal + fast)
+  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery,
+  buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadFrequencyTotalNormalQuery,
+  // Battery queries (normal + fast)
+  buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
   buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery,
   buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery,
   buildBattery1CurrentQuery, buildBattery2CurrentQuery, buildBattery3CurrentQuery,
+  buildBattery1VoltageFastQuery, buildBattery2VoltageFastQuery, buildBattery3VoltageFastQuery,
+  buildBattery1TempFastQuery, buildBattery2TempFastQuery, buildBattery3TempFastQuery,
+  buildBattery1SoCFastQuery, buildBattery2SoCFastQuery, buildBattery3SoCFastQuery,
+  buildBattery1CurrentFastQuery, buildBattery2CurrentFastQuery, buildBattery3CurrentFastQuery,
   buildBatteryMainRelayQuery,
-  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -23,6 +34,7 @@ export const gridVoltageL1Config: WidgetConfig = {
   colorScheme: 'orange',
   csvPrefix: 'grid_voltage_l1',
   buildQuery: buildGridVoltageL1Query,
+  buildFastQuery: buildGridVoltageL1FastQuery,
 };
 
 // ============================================================================
@@ -34,6 +46,7 @@ export const gridVoltageL2Config: WidgetConfig = {
   colorScheme: 'orange',
   csvPrefix: 'grid_voltage_l2',
   buildQuery: buildGridVoltageL2Query,
+  buildFastQuery: buildGridVoltageL2FastQuery,
 };
 
 // ============================================================================
@@ -45,6 +58,7 @@ export const gridCurrentL1Config: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'grid_current_l1',
   buildQuery: buildGridCurrentL1Query,
+  buildFastQuery: buildGridCurrentL1FastQuery,
 };
 
 // ============================================================================
@@ -56,6 +70,7 @@ export const gridCurrentL2Config: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'grid_current_l2',
   buildQuery: buildGridCurrentL2Query,
+  buildFastQuery: buildGridCurrentL2FastQuery,
 };
 
 // ============================================================================
@@ -67,6 +82,7 @@ export const gridFrequencyTotalConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'grid_frequency_total',
   buildQuery: buildGridFrequencyTotalQuery,
+  buildFastQuery: buildGridFrequencyTotalFastQuery,
 };
 import type { WidgetConfig } from './BaseTimeSeriesWidget';
 
@@ -94,6 +110,7 @@ export const pv1VoltageConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'pv1_voltage',
   buildQuery: buildPV1VoltageQuery,
+  buildFastQuery: buildPV1VoltageFastQuery,
 };
 
 // ============================================================================
@@ -106,6 +123,7 @@ export const pv2VoltageConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'pv2_voltage',
   buildQuery: buildPV2VoltageQuery,
+  buildFastQuery: buildPV2VoltageFastQuery,
 };
 
 // ============================================================================
@@ -118,6 +136,7 @@ export const pv3VoltageConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'pv3_voltage',
   buildQuery: buildPV3VoltageQuery,
+  buildFastQuery: buildPV3VoltageFastQuery,
 };
 
 // ============================================================================
@@ -130,6 +149,7 @@ export const pv4VoltageConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'pv4_voltage',
   buildQuery: buildPV4VoltageQuery,
+  buildFastQuery: buildPV4VoltageFastQuery,
 };
 
 // ============================================================================
@@ -177,6 +197,7 @@ export const battery1VoltageConfig: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'battery1_voltage',
   buildQuery: buildBattery1VoltageQuery,
+  buildFastQuery: buildBattery1VoltageFastQuery,
 };
 
 export const battery1TempConfig: WidgetConfig = {
@@ -185,6 +206,7 @@ export const battery1TempConfig: WidgetConfig = {
   colorScheme: 'red',
   csvPrefix: 'battery1_temp',
   buildQuery: buildBattery1TempQuery,
+  buildFastQuery: buildBattery1TempFastQuery,
 };
 
 export const battery1SoCConfig: WidgetConfig = {
@@ -193,6 +215,7 @@ export const battery1SoCConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'battery1_soc',
   buildQuery: buildBattery1SoCQuery,
+  buildFastQuery: buildBattery1SoCFastQuery,
 };
 
 export const battery1CurrentConfig: WidgetConfig = {
@@ -201,6 +224,7 @@ export const battery1CurrentConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'battery1_current',
   buildQuery: buildBattery1CurrentQuery,
+  buildFastQuery: buildBattery1CurrentFastQuery,
 };
 
 // ============================================================================
@@ -212,6 +236,7 @@ export const battery2VoltageConfig: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'battery2_voltage',
   buildQuery: buildBattery2VoltageQuery,
+  buildFastQuery: buildBattery2VoltageFastQuery,
 };
 
 export const battery2TempConfig: WidgetConfig = {
@@ -220,6 +245,7 @@ export const battery2TempConfig: WidgetConfig = {
   colorScheme: 'red',
   csvPrefix: 'battery2_temp',
   buildQuery: buildBattery2TempQuery,
+  buildFastQuery: buildBattery2TempFastQuery,
 };
 
 export const battery2SoCConfig: WidgetConfig = {
@@ -228,6 +254,7 @@ export const battery2SoCConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'battery2_soc',
   buildQuery: buildBattery2SoCQuery,
+  buildFastQuery: buildBattery2SoCFastQuery,
 };
 
 export const battery2CurrentConfig: WidgetConfig = {
@@ -236,6 +263,7 @@ export const battery2CurrentConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'battery2_current',
   buildQuery: buildBattery2CurrentQuery,
+  buildFastQuery: buildBattery2CurrentFastQuery,
 };
 
 // ============================================================================
@@ -247,6 +275,7 @@ export const battery3VoltageConfig: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'battery3_voltage',
   buildQuery: buildBattery3VoltageQuery,
+  buildFastQuery: buildBattery3VoltageFastQuery,
 };
 
 export const battery3TempConfig: WidgetConfig = {
@@ -255,6 +284,7 @@ export const battery3TempConfig: WidgetConfig = {
   colorScheme: 'red',
   csvPrefix: 'battery3_temp',
   buildQuery: buildBattery3TempQuery,
+  buildFastQuery: buildBattery3TempFastQuery,
 };
 
 export const battery3SoCConfig: WidgetConfig = {
@@ -263,6 +293,7 @@ export const battery3SoCConfig: WidgetConfig = {
   colorScheme: 'green',
   csvPrefix: 'battery3_soc',
   buildQuery: buildBattery3SoCQuery,
+  buildFastQuery: buildBattery3SoCFastQuery,
 };
 
 export const battery3CurrentConfig: WidgetConfig = {
@@ -271,6 +302,7 @@ export const battery3CurrentConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'battery3_current',
   buildQuery: buildBattery3CurrentQuery,
+  buildFastQuery: buildBattery3CurrentFastQuery,
 };
 
 // ============================================================================
@@ -286,7 +318,8 @@ export const batteryMainRelayConfig: WidgetConfig = {
 };
 
 // ============================================================================
-// Load Measurements Widgets (Fast Telemetry)
+// Load Measurements Widgets (supports both Normal and Fast Telemetry)
+// Default: Fast Telemetry (15s sampling), can switch to Normal (15min sampling)
 // ============================================================================
 
 export const loadVoltageL1Config: WidgetConfig = {
@@ -294,7 +327,9 @@ export const loadVoltageL1Config: WidgetConfig = {
   unit: 'V',
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l1',
-  buildQuery: buildLoadVoltageL1Query,
+  buildQuery: buildLoadVoltageL1NormalQuery,  // Normal telemetry (15min)
+  buildFastQuery: buildLoadVoltageL1Query,     // Fast telemetry (15s)
+  defaultMode: 'fast',  // Default to fast telemetry
 };
 
 export const loadVoltageL2Config: WidgetConfig = {
@@ -302,7 +337,9 @@ export const loadVoltageL2Config: WidgetConfig = {
   unit: 'V',
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l2',
-  buildQuery: buildLoadVoltageL2Query,
+  buildQuery: buildLoadVoltageL2NormalQuery,  // Normal telemetry (15min)
+  buildFastQuery: buildLoadVoltageL2Query,     // Fast telemetry (15s)
+  defaultMode: 'fast',  // Default to fast telemetry
 };
 
 export const loadFrequencyTotalConfig: WidgetConfig = {
@@ -310,7 +347,9 @@ export const loadFrequencyTotalConfig: WidgetConfig = {
   unit: 'Hz',
   colorScheme: 'blue',
   csvPrefix: 'load_frequency_total',
-  buildQuery: buildLoadFrequencyTotalQuery,
+  buildQuery: buildLoadFrequencyTotalNormalQuery,  // Normal telemetry (15min)
+  buildFastQuery: buildLoadFrequencyTotalQuery,     // Fast telemetry (15s)
+  defaultMode: 'fast',  // Default to fast telemetry
 };
 
 // ============================================================================

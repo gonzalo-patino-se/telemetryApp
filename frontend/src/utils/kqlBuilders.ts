@@ -474,3 +474,218 @@ export function buildLoadFrequencyTotalQuery(serial: string, startDate: Date, en
     telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL',
   });
 }
+
+// ============================================================================
+// Normal Telemetry Versions of Load Measurements
+// Uses standard Telemetry table (sampled every 15 min)
+// ============================================================================
+
+/**
+ * Build query for L1 RMS Voltage Load (normal telemetry - 15 min sampling)
+ */
+export function buildLoadVoltageL1NormalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N',
+  });
+}
+
+/**
+ * Build query for L2 RMS Voltage Load (normal telemetry - 15 min sampling)
+ */
+export function buildLoadVoltageL2NormalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N',
+  });
+}
+
+/**
+ * Build query for Load Frequency Total (normal telemetry - 15 min sampling)
+ */
+export function buildLoadFrequencyTotalNormalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL',
+  });
+}
+
+// ============================================================================
+// Fast Telemetry Versions of Grid Measurements
+// Uses sourcedatastreamingfornam table (sampled every 15 sec)
+// ============================================================================
+
+/**
+ * Build query for Grid Voltage L1 (fast-telemetry - 15 sec sampling)
+ */
+export function buildGridVoltageL1FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N',
+  });
+}
+
+/**
+ * Build query for Grid Voltage L2 (fast-telemetry - 15 sec sampling)
+ */
+export function buildGridVoltageL2FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N',
+  });
+}
+
+/**
+ * Build query for Grid Current L1 (fast-telemetry - 15 sec sampling)
+ */
+export function buildGridCurrentL1FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L1',
+  });
+}
+
+/**
+ * Build query for Grid Current L2 (fast-telemetry - 15 sec sampling)
+ */
+export function buildGridCurrentL2FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L2',
+  });
+}
+
+/**
+ * Build query for Grid Frequency Total (fast-telemetry - 15 sec sampling)
+ */
+export function buildGridFrequencyTotalFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
+  });
+}
+
+// ============================================================================
+// Fast Telemetry Versions of PV Measurements
+// Uses sourcedatastreamingfornam table (sampled every 15 sec)
+// ============================================================================
+
+/**
+ * Build query for PV1 Voltage (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV1VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV1/V',
+  });
+}
+
+/**
+ * Build query for PV2 Voltage (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV2VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV2/V',
+  });
+}
+
+/**
+ * Build query for PV3 Voltage (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV3VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV3/V',
+  });
+}
+
+/**
+ * Build query for PV4 Voltage (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV4VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV4/V',
+  });
+}
+
+// ============================================================================
+// Fast Telemetry Versions of Battery Measurements
+// Uses sourcedatastreamingfornam table (sampled every 15 sec)
+// ============================================================================
+
+// Battery 1
+export function buildBattery1VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/V' });
+}
+
+export function buildBattery1TempFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/TEMP' });
+}
+
+export function buildBattery1SoCFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/USER_SOC' });
+}
+
+export function buildBattery1CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE1/STAT/I' });
+}
+
+// Battery 2
+export function buildBattery2VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/V' });
+}
+
+export function buildBattery2TempFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/TEMP' });
+}
+
+export function buildBattery2SoCFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/USER_SOC' });
+}
+
+export function buildBattery2CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE2/STAT/I' });
+}
+
+// Battery 3
+export function buildBattery3VoltageFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/V' });
+}
+
+export function buildBattery3TempFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/TEMP' });
+}
+
+export function buildBattery3SoCFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/USER_SOC' });
+}
+
+export function buildBattery3CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/I' });
+}
