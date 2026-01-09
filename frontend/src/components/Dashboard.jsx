@@ -9,6 +9,7 @@ import WidgetCard from './layout/WidgetCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
+import InstantaneousGauges from './InstantaneousGauges';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -357,7 +358,7 @@ const Dashboard = () => {
     );
 
     return (
-        <DashboardLayout title="Device Telemetry">
+        <DashboardLayout showFilters={false}>
             {/* Device Search Section */}
             <div style={styles.searchSection}>
                 <WidgetCard title="Device Finder">
@@ -447,6 +448,11 @@ const Dashboard = () => {
 
                 </WidgetCard>
             </div>
+
+            {/* ==================== INSTANTANEOUS VALUES ==================== */}
+            {hasActiveSerial && (
+                <InstantaneousGauges serial={activeSerial} />
+            )}
 
             {/* ==================== SYSTEM STATUS ==================== */}
             <div style={styles.sectionHeader}>
