@@ -105,8 +105,21 @@ const BGCS_CONFIG: TelemetryConfig = {
   decimals: 0 
 };
 
+// ============================================================================
+// WiFi Signal Strength Configuration
+// ============================================================================
+
+const WIFI_CONFIG: TelemetryConfig = {
+  id: 'wifiSignal',
+  label: 'WiFi Signal',
+  telemetryName: '/SCC/WIFI/STAT/SIGNAL_STRENGTH',
+  unit: 'dBm',
+  category: 'system',
+  decimals: 0
+};
+
 // Combined configs for fetching
-const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG];
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG, WIFI_CONFIG];
 
 const QUERY_PATH = '/query_adx/';
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -154,6 +167,19 @@ function buildBgcsRelayKql(serial: string): string {
     | where name has '/BGCS/GRID/STAT/RELAY_STATUS'
     | top 1 by localtime desc
     | project localtime, value_double, name
+  `.trim();
+}
+
+// Special query for WiFi Signal Strength (uses TelemetryLive table for real-time data)
+function buildWifiSignalKql(serial: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    TelemetryLive
+    | where comms_serial contains s
+    | where name contains '/SCC/WIFI/STAT/SIGNAL_STRENGTH'
+    | top 1 by localtime desc
+    | project localtime, value_double
   `.trim();
 }
 
@@ -249,38 +275,130 @@ const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, value, unit, loadi
 // Inverter SVG Component
 // ============================================================================
 
-const Inverter: React.FC<{ x: number; y: number; isActive: boolean }> = ({ x, y, isActive }) => (
-  <g transform={`translate(${x}, ${y})`} className="inverter-group">
-    {/* Inverter body */}
-    <rect
-      x={0}
-      y={0}
-      width={100}
-      height={70}
-      rx={8}
-      className={`inverter-body ${isActive ? 'active' : ''}`}
-    />
-    
-    {/* Glow effect when active */}
-    {isActive && (
+interface InverterProps {
+  x: number;
+  y: number;
+  isActive: boolean;
+  wifiSignal: number | null;
+  wifiLoading: boolean;
+}
+
+// Get WiFi signal strength level (0-4 bars based on dBm)
+const getWifiLevel = (signal: number | null): number => {
+  if (signal === null) return 0;
+  // Typical WiFi signal ranges: -30 dBm (excellent) to -90 dBm (very weak)
+  if (signal >= -50) return 4;  // Excellent
+  if (signal >= -60) return 3;  // Good
+  if (signal >= -70) return 2;  // Fair
+  if (signal >= -80) return 1;  // Weak
+  return 0;  // No signal or very weak
+};
+
+// Get WiFi status text
+const getWifiStatusText = (signal: number | null): string => {
+  if (signal === null) return 'No Signal';
+  if (signal >= -50) return 'Excellent';
+  if (signal >= -60) return 'Good';
+  if (signal >= -70) return 'Fair';
+  if (signal >= -80) return 'Weak';
+  return 'Very Weak';
+};
+
+const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoading }) => {
+  const wifiLevel = getWifiLevel(wifiSignal);
+  const wifiStatus = getWifiStatusText(wifiSignal);
+  
+  return (
+    <g transform={`translate(${x}, ${y})`} className="inverter-group">
+      {/* Inverter body */}
       <rect
-        x={-3}
-        y={-3}
-        width={106}
-        height={76}
-        rx={10}
-        className="inverter-glow"
+        x={0}
+        y={0}
+        width={100}
+        height={70}
+        rx={8}
+        className={`inverter-body ${isActive ? 'active' : ''}`}
       />
-    )}
-    
-    {/* Inverter icon/symbol */}
-    <text x={50} y={28} textAnchor="middle" className="inverter-icon">⚡</text>
-    <text x={50} y={50} textAnchor="middle" className="inverter-label">INVERTER</text>
-    
-    {/* Status LED */}
-    <circle cx={85} cy={12} r={5} className={`status-led ${isActive ? 'active' : ''}`} />
-  </g>
-);
+      
+      {/* Glow effect when active */}
+      {isActive && (
+        <rect
+          x={-3}
+          y={-3}
+          width={106}
+          height={76}
+          rx={10}
+          className="inverter-glow"
+        />
+      )}
+      
+      {/* Inverter icon/symbol */}
+      <text x={50} y={28} textAnchor="middle" className="inverter-icon">⚡</text>
+      <text x={50} y={50} textAnchor="middle" className="inverter-label">INVERTER</text>
+      
+      {/* Status LED */}
+      <circle cx={85} cy={12} r={5} className={`status-led ${isActive ? 'active' : ''}`} />
+      
+  {/* WiFi Signal Indicator - positioned at top left of inverter, smaller size */}
+  <g transform="translate(4, 10) scale(0.6)" className="wifi-indicator-group">
+        {/* WiFi icon background */}
+        <rect x={-4} y={-4} width={28} height={24} rx={4} className="wifi-bg" />
+        
+        {/* WiFi antenna/signal bars - modern arc style */}
+        <g className={`wifi-signal ${wifiLoading ? 'loading' : ''}`}>
+          {/* Base dot (always visible when connected) */}
+          <circle 
+            cx={10} 
+            cy={14} 
+            r={2.5} 
+            className={`wifi-dot ${wifiLevel >= 0 ? 'active' : ''}`}
+          />
+          
+          {/* Signal arcs - animate based on signal strength */}
+          <path 
+            d="M 4 10 A 8 8 0 0 1 16 10" 
+            fill="none" 
+            strokeWidth={2} 
+            strokeLinecap="round"
+            className={`wifi-arc wifi-arc-1 ${wifiLevel >= 1 ? 'active' : ''}`}
+          />
+          <path 
+            d="M 1 6 A 12 12 0 0 1 19 6" 
+            fill="none" 
+            strokeWidth={2} 
+            strokeLinecap="round"
+            className={`wifi-arc wifi-arc-2 ${wifiLevel >= 2 ? 'active' : ''}`}
+          />
+          <path 
+            d="M -2 2 A 16 16 0 0 1 22 2" 
+            fill="none" 
+            strokeWidth={2} 
+            strokeLinecap="round"
+            className={`wifi-arc wifi-arc-3 ${wifiLevel >= 3 ? 'active' : ''}`}
+          />
+          <path 
+            d="M -5 -2 A 20 20 0 0 1 25 -2" 
+            fill="none" 
+            strokeWidth={2} 
+            strokeLinecap="round"
+            className={`wifi-arc wifi-arc-4 ${wifiLevel >= 4 ? 'active' : ''}`}
+          />
+        </g>
+      </g>
+      
+      {/* WiFi signal value display - to the right of inverter, below the grid flow line */}
+      <g transform="translate(110, 55)">
+        <rect x={-5} y={-12} width={55} height={32} rx={4} className="wifi-value-bg" />
+        <text x={22} y={2} textAnchor="middle" className="wifi-value-text">
+          {wifiLoading ? '...' : wifiSignal !== null ? `${wifiSignal} dBm` : '--'}
+        </text>
+        <text x={22} y={15} textAnchor="middle" className="wifi-status-text">
+          {wifiLoading ? '' : wifiStatus}
+        </text>
+      </g>
+    </g>
+  );
+};
 
 // ============================================================================
 // Animated Flow Line Component
@@ -759,12 +877,16 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     const isBatteryRelayQuery = config.id === 'batMainRelay';
     // Use special query for BGCS Relay
     const isBgcsRelayQuery = config.id === 'bgcsRelay';
+    // Use special query for WiFi Signal (from TelemetryLive table)
+    const isWifiQuery = config.id === 'wifiSignal';
     
     let kql: string;
     if (isBatteryRelayQuery) {
       kql = buildBatteryRelayKql(serial);
     } else if (isBgcsRelayQuery) {
       kql = buildBgcsRelayKql(serial);
+    } else if (isWifiQuery) {
+      kql = buildWifiSignalKql(serial);
     } else {
       kql = buildInstantaneousKql(serial, config.telemetryName);
     }
@@ -788,7 +910,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           value = isNaN(parsed) ? null : parsed;
         }
       } else {
-        // Normal telemetry (including BGCS relay) uses 'value_double' field
+        // Normal telemetry (including BGCS relay and WiFi) uses 'value_double' field
         value = row?.value_double ?? null;
       }
       
@@ -958,6 +1080,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const anyBatteryActive = bat1Active || bat2Active || bat3Active;
   const anyBatteryCharging = bat1Charging || bat2Charging || bat3Charging;
   
+  // WiFi signal strength
+  const wifiSignal = telemetryData.wifiSignal?.value ?? null;
+  const wifiLoading = telemetryData.wifiSignal?.loading ?? true;
+  
   // Load values
   const loadValues = {
     voltageL1: telemetryData.loadVL1?.value ?? null,
@@ -987,7 +1113,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
             </svg>
           </div>
           <div>
-            <h3 className="header-title">Energy Flow Diagram</h3>
+            <h3 className="header-title">Flow Diagram</h3>
             <p className="header-subtitle">Live telemetry • Auto-refresh every 10s</p>
           </div>
         </div>
@@ -1163,7 +1289,13 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         />
         
         {/* Inverter - centered under solar panels */}
-        <Inverter x={155} y={165} isActive={anyProducing || gridIsActive || anyBatteryActive} />
+        <Inverter 
+          x={155} 
+          y={165} 
+          isActive={anyProducing || gridIsActive || anyBatteryActive}
+          wifiSignal={wifiSignal}
+          wifiLoading={wifiLoading}
+        />
         
         {/* ==================== BGCS RELAY SECTION (Grid Connection Safety) ==================== */}
         
