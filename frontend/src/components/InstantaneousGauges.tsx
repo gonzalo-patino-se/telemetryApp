@@ -251,7 +251,7 @@ const AnimatedGauge: React.FC<GaugeProps> = ({ config, data }) => {
             fontWeight: 700,
             fill: hasValue 
               ? (isRelayGauge 
-                  ? (value === 1 ? '#22c55e' : value === 0 ? '#f59e0b' : '#ef4444') 
+                  ? (value === 0 ? '#22c55e' : value === 1 ? '#f59e0b' : '#ef4444') 
                   : colorEnd) 
               : 'var(--text-tertiary)',
           }}

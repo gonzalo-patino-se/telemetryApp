@@ -379,7 +379,7 @@ export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDa
 /**
  * Build KQL query for Battery Relay Status
  * Uses Alarms table and projects 'value' as 'value_double' for chart compatibility
- * Value: 0 = Inactive, 1 = Active
+ * Value: 1 = Activated, 0 = Not Activated, -1 = Invalid
  */
 export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endDate: Date): string {
   const escapedSerial = escapeKqlString(serial);
