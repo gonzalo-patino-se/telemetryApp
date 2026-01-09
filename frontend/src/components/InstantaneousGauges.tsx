@@ -76,7 +76,12 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
   // Load (using normal telemetry for instantaneous - fast telemetry requires different query)
   { id: 'load_v_l1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
   { id: 'load_v_l2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
+  { id: 'load_i_l1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1N', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
+  { id: 'load_i_l2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2N', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
   { id: 'load_freq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', min: 55, max: 65, category: 'load', colorStart: '#06b6d4', colorEnd: '#22d3ee', decimals: 2 },
+  
+  // Battery Relay (uses Alarms table - value is 0=Inactive, 1=Active)
+  { id: 'bat_main_relay', label: 'Battery Relay', telemetryName: '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR', unit: '', min: 0, max: 1, category: 'battery', colorStart: '#22c55e', colorEnd: '#4ade80' },
 ];
 
 const QUERY_PATH = '/query_adx/';
@@ -99,6 +104,19 @@ function buildInstantaneousKql(serial: string, telemetryName: string): string {
     | where name contains '${telemetryName}'
     | top 1 by localtime desc
     | project localtime, value_double
+  `.trim();
+}
+
+// Special query for Battery Relay (uses Alarms table)
+function buildBatteryRelayKql(serial: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    Alarms
+    | where comms_serial contains s
+    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
+    | top 1 by localtime desc
+    | project localtime, value
   `.trim();
 }
 
@@ -140,7 +158,18 @@ const AnimatedGauge: React.FC<GaugeProps> = ({ config, data }) => {
   const circumference = radius * Math.PI * 1.5; // 270 degrees arc
   const offset = circumference - (percentage / 100) * circumference;
   
-  const displayValue = hasValue ? value.toFixed(decimals) : '--';
+  // Special handling for Battery Relay - show Activated/Not Activated/Invalid instead of 1/0/-1
+  const isRelayGauge = config.id === 'bat_main_relay';
+  const getRelayDisplayValue = (val: number) => {
+    if (val === 1) return 'Activated';
+    if (val === 0) return 'Not Activated';
+    return 'Invalid';
+  };
+  const displayValue = !hasValue 
+    ? '--' 
+    : isRelayGauge 
+      ? getRelayDisplayValue(value)
+      : value.toFixed(decimals);
   
   return (
     <div style={{
@@ -218,9 +247,13 @@ const AnimatedGauge: React.FC<GaugeProps> = ({ config, data }) => {
           textAnchor="middle"
           dominantBaseline="middle"
           style={{
-            fontSize: '22px',
+            fontSize: isRelayGauge ? '12px' : '22px',
             fontWeight: 700,
-            fill: hasValue ? colorEnd : 'var(--text-tertiary)',
+            fill: hasValue 
+              ? (isRelayGauge 
+                  ? (value === 1 ? '#22c55e' : value === 0 ? '#f59e0b' : '#ef4444') 
+                  : colorEnd) 
+              : 'var(--text-tertiary)',
           }}
         >
           {displayValue}
@@ -313,7 +346,11 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
 
   // Fetch single gauge data
   const fetchGaugeData = useCallback(async (config: GaugeConfig) => {
-    const kql = buildInstantaneousKql(serial, config.telemetryName);
+    // Use special query for Battery Relay (Alarms table)
+    const isRelayQuery = config.id === 'bat_main_relay';
+    const kql = isRelayQuery 
+      ? buildBatteryRelayKql(serial)
+      : buildInstantaneousKql(serial, config.telemetryName);
     
     try {
       const res = await api.post(
@@ -325,8 +362,21 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
       const row = dataArray[0];
       
+      // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
+      let value: number | null = null;
+      if (isRelayQuery) {
+        // Battery Relay uses 'value' field from Alarms table
+        if (row?.value !== undefined && row?.value !== null) {
+          const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
+          value = isNaN(parsed) ? null : parsed;
+        }
+      } else {
+        // Normal telemetry uses 'value_double' field
+        value = row?.value_double ?? null;
+      }
+      
       return {
-        value: row?.value_double ?? null,
+        value,
         localtime: row?.localtime ?? null,
         loading: false,
         error: null,

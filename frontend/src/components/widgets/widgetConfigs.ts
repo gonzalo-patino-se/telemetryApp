@@ -306,11 +306,11 @@ export const battery3CurrentConfig: WidgetConfig = {
 };
 
 // ============================================================================
-// Battery Main Relay Status Widget
+// Battery Relay Status Widget
 // ============================================================================
 
 export const batteryMainRelayConfig: WidgetConfig = {
-  label: 'Battery Main Relay Status',
+  label: 'Battery Relay Status',
   unit: '',
   colorScheme: 'orange',
   csvPrefix: 'battery_main_relay',

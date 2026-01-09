@@ -75,6 +75,9 @@ const BATTERY_CONFIGS: TelemetryConfig[] = [
   { id: 'bat3Temp', label: 'Bat 3 Temp', telemetryName: '/BMS/MODULE3/STAT/TEMP', unit: '°C', category: 'battery3', decimals: 1 },
   { id: 'bat3SoC', label: 'Bat 3 SoC', telemetryName: '/BMS/MODULE3/STAT/USER_SOC', unit: '%', category: 'battery3', decimals: 0 },
   { id: 'bat3I', label: 'Bat 3 I', telemetryName: '/BMS/MODULE3/STAT/I', unit: 'A', category: 'battery3', decimals: 2 },
+  
+  // Battery Relay Status (uses Alarms table - handled specially)
+  { id: 'batMainRelay', label: 'Battery Relay', telemetryName: '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR', unit: '', category: 'battery', decimals: 0 },
 ];
 
 // ============================================================================
@@ -84,6 +87,8 @@ const BATTERY_CONFIGS: TelemetryConfig[] = [
 const LOAD_CONFIGS: TelemetryConfig[] = [
   { id: 'loadVL1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N', unit: 'V', category: 'load', decimals: 1 },
   { id: 'loadVL2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N', unit: 'V', category: 'load', decimals: 1 },
+  { id: 'loadIL1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1N', unit: 'A', category: 'load', decimals: 2 },
+  { id: 'loadIL2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2N', unit: 'A', category: 'load', decimals: 2 },
   { id: 'loadFreq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', category: 'load', decimals: 2 },
 ];
 
@@ -110,6 +115,19 @@ function buildInstantaneousKql(serial: string, telemetryName: string): string {
     | where name contains '${telemetryName}'
     | top 1 by localtime desc
     | project localtime, value_double
+  `.trim();
+}
+
+// Special query for Battery Relay (uses Alarms table instead of Telemetry)
+function buildBatteryRelayKql(serial: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    Alarms
+    | where comms_serial contains s
+    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
+    | top 1 by localtime desc
+    | project localtime, value
   `.trim();
 }
 
@@ -602,13 +620,15 @@ interface LoadComponentProps {
   y: number;
   voltageL1: number | null;
   voltageL2: number | null;
+  currentL1: number | null;
+  currentL2: number | null;
   frequency: number | null;
   loading: boolean;
   isActive: boolean;
 }
 
 const LoadComponent: React.FC<LoadComponentProps> = ({
-  x, y, voltageL1, voltageL2, frequency, loading, isActive
+  x, y, voltageL1, voltageL2, currentL1, currentL2, frequency, loading, isActive
 }) => {
   const formatValue = (val: number | null, decimals: number = 1) =>
     val !== null ? val.toFixed(decimals) : '--';
@@ -649,7 +669,7 @@ const LoadComponent: React.FC<LoadComponentProps> = ({
       
       {/* Values panel - enlarged for better readability */}
       <g transform="translate(-10, 80)">
-        <rect x={0} y={0} width={120} height={95} rx={6} className="load-values-panel" />
+        <rect x={0} y={0} width={120} height={140} rx={6} className="load-values-panel" />
         
         {/* Status indicator */}
         <circle cx={108} cy={14} r={6} className={`load-status ${isActive ? 'active' : ''}`} />
@@ -661,17 +681,32 @@ const LoadComponent: React.FC<LoadComponentProps> = ({
         </text>
         
         {/* L2 Voltage */}
-        <text x={10} y={46} className="load-value-label-lg">V L2:</text>
-        <text x={55} y={46} className="load-value-text-lg">
+        <text x={10} y={44} className="load-value-label-lg">V L2:</text>
+        <text x={55} y={44} className="load-value-text-lg">
           {loading ? '...' : `${formatValue(voltageL2, 1)} V`}
         </text>
         
         {/* Divider */}
-        <line x1={10} y1={58} x2={110} y2={58} className="load-divider" />
+        <line x1={10} y1={54} x2={110} y2={54} className="load-divider" />
+        
+        {/* L1 Current */}
+        <text x={10} y={72} className="load-value-label-lg">I L1:</text>
+        <text x={55} y={72} className="load-value-text-lg">
+          {loading ? '...' : `${formatValue(currentL1, 2)} A`}
+        </text>
+        
+        {/* L2 Current */}
+        <text x={10} y={94} className="load-value-label-lg">I L2:</text>
+        <text x={55} y={94} className="load-value-text-lg">
+          {loading ? '...' : `${formatValue(currentL2, 2)} A`}
+        </text>
+        
+        {/* Divider */}
+        <line x1={10} y1={104} x2={110} y2={104} className="load-divider" />
         
         {/* Frequency */}
-        <text x={10} y={80} className="load-value-label-lg">Freq:</text>
-        <text x={55} y={80} className="load-value-text-lg load-freq">
+        <text x={10} y={125} className="load-value-label-lg">Freq:</text>
+        <text x={55} y={125} className="load-value-text-lg load-freq">
           {loading ? '...' : `${formatValue(frequency, 2)} Hz`}
         </text>
       </g>
@@ -694,7 +729,11 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
 
   // Fetch single telemetry value
   const fetchTelemetryData = useCallback(async (config: TelemetryConfig) => {
-    const kql = buildInstantaneousKql(serial, config.telemetryName);
+    // Use special query for Battery Relay (from Alarms table)
+    const isRelayQuery = config.id === 'batMainRelay';
+    const kql = isRelayQuery
+      ? buildBatteryRelayKql(serial)
+      : buildInstantaneousKql(serial, config.telemetryName);
     
     try {
       const res = await api.post(
@@ -706,8 +745,21 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
       const row = dataArray[0];
       
+      // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
+      let value: number | null = null;
+      if (isRelayQuery) {
+        // Battery Relay uses 'value' field from Alarms table
+        if (row?.value !== undefined && row?.value !== null) {
+          const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
+          value = isNaN(parsed) ? null : parsed;
+        }
+      } else {
+        // Normal telemetry uses 'value_double' field
+        value = row?.value_double ?? null;
+      }
+      
       return {
-        value: row?.value_double ?? null,
+        value,
         localtime: row?.localtime ?? null,
         loading: false,
         error: null,
@@ -819,6 +871,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     },
   };
   
+  // Battery Relay status (1 = Activated, 0 = Not Activated, -1 = Invalid)
+  const batteryRelayValue = telemetryData.batMainRelay?.value ?? null;
+  const batteryRelayStatus = batteryRelayValue !== null 
+    ? (batteryRelayValue === 1 ? 'Activated' : batteryRelayValue === 0 ? 'Not Activated' : 'Invalid') 
+    : '--';
+  const batteryRelayActive = batteryRelayValue === 1;
+  const batteryRelayLedClass = batteryRelayValue === 1 ? 'active' : batteryRelayValue === 0 ? 'inactive' : 'invalid';
+  
   // Battery status - active if voltage > 40V, charging if current > 0
   const bat1Active = (batteryValues.bat1.voltage ?? 0) > 40;
   const bat2Active = (batteryValues.bat2.voltage ?? 0) > 40;
@@ -833,6 +893,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const loadValues = {
     voltageL1: telemetryData.loadVL1?.value ?? null,
     voltageL2: telemetryData.loadVL2?.value ?? null,
+    currentL1: telemetryData.loadIL1?.value ?? null,
+    currentL2: telemetryData.loadIL2?.value ?? null,
     frequency: telemetryData.loadFreq?.value ?? null,
   };
   
@@ -1113,13 +1175,68 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           <line x1={295} y1={345} x2={295} y2={355} className="bus-connector" />
         </g>
         
-        {/* Flow line from battery bus to inverter - vertical connection */}
+        {/* Flow line from battery bus to relay */}
         <HorizontalFlowLine
           startX={205}
           startY={345}
           endX={205}
-          endY={235}
+          endY={310}
           isActive={anyBatteryActive}
+          color="#f59e0b"
+          flowDirection={anyBatteryCharging ? 'left' : 'right'}
+        />
+        
+        {/* Battery Relay - positioned on the battery-to-inverter connection */}
+        <g transform="translate(205, 290)" className="battery-relay-group">
+          {/* Relay body - rectangular housing */}
+          <rect 
+            x={-30} y={-18} 
+            width={60} height={36} 
+            rx={4} 
+            className={`battery-relay-body ${batteryRelayActive ? 'active' : 'inactive'}`}
+          />
+          
+          {/* Relay coil symbol (left side) */}
+          <g className="relay-coil">
+            <rect x={-24} y={-10} width={16} height={20} rx={2} className="relay-coil-body" />
+            {/* Coil windings */}
+            <line x1={-22} y1={-6} x2={-10} y2={-6} className="relay-winding" />
+            <line x1={-22} y1={-2} x2={-10} y2={-2} className="relay-winding" />
+            <line x1={-22} y1={2} x2={-10} y2={2} className="relay-winding" />
+            <line x1={-22} y1={6} x2={-10} y2={6} className="relay-winding" />
+          </g>
+          
+          {/* Relay contact symbol (right side) */}
+          <g className="relay-contact">
+            {/* Contact terminals */}
+            <circle cx={10} cy={-8} r={3} className="relay-terminal" />
+            <circle cx={10} cy={8} r={3} className="relay-terminal" />
+            {/* Contact arm - angled when inactive, straight when active */}
+            <line 
+              x1={10} y1={-5} 
+              x2={batteryRelayActive ? 10 : 18} 
+              y2={batteryRelayActive ? 5 : -2} 
+              className={`relay-arm ${batteryRelayActive ? 'closed' : 'open'}`}
+            />
+            {/* Common terminal */}
+            <circle cx={10} cy={8} r={2} className="relay-common" />
+          </g>
+          
+          {/* Status indicator LED */}
+          <circle cx={22} cy={-12} r={4} className={`relay-led ${batteryRelayLedClass}`} />
+          
+          {/* Label */}
+          <text x={0} y={30} textAnchor="middle" className="battery-relay-label">Battery Relay</text>
+          <text x={0} y={44} textAnchor="middle" className="battery-relay-status">{batteryRelayStatus}</text>
+        </g>
+        
+        {/* Flow line from relay to inverter */}
+        <HorizontalFlowLine
+          startX={205}
+          startY={270}
+          endX={205}
+          endY={235}
+          isActive={anyBatteryActive && batteryRelayActive}
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
         />
@@ -1132,6 +1249,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           y={170}
           voltageL1={loadValues.voltageL1}
           voltageL2={loadValues.voltageL2}
+          currentL1={loadValues.currentL1}
+          currentL2={loadValues.currentL2}
           frequency={loadValues.frequency}
           loading={telemetryData.loadVL1?.loading ?? true}
           isActive={loadIsActive}

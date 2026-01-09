@@ -373,12 +373,13 @@ export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDa
 }
 
 // ============================================================================
-// Battery Main Relay Status Widget (Alarms table)
+// Battery Relay Status Widget (Alarms table)
 // ============================================================================
 
 /**
- * Build KQL query for Battery Main Relay Status
+ * Build KQL query for Battery Relay Status
  * Uses Alarms table and projects 'value' as 'value_double' for chart compatibility
+ * Value: 0 = Inactive, 1 = Active
  */
 export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endDate: Date): string {
   const escapedSerial = escapeKqlString(serial);
@@ -391,7 +392,7 @@ export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endD
     let finish = datetime(${endLocal});
     Alarms
     | where comms_serial contains s
-    | where name contains 'MAIN_RELAY_STATUS'
+    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
     | where localtime between (start .. finish)
     | project localtime, value_double = value
     | order by localtime asc
