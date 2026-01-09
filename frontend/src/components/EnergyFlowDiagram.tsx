@@ -77,8 +77,18 @@ const BATTERY_CONFIGS: TelemetryConfig[] = [
   { id: 'bat3I', label: 'Bat 3 I', telemetryName: '/BMS/MODULE3/STAT/I', unit: 'A', category: 'battery3', decimals: 2 },
 ];
 
+// ============================================================================
+// Load Configurations
+// ============================================================================
+
+const LOAD_CONFIGS: TelemetryConfig[] = [
+  { id: 'loadVL1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N', unit: 'V', category: 'load', decimals: 1 },
+  { id: 'loadVL2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N', unit: 'V', category: 'load', decimals: 1 },
+  { id: 'loadFreq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', category: 'load', decimals: 2 },
+];
+
 // Combined configs for fetching
-const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS];
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS];
 
 const QUERY_PATH = '/query_adx/';
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -151,20 +161,20 @@ const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, value, unit, loadi
       )}
       
       {/* Label */}
-      <text x={40} y={-8} textAnchor="middle" className="panel-label">
+      <text x={40} y={-10} textAnchor="middle" className="panel-label-lg">
         {label}
       </text>
       
-      {/* Value display */}
+      {/* Value display - enlarged */}
       <rect
-        x={15}
+        x={10}
         y={55}
-        width={50}
-        height={22}
+        width={60}
+        height={26}
         rx={4}
         className="value-badge"
       />
-      <text x={40} y={70} textAnchor="middle" className="value-text">
+      <text x={40} y={73} textAnchor="middle" className="value-text-lg">
         {loading ? '...' : `${displayValue}${unit}`}
       </text>
       
@@ -420,46 +430,46 @@ const GridComponent: React.FC<GridComponentProps> = ({
       )}
       
       {/* Label */}
-      <text x={50} y={-15} textAnchor="middle" className="grid-label">GRID</text>
+      <text x={50} y={-15} textAnchor="middle" className="grid-label-lg">GRID</text>
       
-      {/* Values panel - expanded to show all 5 values */}
-      <g transform="translate(-10, 75)">
-        <rect x={0} y={0} width={120} height={95} rx={6} className="grid-values-panel" />
+      {/* Values panel - expanded with larger text */}
+      <g transform="translate(-15, 75)">
+        <rect x={0} y={0} width={130} height={110} rx={6} className="grid-values-panel" />
         
         {/* Status indicator */}
-        <circle cx={105} cy={12} r={5} className={`grid-status ${isActive ? 'active' : ''}`} />
+        <circle cx={115} cy={14} r={6} className={`grid-status ${isActive ? 'active' : ''}`} />
         
         {/* L1 Section */}
-        <text x={10} y={16} className="grid-section-label">L1</text>
-        <text x={35} y={16} className="grid-value-label">V:</text>
-        <text x={50} y={16} className="grid-value-text">
-          {loading ? '...' : `${formatValue(voltageL1, 1)}V`}
+        <text x={10} y={20} className="grid-section-label-lg">L1</text>
+        <text x={40} y={20} className="grid-value-label-lg">V:</text>
+        <text x={58} y={20} className="grid-value-text-lg">
+          {loading ? '...' : `${formatValue(voltageL1, 1)} V`}
         </text>
-        <text x={35} y={30} className="grid-value-label">I:</text>
-        <text x={50} y={30} className="grid-value-text">
-          {loading ? '...' : `${formatValue(currentL1, 2)}A`}
+        <text x={40} y={38} className="grid-value-label-lg">I:</text>
+        <text x={58} y={38} className="grid-value-text-lg">
+          {loading ? '...' : `${formatValue(currentL1, 2)} A`}
         </text>
         
         {/* Divider */}
-        <line x1={10} y1={38} x2={110} y2={38} className="grid-divider" />
+        <line x1={10} y1={48} x2={120} y2={48} className="grid-divider" />
         
         {/* L2 Section */}
-        <text x={10} y={52} className="grid-section-label">L2</text>
-        <text x={35} y={52} className="grid-value-label">V:</text>
-        <text x={50} y={52} className="grid-value-text">
-          {loading ? '...' : `${formatValue(voltageL2, 1)}V`}
+        <text x={10} y={66} className="grid-section-label-lg">L2</text>
+        <text x={40} y={66} className="grid-value-label-lg">V:</text>
+        <text x={58} y={66} className="grid-value-text-lg">
+          {loading ? '...' : `${formatValue(voltageL2, 1)} V`}
         </text>
-        <text x={35} y={66} className="grid-value-label">I:</text>
-        <text x={50} y={66} className="grid-value-text">
-          {loading ? '...' : `${formatValue(currentL2, 2)}A`}
+        <text x={40} y={84} className="grid-value-label-lg">I:</text>
+        <text x={58} y={84} className="grid-value-text-lg">
+          {loading ? '...' : `${formatValue(currentL2, 2)} A`}
         </text>
         
         {/* Divider */}
-        <line x1={10} y1={74} x2={110} y2={74} className="grid-divider" />
+        <line x1={10} y1={94} x2={120} y2={94} className="grid-divider" />
         
         {/* Frequency */}
-        <text x={10} y={88} className="grid-value-label">Freq:</text>
-        <text x={45} y={88} className="grid-value-text grid-freq">
+        <text x={10} y={108} className="grid-value-label-lg">Freq:</text>
+        <text x={55} y={108} className="grid-value-text-lg grid-freq">
           {loading ? '...' : `${formatValue(frequency, 2)} Hz`}
         </text>
       </g>
@@ -548,35 +558,121 @@ const BatteryModule: React.FC<BatteryModuleProps> = ({
       </g>
       
       {/* Module label */}
-      <text x={35} y={-8} textAnchor="middle" className="battery-label">
+      <text x={35} y={-10} textAnchor="middle" className="battery-label-lg">
         BAT {moduleNumber}
       </text>
       
-      {/* Values panel */}
-      <g transform="translate(-5, 65)">
-        <rect x={0} y={0} width={80} height={62} rx={4} className="battery-values-panel" />
+      {/* Values panel - enlarged */}
+      <g transform="translate(-10, 65)">
+        <rect x={0} y={0} width={90} height={75} rx={4} className="battery-values-panel" />
         
         {/* SoC - prominent display */}
-        <text x={40} y={16} textAnchor="middle" className="battery-soc-value" fill={getBatteryColor()}>
+        <text x={45} y={20} textAnchor="middle" className="battery-soc-value-lg" fill={getBatteryColor()}>
           {loading ? '...' : `${formatValue(soc, 0)}%`}
         </text>
         
         {/* Voltage */}
-        <text x={8} y={32} className="battery-value-label">V:</text>
-        <text x={22} y={32} className="battery-value-text">
-          {loading ? '...' : `${formatValue(voltage, 1)}V`}
+        <text x={10} y={40} className="battery-value-label-lg">V:</text>
+        <text x={28} y={40} className="battery-value-text-lg">
+          {loading ? '...' : `${formatValue(voltage, 1)} V`}
         </text>
         
         {/* Current */}
-        <text x={8} y={44} className="battery-value-label">I:</text>
-        <text x={22} y={44} className={`battery-value-text ${isCharging ? 'charging' : 'discharging'}`}>
-          {loading ? '...' : `${formatValue(current, 2)}A`}
+        <text x={10} y={55} className="battery-value-label-lg">I:</text>
+        <text x={28} y={55} className={`battery-value-text-lg ${isCharging ? 'charging' : 'discharging'}`}>
+          {loading ? '...' : `${formatValue(current, 2)} A`}
         </text>
         
         {/* Temperature */}
-        <text x={8} y={56} className="battery-value-label">T:</text>
-        <text x={22} y={56} className="battery-value-text">
+        <text x={10} y={70} className="battery-value-label-lg">T:</text>
+        <text x={28} y={70} className="battery-value-text-lg">
           {loading ? '...' : `${formatValue(temperature, 1)}°C`}
+        </text>
+      </g>
+    </g>
+  );
+};
+
+// ============================================================================
+// Load Component SVG
+// ============================================================================
+
+interface LoadComponentProps {
+  x: number;
+  y: number;
+  voltageL1: number | null;
+  voltageL2: number | null;
+  frequency: number | null;
+  loading: boolean;
+  isActive: boolean;
+}
+
+const LoadComponent: React.FC<LoadComponentProps> = ({
+  x, y, voltageL1, voltageL2, frequency, loading, isActive
+}) => {
+  const formatValue = (val: number | null, decimals: number = 1) =>
+    val !== null ? val.toFixed(decimals) : '--';
+
+  return (
+    <g transform={`translate(${x}, ${y})`} className="load-component-group">
+      {/* House icon */}
+      <g className={`load-house ${isActive ? 'active' : ''}`}>
+        {/* Roof */}
+        <path
+          d="M 50 5 L 10 40 L 20 40 L 20 75 L 80 75 L 80 40 L 90 40 Z"
+          className="load-house-body"
+        />
+        {/* Door */}
+        <rect x={40} y={50} width={20} height={25} rx={2} className="load-door" />
+        {/* Window left */}
+        <rect x={25} y={45} width={12} height={12} rx={1} className="load-window" />
+        {/* Window right */}
+        <rect x={63} y={45} width={12} height={12} rx={1} className="load-window" />
+        {/* Chimney */}
+        <rect x={70} y={15} width={8} height={20} className="load-chimney" />
+      </g>
+      
+      {/* Glow effect when active */}
+      {isActive && (
+        <rect
+          x={5}
+          y={0}
+          width={90}
+          height={80}
+          rx={8}
+          className="load-glow"
+        />
+      )}
+      
+      {/* Label */}
+      <text x={50} y={-8} textAnchor="middle" className="load-label">LOAD</text>
+      
+      {/* Values panel - enlarged for better readability */}
+      <g transform="translate(-10, 80)">
+        <rect x={0} y={0} width={120} height={95} rx={6} className="load-values-panel" />
+        
+        {/* Status indicator */}
+        <circle cx={108} cy={14} r={6} className={`load-status ${isActive ? 'active' : ''}`} />
+        
+        {/* L1 Voltage */}
+        <text x={10} y={22} className="load-value-label-lg">V L1:</text>
+        <text x={55} y={22} className="load-value-text-lg">
+          {loading ? '...' : `${formatValue(voltageL1, 1)} V`}
+        </text>
+        
+        {/* L2 Voltage */}
+        <text x={10} y={46} className="load-value-label-lg">V L2:</text>
+        <text x={55} y={46} className="load-value-text-lg">
+          {loading ? '...' : `${formatValue(voltageL2, 1)} V`}
+        </text>
+        
+        {/* Divider */}
+        <line x1={10} y1={58} x2={110} y2={58} className="load-divider" />
+        
+        {/* Frequency */}
+        <text x={10} y={80} className="load-value-label-lg">Freq:</text>
+        <text x={55} y={80} className="load-value-text-lg load-freq">
+          {loading ? '...' : `${formatValue(frequency, 2)} Hz`}
         </text>
       </g>
     </g>
@@ -733,6 +829,16 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const anyBatteryActive = bat1Active || bat2Active || bat3Active;
   const anyBatteryCharging = bat1Charging || bat2Charging || bat3Charging;
   
+  // Load values
+  const loadValues = {
+    voltageL1: telemetryData.loadVL1?.value ?? null,
+    voltageL2: telemetryData.loadVL2?.value ?? null,
+    frequency: telemetryData.loadFreq?.value ?? null,
+  };
+  
+  // Load is active if we have voltage readings
+  const loadIsActive = (loadValues.voltageL1 ?? 0) > 100 || (loadValues.voltageL2 ?? 0) > 100;
+  
   // Grid is active if we have voltage readings
   const gridIsActive = (gridValues.voltageL1 ?? 0) > 100 || (gridValues.voltageL2 ?? 0) > 100;
   
@@ -802,7 +908,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       )}
       
       {/* SVG Diagram */}
-      <svg viewBox="0 0 700 520" className="energy-flow-svg">
+      <svg viewBox="-60 0 760 540" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">
@@ -838,6 +944,18 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           <linearGradient id="grid-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#166534"/>
             <stop offset="100%" stopColor="#14532d"/>
+          </linearGradient>
+          
+          {/* Gradient for load (house) */}
+          <linearGradient id="load-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#9d174d"/>
+            <stop offset="100%" stopColor="#831843"/>
+          </linearGradient>
+          
+          {/* Gradient for load (house) active state */}
+          <linearGradient id="load-gradient-active" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#db2777"/>
+            <stop offset="100%" stopColor="#be185d"/>
           </linearGradient>
         </defs>
         
@@ -1005,6 +1123,32 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
         />
+        
+        {/* ==================== LOAD SECTION ==================== */}
+        
+        {/* Load Component - positioned to the left of inverter */}
+        <LoadComponent
+          x={-50}
+          y={170}
+          voltageL1={loadValues.voltageL1}
+          voltageL2={loadValues.voltageL2}
+          frequency={loadValues.frequency}
+          loading={telemetryData.loadVL1?.loading ?? true}
+          isActive={loadIsActive}
+        />
+        
+        {/* Flow line from inverter to load - horizontal to the left */}
+        <g className="load-connection">
+          <HorizontalFlowLine
+            startX={155}
+            startY={200}
+            endX={50}
+            endY={200}
+            isActive={loadIsActive}
+            color="#ec4899"
+            flowDirection="left"
+          />
+        </g>
       </svg>
       
       {/* Legend */}
@@ -1036,6 +1180,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         <div className="legend-item">
           <div className="legend-line battery" />
           <span>Battery Flow</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-dot load-active" />
+          <span>Load Active</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-line load" />
+          <span>Load Flow</span>
         </div>
       </div>
     </div>
