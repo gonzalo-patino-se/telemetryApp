@@ -409,48 +409,104 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   // UI
   return (
     <>
-      {/* Date range selectors */}
-      <div className="flex flex-wrap items-end gap-3 mb-3">
-        <div className="flex flex-col">
-          <span className="text-xs text-text-tertiary mb-1">From (local)</span>
+      {/* Date range selectors - Modern compact design */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '16px',
+        padding: '12px',
+        background: 'rgba(15, 23, 42, 0.4)',
+        borderRadius: '10px',
+        border: '1px solid rgba(148, 163, 184, 0.1)',
+      }}>
+        {/* From Date */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ 
+            fontSize: '10px', 
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: '#64748b' 
+          }}>From</span>
           <DatePicker
             selected={fromDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
-            placeholderText="Start date & time"
-            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+            placeholderText="Start"
+            className="modern-datepicker"
             showTimeSelect
             timeIntervals={15}
-            dateFormat="yyyy-MM-dd HH:mm"
+            dateFormat="MMM d, HH:mm"
             isClearable={false}
             portalId="root"
           />
         </div>
 
-        <div className="flex flex-col">
-          <span className="text-xs text-text-tertiary mb-1">To (local)</span>
+        {/* Arrow separator */}
+        <span style={{ color: '#64748b', fontSize: '14px', marginTop: '16px' }}>→</span>
+
+        {/* To Date */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ 
+            fontSize: '10px', 
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: '#64748b' 
+          }}>To</span>
           <DatePicker
             selected={toDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
-            placeholderText="End date & time"
-            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+            placeholderText="End"
+            className="modern-datepicker"
             showTimeSelect
             timeIntervals={15}
-            dateFormat="yyyy-MM-dd HH:mm"
+            dateFormat="MMM d, HH:mm"
             isClearable={false}
             minDate={fromDT ?? undefined}
             portalId="root"
           />
         </div>
 
-        {/* Quick presets */}
-        <div className="flex items-center gap-2">
+        {/* Divider */}
+        <div style={{ 
+          width: '1px', 
+          height: '32px', 
+          background: 'rgba(148, 163, 184, 0.2)',
+          marginLeft: '4px',
+          marginRight: '4px',
+        }} />
+
+        {/* Quick presets - Pill buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {[6, 24, 24 * 7].map((hours) => {
-            const presetLabel = hours < 24 ? `Last ${hours}h` : hours === 24 ? 'Last 24h' : `Last ${hours / 24}d`;
+            const presetLabel = hours < 24 ? `${hours}h` : hours === 24 ? '24h' : '7d';
             return (
               <button
                 key={hours}
                 type="button"
-                className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '16px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                  e.currentTarget.style.color = '#e2e8f0';
+                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                  e.currentTarget.style.color = '#94a3b8';
+                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.2)';
+                }}
                 onClick={() => {
                   const { start, end } = getLastHours(hours);
                   setRange({ fromDT: start, toDT: end });
@@ -462,25 +518,57 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           })}
         </div>
 
-        {/* Telemetry Mode Toggle - Only shown when fast telemetry is supported */}
+        {/* Telemetry Mode Toggle - Modern segmented control */}
         {supportsFastTelemetry && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-tertiary">Mode:</span>
-            <div className="flex items-center bg-bg-primary rounded-lg p-0.5 border border-border-default">
+          <>
+            <div style={{ 
+              width: '1px', 
+              height: '32px', 
+              background: 'rgba(148, 163, 184, 0.2)',
+              marginLeft: '4px',
+              marginRight: '4px',
+            }} />
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              padding: '4px',
+              background: 'rgba(15, 23, 42, 0.6)',
+              borderRadius: '20px',
+              border: '1px solid rgba(148, 163, 184, 0.15)',
+            }}>
               <button
                 type="button"
                 onClick={() => {
                   onTelemetryModeChange?.('normal');
                   if (telemetryModeProp === undefined) setTelemetryModeInternal('normal');
                 }}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  telemetryMode === 'normal'
-                    ? 'bg-accent-primary text-white'
-                    : 'text-text-secondary hover:text-text-primary'
-                }`}
+                style={{
+                  padding: '5px 14px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  background: telemetryMode === 'normal' 
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' 
+                    : 'transparent',
+                  color: telemetryMode === 'normal' ? '#ffffff' : '#64748b',
+                  boxShadow: telemetryMode === 'normal' 
+                    ? '0 2px 8px rgba(59, 130, 246, 0.3)' 
+                    : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
                 title="Normal Telemetry - sampled every 15 minutes"
               >
-                Normal
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                15min
               </button>
               <button
                 type="button"
@@ -488,23 +576,52 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                   onTelemetryModeChange?.('fast');
                   if (telemetryModeProp === undefined) setTelemetryModeInternal('fast');
                 }}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-                  telemetryMode === 'fast'
-                    ? 'bg-orange-500 text-white'
-                    : 'text-text-secondary hover:text-text-primary'
-                }`}
+                style={{
+                  padding: '5px 14px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  background: telemetryMode === 'fast' 
+                    ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' 
+                    : 'transparent',
+                  color: telemetryMode === 'fast' ? '#ffffff' : '#64748b',
+                  boxShadow: telemetryMode === 'fast' 
+                    ? '0 2px 8px rgba(249, 115, 22, 0.3)' 
+                    : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
                 title="Fast Telemetry - sampled every 15 seconds"
               >
-                Fast ⚡
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                15sec
               </button>
             </div>
-          </div>
+          </>
         )}
 
-        {/* Fetch controls */}
+        {/* Fetch controls - right aligned */}
         {showControls && (
-          <div className="flex items-center gap-2 ml-auto">
-            <label className="text-xs text-text-secondary flex items-center gap-1.5 cursor-pointer">
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            marginLeft: 'auto' 
+          }}>
+            <label style={{ 
+              fontSize: '11px', 
+              color: '#94a3b8', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              cursor: 'pointer' 
+            }}>
               <input
                 type="checkbox"
                 checked={autoFetch}
@@ -512,20 +629,36 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                   onAutoFetchChange?.(e.target.checked);
                   if (autoFetchProp === undefined) setAutoFetchInternal(e.target.checked);
                 }}
-                className="w-3.5 h-3.5 rounded border-border-default bg-bg-input accent-accent-primary"
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  accentColor: '#3b82f6',
+                  cursor: 'pointer',
+                }}
               />
-              Auto‑fetch on change
+              Auto
             </label>
             <button
               onClick={fetchData}
               disabled={!canFetch || loading}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                canFetch && !loading 
-                  ? 'bg-accent-primary text-white hover:bg-accent-hover' 
-                  : 'bg-bg-input text-text-tertiary cursor-not-allowed'
-              }`}
+              style={{
+                padding: '6px 16px',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '18px',
+                border: 'none',
+                cursor: canFetch && !loading ? 'pointer' : 'not-allowed',
+                transition: 'all 0.2s ease',
+                background: canFetch && !loading 
+                  ? 'linear-gradient(135deg, #3dcd58 0%, #22c55e 100%)' 
+                  : 'rgba(100, 116, 139, 0.2)',
+                color: canFetch && !loading ? '#ffffff' : '#64748b',
+                boxShadow: canFetch && !loading 
+                  ? '0 2px 8px rgba(61, 205, 88, 0.3)' 
+                  : 'none',
+              }}
             >
-              {loading ? 'Fetching…' : 'Fetch'}
+              {loading ? '⏳' : '↻ Fetch'}
             </button>
           </div>
         )}
@@ -538,12 +671,24 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
             Selected (local): <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(fromDT)}</code> →{' '}
             <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(toDT)}</code>
             {supportsFastTelemetry && (
-              <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
-                telemetryMode === 'fast' 
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-              }`}>
-                {telemetryMode === 'fast' ? '⚡ 15s sampling' : '📊 15min sampling'}
+              <span 
+                className={`ml-2 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide inline-flex items-center gap-1 ${
+                  telemetryMode === 'fast' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
+                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                }`}
+              >
+                {telemetryMode === 'fast' ? (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                ) : (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                )}
+                {telemetryMode === 'fast' ? '15s sampling' : '15min sampling'}
               </span>
             )}
           </>
