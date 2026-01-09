@@ -696,6 +696,15 @@ a:hover {
   letter-spacing: 0.5px;
 }
 
+/* Larger panel label */
+.panel-label-lg {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .value-badge {
   fill: var(--bg-primary);
   stroke: var(--border-medium);
@@ -704,6 +713,14 @@ a:hover {
 
 .value-text {
   font-size: 11px;
+  font-weight: 700;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* Larger value text for solar panels */
+.value-text-lg {
+  font-size: 14px;
   font-weight: 700;
   fill: var(--text-primary);
   font-family: 'SF Mono', 'Monaco', monospace;
@@ -874,6 +891,15 @@ a:hover {
   letter-spacing: 1px;
 }
 
+/* Larger grid label */
+.grid-label-lg {
+  font-size: 16px;
+  font-weight: 700;
+  fill: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .grid-values-panel {
   fill: var(--bg-primary);
   stroke: var(--border-medium);
@@ -893,6 +919,25 @@ a:hover {
   font-family: 'SF Mono', 'Monaco', monospace;
 }
 
+/* Larger grid value styles */
+.grid-value-label-lg {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--text-tertiary);
+}
+
+.grid-value-text-lg {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.grid-value-text-lg.grid-freq {
+  fill: #22c55e;
+  font-weight: 700;
+}
+
 .grid-value-text.grid-freq {
   fill: #22c55e;
   font-weight: 700;
@@ -900,6 +945,13 @@ a:hover {
 
 .grid-section-label {
   font-size: 11px;
+  font-weight: 700;
+  fill: #22c55e;
+}
+
+/* Larger grid section label */
+.grid-section-label-lg {
+  font-size: 14px;
   font-weight: 700;
   fill: #22c55e;
 }
@@ -1080,6 +1132,15 @@ a:hover {
   letter-spacing: 0.5px;
 }
 
+/* Larger battery label */
+.battery-label-lg {
+  font-size: 14px;
+  font-weight: 700;
+  fill: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .battery-values-panel {
   fill: var(--bg-primary);
   stroke: var(--border-medium);
@@ -1092,8 +1153,22 @@ a:hover {
   font-family: 'SF Mono', 'Monaco', monospace;
 }
 
+/* Larger battery SoC value */
+.battery-soc-value-lg {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
 .battery-value-label {
   font-size: 9px;
+  font-weight: 600;
+  fill: var(--text-tertiary);
+}
+
+/* Larger battery value label */
+.battery-value-label-lg {
+  font-size: 12px;
   font-weight: 600;
   fill: var(--text-tertiary);
 }
@@ -1103,6 +1178,22 @@ a:hover {
   font-weight: 600;
   fill: var(--text-primary);
   font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* Larger battery value text */
+.battery-value-text-lg {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.battery-value-text-lg.charging {
+  fill: #22c55e;
+}
+
+.battery-value-text-lg.discharging {
+  fill: #f59e0b;
 }
 
 .battery-value-text.charging {
@@ -1135,4 +1226,143 @@ a:hover {
 
 .legend-line.battery {
   background: #f59e0b;
+}
+
+/* ============================================================================
+   LOAD COMPONENT STYLES
+   ============================================================================ */
+
+.load-component-group {
+  transition: all 0.3s ease;
+}
+
+.load-house-body {
+  fill: url(#load-gradient);
+  stroke: #db2777;
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.load-house.active .load-house-body {
+  fill: url(#load-gradient-active);
+  stroke: #ec4899;
+  filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.5));
+}
+
+.load-door {
+  fill: #7c3aed;
+  stroke: #a855f7;
+  stroke-width: 1;
+}
+
+.load-window {
+  fill: #fef3c7;
+  stroke: #fbbf24;
+  stroke-width: 1;
+}
+
+.load-house.active .load-window {
+  fill: #fef08a;
+  animation: window-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes window-glow {
+  0%, 100% { opacity: 0.8; fill: #fef08a; }
+  50% { opacity: 1; fill: #fde047; }
+}
+
+.load-chimney {
+  fill: #78716c;
+  stroke: #a8a29e;
+  stroke-width: 1;
+}
+
+.load-glow {
+  fill: none;
+  stroke: #ec4899;
+  stroke-width: 2;
+  opacity: 0.5;
+  animation: load-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes load-glow-pulse {
+  0%, 100% { opacity: 0.3; stroke-width: 2; }
+  50% { opacity: 0.6; stroke-width: 3; }
+}
+
+.load-label {
+  font-size: 16px;
+  font-weight: 700;
+  fill: #ec4899;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.load-values-panel {
+  fill: var(--bg-secondary);
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+
+.load-value-label {
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--text-secondary);
+}
+
+.load-value-text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* Larger text styles for Load component */
+.load-value-label-lg {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+}
+
+.load-value-text-lg {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.load-value-text-lg.load-freq {
+  fill: #22d3ee;
+}
+
+.load-value-text.load-freq {
+  fill: #22d3ee;
+}
+
+.load-divider {
+  stroke: var(--border-color);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.load-status {
+  fill: #6b7280;
+  transition: all 0.3s ease;
+}
+
+.load-status.active {
+  fill: #ec4899;
+  filter: drop-shadow(0 0 4px #ec4899);
+  animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+/* Legend additions for load */
+.legend-dot.load-active {
+  background: #ec4899;
+  box-shadow: 0 0 6px #ec4899;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.legend-line.load {
+  background: #ec4899;
 }
