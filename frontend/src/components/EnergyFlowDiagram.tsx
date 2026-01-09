@@ -871,12 +871,15 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     },
   };
   
-  // Battery Relay status (1 = Activated, 0 = Not Activated, -1 = Invalid)
+  // Battery Relay status (1 = Activated/Error, 0 = Not Activated/Normal/Closed, -1 = Invalid)
+  // "Not Activated" means relay is closed and power can flow
+  // "Activated" means there's an alarm/error condition
   const batteryRelayValue = telemetryData.batMainRelay?.value ?? null;
   const batteryRelayStatus = batteryRelayValue !== null 
     ? (batteryRelayValue === 1 ? 'Activated' : batteryRelayValue === 0 ? 'Not Activated' : 'Invalid') 
     : '--';
-  const batteryRelayActive = batteryRelayValue === 1;
+  const batteryRelayActive = batteryRelayValue === 1;  // Alarm is active
+  const batteryRelayClosed = batteryRelayValue === 0;  // Relay is closed, power can flow
   const batteryRelayLedClass = batteryRelayValue === 1 ? 'active' : batteryRelayValue === 0 ? 'inactive' : 'invalid';
   
   // Battery status - active if voltage > 40V, charging if current > 0
@@ -970,7 +973,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       )}
       
       {/* SVG Diagram */}
-      <svg viewBox="-60 0 760 540" className="energy-flow-svg">
+      <svg viewBox="-60 0 760 620" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">
@@ -1125,7 +1128,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Battery 1 */}
         <BatteryModule
           x={80}
-          y={350}
+          y={430}
           moduleNumber={1}
           voltage={batteryValues.bat1.voltage}
           temperature={batteryValues.bat1.temperature}
@@ -1139,7 +1142,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Battery 2 */}
         <BatteryModule
           x={170}
-          y={350}
+          y={430}
           moduleNumber={2}
           voltage={batteryValues.bat2.voltage}
           temperature={batteryValues.bat2.temperature}
@@ -1153,7 +1156,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Battery 3 */}
         <BatteryModule
           x={260}
-          y={350}
+          y={430}
           moduleNumber={3}
           voltage={batteryValues.bat3.voltage}
           temperature={batteryValues.bat3.temperature}
@@ -1167,27 +1170,27 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Battery to Inverter connection - parallel bus bar */}
         <g className="battery-bus">
           {/* Horizontal bus bar connecting all batteries */}
-          <line x1={115} y1={345} x2={295} y2={345} className="bus-bar" />
+          <line x1={115} y1={425} x2={295} y2={425} className="bus-bar" />
           
           {/* Vertical connections from each battery to bus */}
-          <line x1={115} y1={345} x2={115} y2={355} className="bus-connector" />
-          <line x1={205} y1={345} x2={205} y2={355} className="bus-connector" />
-          <line x1={295} y1={345} x2={295} y2={355} className="bus-connector" />
+          <line x1={115} y1={425} x2={115} y2={435} className="bus-connector" />
+          <line x1={205} y1={425} x2={205} y2={435} className="bus-connector" />
+          <line x1={295} y1={425} x2={295} y2={435} className="bus-connector" />
         </g>
         
         {/* Flow line from battery bus to relay */}
         <HorizontalFlowLine
           startX={205}
-          startY={345}
+          startY={425}
           endX={205}
-          endY={310}
+          endY={355}
           isActive={anyBatteryActive}
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
         />
         
         {/* Battery Relay - positioned on the battery-to-inverter connection */}
-        <g transform="translate(205, 290)" className="battery-relay-group">
+        <g transform="translate(205, 330)" className="battery-relay-group">
           {/* Relay body - rectangular housing */}
           <rect 
             x={-30} y={-18} 
@@ -1211,12 +1214,12 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
             {/* Contact terminals */}
             <circle cx={10} cy={-8} r={3} className="relay-terminal" />
             <circle cx={10} cy={8} r={3} className="relay-terminal" />
-            {/* Contact arm - angled when inactive, straight when active */}
+            {/* Contact arm - straight when closed (Not Activated/0), angled when open (Activated/1) */}
             <line 
               x1={10} y1={-5} 
-              x2={batteryRelayActive ? 10 : 18} 
-              y2={batteryRelayActive ? 5 : -2} 
-              className={`relay-arm ${batteryRelayActive ? 'closed' : 'open'}`}
+              x2={batteryRelayClosed ? 10 : 18} 
+              y2={batteryRelayClosed ? 5 : -2} 
+              className={`relay-arm ${batteryRelayClosed ? 'closed' : 'open'}`}
             />
             {/* Common terminal */}
             <circle cx={10} cy={8} r={2} className="relay-common" />
@@ -1225,18 +1228,19 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           {/* Status indicator LED */}
           <circle cx={22} cy={-12} r={4} className={`relay-led ${batteryRelayLedClass}`} />
           
-          {/* Label */}
-          <text x={0} y={30} textAnchor="middle" className="battery-relay-label">Battery Relay</text>
-          <text x={0} y={44} textAnchor="middle" className="battery-relay-status">{batteryRelayStatus}</text>
+          {/* Label - positioned to the right of the relay */}
+          <text x={45} y={-5} textAnchor="start" className="battery-relay-label">Battery</text>
+          <text x={45} y={8} textAnchor="start" className="battery-relay-label">MAIN Relay</text>
+          <text x={45} y={21} textAnchor="start" className="battery-relay-status">{batteryRelayStatus}</text>
         </g>
         
         {/* Flow line from relay to inverter */}
         <HorizontalFlowLine
           startX={205}
-          startY={270}
+          startY={305}
           endX={205}
           endY={235}
-          isActive={anyBatteryActive && batteryRelayActive}
+          isActive={anyBatteryActive && batteryRelayClosed}
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
         />

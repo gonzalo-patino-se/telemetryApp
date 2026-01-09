@@ -1431,15 +1431,17 @@ a:hover {
   transition: all 0.3s ease;
 }
 
+/* active = Activated (alarm condition, value=1) - amber warning */
 .relay-led.active {
-  fill: #22c55e;
-  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
-  animation: relay-pulse 1.5s ease-in-out infinite;
+  fill: #f59e0b;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+  animation: relay-pulse-warning 1.5s ease-in-out infinite;
 }
 
+/* inactive = Not Activated (relay closed, normal, value=0) - green good */
 .relay-led.inactive {
-  fill: #f59e0b;
-  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
+  fill: #22c55e;
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6));
 }
 
 .relay-led.invalid {
@@ -1460,7 +1462,7 @@ a:hover {
   font-family: 'SF Mono', 'Monaco', monospace;
 }
 
-@keyframes relay-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.6)); }
-  50% { filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.9)); }
+@keyframes relay-pulse-warning {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6)); }
+  50% { filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.9)); }
 }
