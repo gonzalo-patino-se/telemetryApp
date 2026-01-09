@@ -571,7 +571,7 @@ const Dashboard = () => {
                 <span style={styles.sectionBadge}>Alarms</span>
             </div>
             <div style={styles.chartsGrid}>
-                {renderWidgetCard("Main Relay Status", BatteryMainRelayWidget, batteryMainRelayAutoFetch, setBatteryMainRelayAutoFetch, batteryMainRelayFetchSignal, setBatteryMainRelayFetchSignal)}
+                {renderWidgetCard("Battery Relay Status", BatteryMainRelayWidget, batteryMainRelayAutoFetch, setBatteryMainRelayAutoFetch, batteryMainRelayFetchSignal, setBatteryMainRelayFetchSignal)}
             </div>
 
             {/* Device Info Section */}
