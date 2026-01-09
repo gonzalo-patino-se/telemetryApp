@@ -51,6 +51,9 @@ ChartJS.register(
 // Types
 // ============================================================================
 
+/** Telemetry mode - normal (15 min sampling) or fast (15 sec sampling) */
+export type TelemetryMode = 'normal' | 'fast';
+
 export interface WidgetConfig {
   /** Display label for the widget data */
   label: string;
@@ -64,8 +67,14 @@ export interface WidgetConfig {
   offlineLabel?: string;
   /** File prefix for CSV export */
   csvPrefix: string;
-  /** Function to build KQL query */
+  /** Function to build KQL query (normal telemetry - default) */
   buildQuery: (serial: string, startDate: Date, endDate: Date) => string;
+  /** Function to build fast telemetry KQL query (optional - enables toggle) */
+  buildFastQuery?: (serial: string, startDate: Date, endDate: Date) => string;
+  /** Whether this widget supports fast telemetry mode (auto-detected from buildFastQuery) */
+  supportsFastTelemetry?: boolean;
+  /** Default telemetry mode (defaults to 'normal') */
+  defaultMode?: TelemetryMode;
 }
 
 export interface BaseTimeSeriesWidgetProps {
@@ -80,6 +89,9 @@ export interface BaseTimeSeriesWidgetProps {
   onAutoFetchChange?: (value: boolean) => void;
   /** Signal to trigger fetch from parent */
   fetchSignal?: number;
+  /** Controlled telemetry mode from parent (optional) */
+  telemetryModeProp?: TelemetryMode;
+  onTelemetryModeChange?: (mode: TelemetryMode) => void;
 }
 
 const QUERY_PATH = '/query_adx/';
@@ -137,10 +149,22 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   autoFetchProp,
   onAutoFetchChange,
   fetchSignal,
+  telemetryModeProp,
+  onTelemetryModeChange,
 }) => {
   const { accessToken, logout } = useAuth();
-  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery } = config;
+  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode } = config;
   const colors = chartColorSchemes[colorScheme];
+  
+  // Determine if fast telemetry is supported
+  const supportsFastTelemetry = Boolean(buildFastQuery);
+  
+  // Telemetry mode state (normal vs fast)
+  const [telemetryModeInternal, setTelemetryModeInternal] = useState<TelemetryMode>(defaultMode ?? 'normal');
+  const telemetryMode = telemetryModeProp ?? telemetryModeInternal;
+  
+  // Get the appropriate query builder based on mode
+  const activeQueryBuilder = telemetryMode === 'fast' && buildFastQuery ? buildFastQuery : buildQuery;
 
   // State
   const [{ fromDT, toDT }, setRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
@@ -162,8 +186,8 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 
   const kql = useMemo(() => {
     if (!canFetch || !fromDT || !toDT) return null;
-    return buildQuery(serial, fromDT, toDT);
-  }, [canFetch, serial, fromDT, toDT, buildQuery]);
+    return activeQueryBuilder(serial, fromDT, toDT);
+  }, [canFetch, serial, fromDT, toDT, activeQueryBuilder]);
 
   // Auto-fetch effect with abort controller
   useEffect(() => {
@@ -171,7 +195,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     if (!canFetch || !fromDT || !toDT || !serial) return;
     
     const abortController = new AbortController();
-    const currentKql = buildQuery(serial, fromDT, toDT);
+    const currentKql = activeQueryBuilder(serial, fromDT, toDT);
     
     const doFetch = async () => {
       setLoading(true);
@@ -202,7 +226,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     
     // Cleanup: abort pending request when dependencies change
     return () => abortController.abort();
-  }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout, buildQuery]);
+  }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout, activeQueryBuilder, telemetryMode]);
 
   // Parent-triggered fetch with abort controller
   useEffect(() => {
@@ -421,7 +445,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         {/* Quick presets */}
         <div className="flex items-center gap-2">
           {[6, 24, 24 * 7].map((hours) => {
-            const label = hours < 24 ? `Last ${hours}h` : hours === 24 ? 'Last 24h' : `Last ${hours / 24}d`;
+            const presetLabel = hours < 24 ? `Last ${hours}h` : hours === 24 ? 'Last 24h' : `Last ${hours / 24}d`;
             return (
               <button
                 key={hours}
@@ -432,11 +456,50 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                   setRange({ fromDT: start, toDT: end });
                 }}
               >
-                {label}
+                {presetLabel}
               </button>
             );
           })}
         </div>
+
+        {/* Telemetry Mode Toggle - Only shown when fast telemetry is supported */}
+        {supportsFastTelemetry && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-tertiary">Mode:</span>
+            <div className="flex items-center bg-bg-primary rounded-lg p-0.5 border border-border-default">
+              <button
+                type="button"
+                onClick={() => {
+                  onTelemetryModeChange?.('normal');
+                  if (telemetryModeProp === undefined) setTelemetryModeInternal('normal');
+                }}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  telemetryMode === 'normal'
+                    ? 'bg-accent-primary text-white'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                title="Normal Telemetry - sampled every 15 minutes"
+              >
+                Normal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onTelemetryModeChange?.('fast');
+                  if (telemetryModeProp === undefined) setTelemetryModeInternal('fast');
+                }}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  telemetryMode === 'fast'
+                    ? 'bg-orange-500 text-white'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+                title="Fast Telemetry - sampled every 15 seconds"
+              >
+                Fast ⚡
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Fetch controls */}
         {showControls && (
@@ -469,11 +532,20 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       </div>
 
       {/* Selection summary */}
-      <div className="text-xs text-text-secondary mb-2">
+      <div className="text-xs text-text-secondary mb-2 flex items-center gap-2 flex-wrap">
         {fromDT && toDT ? (
           <>
             Selected (local): <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(fromDT)}</code> →{' '}
             <code className="bg-bg-primary px-1 py-0.5 rounded text-text-primary font-mono">{toLocalLabel(toDT)}</code>
+            {supportsFastTelemetry && (
+              <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+                telemetryMode === 'fast' 
+                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+              }`}>
+                {telemetryMode === 'fast' ? '⚡ 15s sampling' : '📊 15min sampling'}
+              </span>
+            )}
           </>
         ) : (
           'Pick start & end, then click Fetch.'

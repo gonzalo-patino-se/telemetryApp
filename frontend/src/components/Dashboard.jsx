@@ -7,8 +7,7 @@ import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
-import AdxSearchPV1Widget from './AdxSearchPV1Widget';
-import { PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
+import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
@@ -470,7 +469,7 @@ const Dashboard = () => {
                 <span style={styles.sectionBadge}>4 channels</span>
             </div>
             <div style={styles.chartsGridPaired}>
-                {renderWidgetCard("PV1 Voltage", AdxSearchPV1Widget, pv1AutoFetch, setPv1AutoFetch, pv1FetchSignal, setPv1FetchSignal)}
+                {renderWidgetCard("PV1 Voltage", PV1VoltageWidget, pv1AutoFetch, setPv1AutoFetch, pv1FetchSignal, setPv1FetchSignal)}
                 {renderWidgetCard("PV2 Voltage", PV2VoltageWidget, pv2AutoFetch, setPv2AutoFetch, pv2FetchSignal, setPv2FetchSignal)}
                 {renderWidgetCard("PV3 Voltage", PV3VoltageWidget, pv3AutoFetch, setPv3AutoFetch, pv3FetchSignal, setPv3FetchSignal)}
                 {renderWidgetCard("PV4 Voltage", PV4VoltageWidget, pv4AutoFetch, setPv4AutoFetch, pv4FetchSignal, setPv4FetchSignal)}
