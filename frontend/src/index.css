@@ -310,3 +310,141 @@ a:hover {
 .react-datepicker-popper[data-placement^="top"] .react-datepicker__triangle::after {
   border-top-color: var(--bg-surface);
 }
+
+/* ============================================
+   MODERN DATEPICKER INPUT STYLES
+   ============================================ */
+.modern-datepicker,
+.widget-datepicker-input {
+  background: linear-gradient(135deg, var(--bg-input) 0%, var(--bg-surface) 100%) !important;
+  border: 1px solid var(--border-medium) !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+  min-width: 130px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.modern-datepicker:hover,
+.widget-datepicker-input:hover {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transform: translateY(-1px);
+}
+
+.modern-datepicker:focus,
+.widget-datepicker-input:focus {
+  outline: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+.modern-datepicker::placeholder,
+.widget-datepicker-input::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* ============================================
+   WIDGET CONTROL STYLES
+   Modern styled inputs, buttons, and toggles
+   ============================================ */
+
+/* Preset Buttons - Pill Style */
+.widget-preset-btn {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-input) 100%);
+  border: 1px solid var(--border-medium);
+  border-radius: 10px;
+  padding: 8px 16px;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.widget-preset-btn:hover {
+  background: linear-gradient(135deg, var(--bg-surface-hover) 0%, var(--bg-surface) 100%);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.widget-preset-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Mode Toggle - Segmented Control */
+.widget-mode-toggle {
+  display: inline-flex;
+  background: var(--bg-input);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.widget-mode-toggle button {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.widget-mode-toggle button.active {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-hover) 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.widget-mode-toggle button:not(.active) {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.widget-mode-toggle button:not(.active):hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+
+/* Fetch Button - Primary Action */
+.widget-fetch-btn {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-hover) 100%);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.widget-fetch-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.widget-fetch-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.widget-fetch-btn:disabled {
+  background: var(--bg-input);
+  color: var(--text-tertiary);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+

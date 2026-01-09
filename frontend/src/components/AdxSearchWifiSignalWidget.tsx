@@ -455,14 +455,14 @@
     return (
     <>
         {/* Range selectors */}
-        <div className="flex flex-wrap items-end gap-3 mb-3">
+        <div className="flex flex-wrap items-end gap-4 mb-4">
         <div className="flex flex-col">
-            <span className="text-xs text-text-tertiary mb-1">From (local)</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From (local)</span>
             <DatePicker
             selected={fromDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
             placeholderText="Start date & time"
-            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+            className="widget-datepicker-input"
             showTimeSelect
             timeIntervals={15}
             dateFormat="yyyy-MM-dd HH:mm"
@@ -472,12 +472,12 @@
         </div>
 
         <div className="flex flex-col">
-            <span className="text-xs text-text-tertiary mb-1">To (local)</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To (local)</span>
             <DatePicker
             selected={toDT}
             onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
             placeholderText="End date & time"
-            className="border border-border-default bg-bg-input text-text-primary p-2 rounded-md focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+            className="widget-datepicker-input"
             showTimeSelect
             timeIntervals={15}
             dateFormat="yyyy-MM-dd HH:mm"
@@ -487,11 +487,11 @@
             />
         </div>
 
-        {/* Quick presets */}
+        {/* Quick presets with modern styling */}
         <div className="flex items-center gap-2">
             <button
             type="button"
-            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
+            className="widget-preset-btn"
             onClick={() => {
                 const { start, end } = lastHours(6);
                 setRange({ fromDT: start, toDT: end });
@@ -501,7 +501,7 @@
             </button>
             <button
             type="button"
-            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
+            className="widget-preset-btn"
             onClick={() => {
                 const { start, end } = lastHours(24);
                 setRange({ fromDT: start, toDT: end });
@@ -511,7 +511,7 @@
             </button>
             <button
             type="button"
-            className="px-2.5 py-1.5 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover transition-colors"
+            className="widget-preset-btn"
             onClick={() => {
                 const { start, end } = lastHours(24 * 7);
                 setRange({ fromDT: start, toDT: end });
@@ -523,8 +523,8 @@
 
         {/* Fetch controls — hidden if parent renders them in header */}
         {showControls && (
-            <div className="flex items-center gap-2 ml-auto">
-            <label className="text-xs text-text-secondary flex items-center gap-1.5 cursor-pointer">
+            <div className="flex items-center gap-3 ml-auto">
+            <label style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                 <input
                 type="checkbox"
                 checked={autoFetch}
@@ -532,18 +532,14 @@
                     onAutoFetchChange?.(e.target.checked);
                     if (autoFetchProp === undefined) setAutoFetchInternal(e.target.checked);
                 }}
-                className="w-3.5 h-3.5 rounded border-border-default bg-bg-input accent-accent-primary"
+                style={{ width: '16px', height: '16px', borderRadius: '4px', accentColor: 'var(--accent-primary)' }}
                 />
                 Auto‑fetch on change
             </label>
             <button
                 onClick={fetchData}
                 disabled={!canFetch || loading}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                canFetch && !loading 
-                    ? 'bg-accent-primary text-white hover:bg-accent-hover' 
-                    : 'bg-bg-input text-text-tertiary cursor-not-allowed'
-                }`}
+                className="widget-fetch-btn"
             >
                 {loading ? 'Fetching…' : 'Fetch'}
             </button>
