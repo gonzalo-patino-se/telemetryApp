@@ -10,6 +10,7 @@ import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
+import EnergyFlowDiagram from './EnergyFlowDiagram';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -448,6 +449,11 @@ const Dashboard = () => {
 
                 </WidgetCard>
             </div>
+
+            {/* ==================== ENERGY FLOW DIAGRAM ==================== */}
+            {hasActiveSerial && (
+                <EnergyFlowDiagram serial={activeSerial} />
+            )}
 
             {/* ==================== INSTANTANEOUS VALUES ==================== */}
             {hasActiveSerial && (
