@@ -802,7 +802,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       )}
       
       {/* SVG Diagram */}
-      <svg viewBox="0 0 700 450" className="energy-flow-svg">
+      <svg viewBox="0 0 700 520" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">
@@ -883,45 +883,45 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         <FlowLine
           startX={65}
           startY={110}
-          endX={200}
-          endY={220}
+          endX={180}
+          endY={165}
           isActive={pvValues.pv1 > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
           startX={165}
           startY={110}
-          endX={220}
-          endY={220}
+          endX={200}
+          endY={165}
           isActive={pvValues.pv2 > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
           startX={265}
           startY={110}
-          endX={250}
-          endY={220}
+          endX={230}
+          endY={165}
           isActive={pvValues.pv3 > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
           startX={365}
           startY={110}
-          endX={280}
-          endY={220}
+          endX={260}
+          endY={165}
           isActive={pvValues.pv4 > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         
-        {/* Inverter */}
-        <Inverter x={250} y={220} isActive={anyProducing || gridIsActive || anyBatteryActive} />
+        {/* Inverter - centered under solar panels */}
+        <Inverter x={155} y={165} isActive={anyProducing || gridIsActive || anyBatteryActive} />
         
         {/* Grid Connection Line (Inverter to Grid) */}
         <HorizontalFlowLine
-          startX={350}
-          startY={255}
+          startX={255}
+          startY={200}
           endX={500}
-          endY={255}
+          endY={200}
           isActive={gridIsActive}
           color="#22c55e"
           flowDirection={anyProducing ? 'right' : 'left'}
@@ -944,8 +944,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         
         {/* Battery 1 */}
         <BatteryModule
-          x={20}
-          y={250}
+          x={80}
+          y={350}
           moduleNumber={1}
           voltage={batteryValues.bat1.voltage}
           temperature={batteryValues.bat1.temperature}
@@ -958,8 +958,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         
         {/* Battery 2 */}
         <BatteryModule
-          x={110}
-          y={250}
+          x={170}
+          y={350}
           moduleNumber={2}
           voltage={batteryValues.bat2.voltage}
           temperature={batteryValues.bat2.temperature}
@@ -972,8 +972,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         
         {/* Battery 3 */}
         <BatteryModule
-          x={200}
-          y={250}
+          x={260}
+          y={350}
           moduleNumber={3}
           voltage={batteryValues.bat3.voltage}
           temperature={batteryValues.bat3.temperature}
@@ -987,20 +987,20 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Battery to Inverter connection - parallel bus bar */}
         <g className="battery-bus">
           {/* Horizontal bus bar connecting all batteries */}
-          <line x1={55} y1={245} x2={235} y2={245} className="bus-bar" />
+          <line x1={115} y1={345} x2={295} y2={345} className="bus-bar" />
           
           {/* Vertical connections from each battery to bus */}
-          <line x1={55} y1={245} x2={55} y2={255} className="bus-connector" />
-          <line x1={145} y1={245} x2={145} y2={255} className="bus-connector" />
-          <line x1={235} y1={245} x2={235} y2={255} className="bus-connector" />
+          <line x1={115} y1={345} x2={115} y2={355} className="bus-connector" />
+          <line x1={205} y1={345} x2={205} y2={355} className="bus-connector" />
+          <line x1={295} y1={345} x2={295} y2={355} className="bus-connector" />
         </g>
         
-        {/* Flow line from battery bus to inverter */}
+        {/* Flow line from battery bus to inverter - vertical connection */}
         <HorizontalFlowLine
-          startX={235}
-          startY={245}
-          endX={250}
-          endY={255}
+          startX={205}
+          startY={345}
+          endX={205}
+          endY={235}
           isActive={anyBatteryActive}
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
