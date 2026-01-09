@@ -1,5 +1,5 @@
 // src/components/EnergyFlowDiagram.tsx
-// Animated Energy Flow Diagram - Phase 1: Solar PV Section
+// Animated Energy Flow Diagram - Solar PV + Grid Sections
 // Same data fetching as InstantaneousGauges, but with animated SVG visuals
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
@@ -40,6 +40,21 @@ const SOLAR_CONFIGS: TelemetryConfig[] = [
   { id: 'pv3', label: 'PV3', telemetryName: '/INV/DCPORT/STAT/PV3/V', unit: 'V', category: 'solar', decimals: 0 },
   { id: 'pv4', label: 'PV4', telemetryName: '/INV/DCPORT/STAT/PV4/V', unit: 'V', category: 'solar', decimals: 0 },
 ];
+
+// ============================================================================
+// Grid Configurations
+// ============================================================================
+
+const GRID_CONFIGS: TelemetryConfig[] = [
+  { id: 'gridVL1', label: 'V L1', telemetryName: '/INV/ACPORT/STAT/VRMS_L1N', unit: 'V', category: 'grid', decimals: 1 },
+  { id: 'gridVL2', label: 'V L2', telemetryName: '/INV/ACPORT/STAT/VRMS_L2N', unit: 'V', category: 'grid', decimals: 1 },
+  { id: 'gridIL1', label: 'I L1', telemetryName: '/INV/ACPORT/STAT/IRMS_L1', unit: 'A', category: 'grid', decimals: 2 },
+  { id: 'gridIL2', label: 'I L2', telemetryName: '/INV/ACPORT/STAT/IRMS_L2', unit: 'A', category: 'grid', decimals: 2 },
+  { id: 'gridFreq', label: 'Freq', telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL', unit: 'Hz', category: 'grid', decimals: 2 },
+];
+
+// Combined configs for fetching
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS];
 
 const QUERY_PATH = '/query_adx/';
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -250,6 +265,185 @@ const FlowLine: React.FC<FlowLineProps> = ({ startX, startY, endX, endY, isActiv
 };
 
 // ============================================================================
+// Horizontal Flow Line Component (for Grid connection)
+// ============================================================================
+
+interface HorizontalFlowLineProps {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  isActive: boolean;
+  color: string;
+  flowDirection: 'left' | 'right';
+}
+
+const HorizontalFlowLine: React.FC<HorizontalFlowLineProps> = ({ 
+  startX, startY, endX, endY, isActive, color, flowDirection 
+}) => {
+  const path = `M ${startX} ${startY} L ${endX} ${endY}`;
+  
+  return (
+    <g className="flow-line-group">
+      {/* Background line */}
+      <path
+        d={path}
+        fill="none"
+        stroke="var(--border-subtle)"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      
+      {/* Animated flow line */}
+      {isActive && (
+        <path
+          d={path}
+          fill="none"
+          stroke={color}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray="8 12"
+          className={flowDirection === 'right' ? 'flow-animation' : 'flow-animation-reverse'}
+        />
+      )}
+      
+      {/* Flow particles */}
+      {isActive && (
+        <>
+          <circle r={4} fill={color} className="flow-particle">
+            <animateMotion 
+              dur="1s" 
+              repeatCount="indefinite" 
+              path={flowDirection === 'right' ? path : `M ${endX} ${endY} L ${startX} ${startY}`} 
+            />
+          </circle>
+          <circle r={4} fill={color} className="flow-particle">
+            <animateMotion 
+              dur="1s" 
+              repeatCount="indefinite" 
+              path={flowDirection === 'right' ? path : `M ${endX} ${endY} L ${startX} ${startY}`} 
+              begin="0.33s"
+            />
+          </circle>
+          <circle r={4} fill={color} className="flow-particle">
+            <animateMotion 
+              dur="1s" 
+              repeatCount="indefinite" 
+              path={flowDirection === 'right' ? path : `M ${endX} ${endY} L ${startX} ${startY}`} 
+              begin="0.66s"
+            />
+          </circle>
+        </>
+      )}
+    </g>
+  );
+};
+
+// ============================================================================
+// Grid SVG Component
+// ============================================================================
+
+interface GridComponentProps {
+  x: number;
+  y: number;
+  voltageL1: number | null;
+  voltageL2: number | null;
+  currentL1: number | null;
+  currentL2: number | null;
+  frequency: number | null;
+  loading: boolean;
+  isActive: boolean;
+}
+
+const GridComponent: React.FC<GridComponentProps> = ({ 
+  x, y, voltageL1, voltageL2, currentL1, currentL2, frequency, loading, isActive 
+}) => {
+  const formatValue = (val: number | null, decimals: number = 1) => 
+    val !== null ? val.toFixed(decimals) : '--';
+
+  return (
+    <g transform={`translate(${x}, ${y})`} className="grid-component-group">
+      {/* Grid icon - Power transmission tower */}
+      <g className={`grid-tower ${isActive ? 'active' : ''}`}>
+        {/* Tower base */}
+        <path
+          d="M 30 0 L 45 70 L 55 70 L 70 0 Z"
+          className="grid-tower-body"
+        />
+        {/* Cross beams */}
+        <line x1={35} y1={20} x2={65} y2={20} className="grid-tower-beam" />
+        <line x1={38} y1={40} x2={62} y2={40} className="grid-tower-beam" />
+        {/* Power lines */}
+        <line x1={20} y1={10} x2={80} y2={10} className="grid-power-line" />
+        <line x1={15} y1={5} x2={85} y2={5} className="grid-power-line" />
+        {/* Insulators */}
+        <circle cx={30} cy={10} r={3} className="grid-insulator" />
+        <circle cx={70} cy={10} r={3} className="grid-insulator" />
+        <circle cx={25} cy={5} r={3} className="grid-insulator" />
+        <circle cx={75} cy={5} r={3} className="grid-insulator" />
+      </g>
+      
+      {/* Glow effect when active */}
+      {isActive && (
+        <rect
+          x={15}
+          y={-5}
+          width={70}
+          height={80}
+          rx={8}
+          className="grid-glow"
+        />
+      )}
+      
+      {/* Label */}
+      <text x={50} y={-15} textAnchor="middle" className="grid-label">GRID</text>
+      
+      {/* Values panel - expanded to show all 5 values */}
+      <g transform="translate(-10, 75)">
+        <rect x={0} y={0} width={120} height={95} rx={6} className="grid-values-panel" />
+        
+        {/* Status indicator */}
+        <circle cx={105} cy={12} r={5} className={`grid-status ${isActive ? 'active' : ''}`} />
+        
+        {/* L1 Section */}
+        <text x={10} y={16} className="grid-section-label">L1</text>
+        <text x={35} y={16} className="grid-value-label">V:</text>
+        <text x={50} y={16} className="grid-value-text">
+          {loading ? '...' : `${formatValue(voltageL1, 1)}V`}
+        </text>
+        <text x={35} y={30} className="grid-value-label">I:</text>
+        <text x={50} y={30} className="grid-value-text">
+          {loading ? '...' : `${formatValue(currentL1, 2)}A`}
+        </text>
+        
+        {/* Divider */}
+        <line x1={10} y1={38} x2={110} y2={38} className="grid-divider" />
+        
+        {/* L2 Section */}
+        <text x={10} y={52} className="grid-section-label">L2</text>
+        <text x={35} y={52} className="grid-value-label">V:</text>
+        <text x={50} y={52} className="grid-value-text">
+          {loading ? '...' : `${formatValue(voltageL2, 1)}V`}
+        </text>
+        <text x={35} y={66} className="grid-value-label">I:</text>
+        <text x={50} y={66} className="grid-value-text">
+          {loading ? '...' : `${formatValue(currentL2, 2)}A`}
+        </text>
+        
+        {/* Divider */}
+        <line x1={10} y1={74} x2={110} y2={74} className="grid-divider" />
+        
+        {/* Frequency */}
+        <text x={10} y={88} className="grid-value-label">Freq:</text>
+        <text x={45} y={88} className="grid-value-text grid-freq">
+          {loading ? '...' : `${formatValue(frequency, 2)} Hz`}
+        </text>
+      </g>
+    </g>
+  );
+};
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -298,18 +492,18 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     // Set all to loading
     setTelemetryData(prev => {
       const newData: Record<string, TelemetryData> = {};
-      SOLAR_CONFIGS.forEach(config => {
+      ALL_CONFIGS.forEach(config => {
         newData[config.id] = { ...prev[config.id], loading: true };
       });
       return newData;
     });
 
     // Fetch all in parallel
-    const results = await Promise.all(SOLAR_CONFIGS.map(fetchTelemetryData));
+    const results = await Promise.all(ALL_CONFIGS.map(fetchTelemetryData));
     
     setTelemetryData(prev => {
       const newData = { ...prev };
-      SOLAR_CONFIGS.forEach((config, idx) => {
+      ALL_CONFIGS.forEach((config, idx) => {
         newData[config.id] = results[idx];
       });
       return newData;
@@ -358,6 +552,18 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     pv4: telemetryData.pv4?.value ?? 0,
   };
   
+  // Grid values
+  const gridValues = {
+    voltageL1: telemetryData.gridVL1?.value ?? null,
+    voltageL2: telemetryData.gridVL2?.value ?? null,
+    currentL1: telemetryData.gridIL1?.value ?? null,
+    currentL2: telemetryData.gridIL2?.value ?? null,
+    frequency: telemetryData.gridFreq?.value ?? null,
+  };
+  
+  // Grid is active if we have voltage readings
+  const gridIsActive = (gridValues.voltageL1 ?? 0) > 100 || (gridValues.voltageL2 ?? 0) > 100;
+  
   const anyProducing = Object.values(pvValues).some(v => v > PRODUCING_THRESHOLD);
 
   return (
@@ -372,7 +578,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
             </svg>
           </div>
           <div>
-            <h3 className="header-title">Solar PV Energy Flow</h3>
+            <h3 className="header-title">Energy Flow Diagram</h3>
             <p className="header-subtitle">Live telemetry • Auto-refresh every 10s</p>
           </div>
         </div>
@@ -424,11 +630,20 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       )}
       
       {/* SVG Diagram */}
-      <svg viewBox="0 0 500 300" className="energy-flow-svg">
+      <svg viewBox="0 0 620 360" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          
+          {/* Glow filter for grid */}
+          <filter id="glow-grid" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
@@ -445,6 +660,12 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           <linearGradient id="inverter-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="var(--bg-elevated)"/>
             <stop offset="100%" stopColor="var(--bg-surface)"/>
+          </linearGradient>
+          
+          {/* Gradient for grid */}
+          <linearGradient id="grid-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#166534"/>
+            <stop offset="100%" stopColor="#14532d"/>
           </linearGradient>
         </defs>
         
@@ -521,22 +742,54 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         />
         
         {/* Inverter */}
-        <Inverter x={200} y={220} isActive={anyProducing} />
+        <Inverter x={200} y={220} isActive={anyProducing || gridIsActive} />
+        
+        {/* Grid Connection Line (Inverter to Grid) */}
+        <HorizontalFlowLine
+          startX={300}
+          startY={255}
+          endX={450}
+          endY={255}
+          isActive={gridIsActive}
+          color="#22c55e"
+          flowDirection={anyProducing ? 'right' : 'left'}
+        />
+        
+        {/* Grid Component */}
+        <GridComponent
+          x={450}
+          y={170}
+          voltageL1={gridValues.voltageL1}
+          voltageL2={gridValues.voltageL2}
+          currentL1={gridValues.currentL1}
+          currentL2={gridValues.currentL2}
+          frequency={gridValues.frequency}
+          loading={telemetryData.gridVL1?.loading ?? true}
+          isActive={gridIsActive}
+        />
       </svg>
       
       {/* Legend */}
       <div className="energy-flow-legend">
         <div className="legend-item">
           <div className="legend-dot producing" />
-          <span>Producing (&gt;50V)</span>
+          <span>Solar Active</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-dot grid-active" />
+          <span>Grid Connected</span>
         </div>
         <div className="legend-item">
           <div className="legend-dot idle" />
-          <span>Idle/Night</span>
+          <span>Idle</span>
         </div>
         <div className="legend-item">
-          <div className="legend-line" />
-          <span>Energy Flow</span>
+          <div className="legend-line solar" />
+          <span>Solar Flow</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-line grid" />
+          <span>Grid Flow</span>
         </div>
       </div>
     </div>
