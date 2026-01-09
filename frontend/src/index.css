@@ -1466,3 +1466,89 @@ a:hover {
   0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6)); }
   50% { filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.9)); }
 }
+
+/* ============================================================================
+   BGCS RELAY INDICATOR STYLES (Grid Connection Safety Relay)
+   ============================================================================ */
+
+.bgcs-relay-group {
+  transition: all 0.3s ease;
+}
+
+.bgcs-relay-body {
+  fill: rgba(15, 23, 42, 0.95);
+  stroke: #4b5563;
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.bgcs-relay-body.closed {
+  stroke: #22c55e;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.4));
+}
+
+.bgcs-relay-body.open {
+  stroke: #6b7280;
+}
+
+/* BGCS Relay LED states */
+.bgcs-relay-led {
+  transition: all 0.3s ease;
+}
+
+/* Normal closed state - green */
+.bgcs-relay-led.closed {
+  fill: #22c55e;
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6));
+}
+
+/* Normal open state - gray */
+.bgcs-relay-led.open {
+  fill: #6b7280;
+  filter: drop-shadow(0 0 2px rgba(107, 114, 128, 0.4));
+}
+
+/* Faulted state - red */
+.bgcs-relay-led.faulted {
+  fill: #ef4444;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+  animation: relay-pulse-danger 1s ease-in-out infinite;
+}
+
+/* Override state - amber */
+.bgcs-relay-led.override {
+  fill: #f59e0b;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+  animation: relay-pulse-warning 1.5s ease-in-out infinite;
+}
+
+/* E-Stop state - red pulsing */
+.bgcs-relay-led.estop {
+  fill: #dc2626;
+  filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.9));
+  animation: relay-pulse-danger 0.75s ease-in-out infinite;
+}
+
+/* Invalid/unknown state */
+.bgcs-relay-led.invalid {
+  fill: #6b7280;
+  filter: drop-shadow(0 0 2px rgba(107, 114, 128, 0.4));
+}
+
+.bgcs-relay-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.bgcs-relay-status {
+  font-size: 10px;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+@keyframes relay-pulse-danger {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6)); }
+  50% { filter: drop-shadow(0 0 14px rgba(239, 68, 68, 1)); }
+}

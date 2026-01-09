@@ -92,8 +92,21 @@ const LOAD_CONFIGS: TelemetryConfig[] = [
   { id: 'loadFreq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', category: 'load', decimals: 2 },
 ];
 
+// ============================================================================
+// BGCS Relay Configuration (Grid Connection Safety Relay)
+// ============================================================================
+
+const BGCS_CONFIG: TelemetryConfig = {
+  id: 'bgcsRelay', 
+  label: 'BGCS Relay', 
+  telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS', 
+  unit: '', 
+  category: 'grid', 
+  decimals: 0 
+};
+
 // Combined configs for fetching
-const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS];
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG];
 
 const QUERY_PATH = '/query_adx/';
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -128,6 +141,19 @@ function buildBatteryRelayKql(serial: string): string {
     | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
     | top 1 by localtime desc
     | project localtime, value
+  `.trim();
+}
+
+// Special query for BGCS Relay Status (instantaneous from Telemetry table)
+function buildBgcsRelayKql(serial: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    Telemetry
+    | where comms_serial contains s
+    | where name has '/BGCS/GRID/STAT/RELAY_STATUS'
+    | top 1 by localtime desc
+    | project localtime, value_double, name
   `.trim();
 }
 
@@ -730,10 +756,18 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // Fetch single telemetry value
   const fetchTelemetryData = useCallback(async (config: TelemetryConfig) => {
     // Use special query for Battery Relay (from Alarms table)
-    const isRelayQuery = config.id === 'batMainRelay';
-    const kql = isRelayQuery
-      ? buildBatteryRelayKql(serial)
-      : buildInstantaneousKql(serial, config.telemetryName);
+    const isBatteryRelayQuery = config.id === 'batMainRelay';
+    // Use special query for BGCS Relay
+    const isBgcsRelayQuery = config.id === 'bgcsRelay';
+    
+    let kql: string;
+    if (isBatteryRelayQuery) {
+      kql = buildBatteryRelayKql(serial);
+    } else if (isBgcsRelayQuery) {
+      kql = buildBgcsRelayKql(serial);
+    } else {
+      kql = buildInstantaneousKql(serial, config.telemetryName);
+    }
     
     try {
       const res = await api.post(
@@ -747,14 +781,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       
       // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
       let value: number | null = null;
-      if (isRelayQuery) {
+      if (isBatteryRelayQuery) {
         // Battery Relay uses 'value' field from Alarms table
         if (row?.value !== undefined && row?.value !== null) {
           const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
           value = isNaN(parsed) ? null : parsed;
         }
       } else {
-        // Normal telemetry uses 'value_double' field
+        // Normal telemetry (including BGCS relay) uses 'value_double' field
         value = row?.value_double ?? null;
       }
       
@@ -881,6 +915,38 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const batteryRelayActive = batteryRelayValue === 1;  // Alarm is active
   const batteryRelayClosed = batteryRelayValue === 0;  // Relay is closed, power can flow
   const batteryRelayLedClass = batteryRelayValue === 1 ? 'active' : batteryRelayValue === 0 ? 'inactive' : 'invalid';
+  
+  // BGCS Relay status (Grid Connection Safety Relay - prevents backfeed during outages)
+  // 1: Open, 2: Closed, 3: Faulted open, 4: Faulted closed, 5: Override open, 6: Override closed, 7: Estop open, 8: Estop closed
+  const bgcsRelayValue = telemetryData.bgcsRelay?.value ?? null;
+  const getBgcsRelayStatus = (value: number | null): string => {
+    if (value === null) return '--';
+    switch (value) {
+      case 1: return 'Open';
+      case 2: return 'Closed';
+      case 3: return 'Faulted Open';
+      case 4: return 'Faulted Closed';
+      case 5: return 'Override Open';
+      case 6: return 'Override Closed';
+      case 7: return 'E-Stop Open';
+      case 8: return 'E-Stop Closed';
+      default: return 'Unknown';
+    }
+  };
+  const bgcsRelayStatus = getBgcsRelayStatus(bgcsRelayValue);
+  // Relay is closed when value is 2, 4, 6, or 8 (closed states)
+  const bgcsRelayClosed = bgcsRelayValue !== null && [2, 4, 6, 8].includes(bgcsRelayValue);
+  // LED class based on status
+  const getBgcsRelayLedClass = (value: number | null): string => {
+    if (value === null) return 'invalid';
+    if ([3, 4].includes(value)) return 'faulted';  // Faulted states
+    if ([5, 6].includes(value)) return 'override';  // Override states
+    if ([7, 8].includes(value)) return 'estop';  // E-Stop states
+    if (value === 2) return 'closed';  // Normal closed
+    if (value === 1) return 'open';  // Normal open
+    return 'invalid';
+  };
+  const bgcsRelayLedClass = getBgcsRelayLedClass(bgcsRelayValue);
   
   // Battery status - active if voltage > 40V, charging if current > 0
   const bat1Active = (batteryValues.bat1.voltage ?? 0) > 40;
@@ -1099,13 +1165,70 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         {/* Inverter - centered under solar panels */}
         <Inverter x={155} y={165} isActive={anyProducing || gridIsActive || anyBatteryActive} />
         
-        {/* Grid Connection Line (Inverter to Grid) */}
+        {/* ==================== BGCS RELAY SECTION (Grid Connection Safety) ==================== */}
+        
+        {/* Flow line from Inverter to BGCS Relay */}
         <HorizontalFlowLine
           startX={255}
           startY={200}
+          endX={345}
+          endY={200}
+          isActive={gridIsActive && bgcsRelayClosed}
+          color="#22c55e"
+          flowDirection={anyProducing ? 'right' : 'left'}
+        />
+        
+        {/* BGCS Relay - Grid Connection Safety Relay (prevents backfeed during outages) */}
+        <g transform="translate(375, 200)" className="bgcs-relay-group">
+          {/* Relay body - rectangular housing */}
+          <rect 
+            x={-30} y={-22} 
+            width={60} height={44} 
+            rx={4} 
+            className={`bgcs-relay-body ${bgcsRelayClosed ? 'closed' : 'open'}`}
+          />
+          
+          {/* Relay coil symbol (left side) */}
+          <g className="relay-coil">
+            <rect x={-24} y={-12} width={16} height={24} rx={2} className="relay-coil-body" />
+            {/* Coil windings */}
+            <line x1={-22} y1={-8} x2={-10} y2={-8} className="relay-winding" />
+            <line x1={-22} y1={-3} x2={-10} y2={-3} className="relay-winding" />
+            <line x1={-22} y1={2} x2={-10} y2={2} className="relay-winding" />
+            <line x1={-22} y1={7} x2={-10} y2={7} className="relay-winding" />
+          </g>
+          
+          {/* Relay contact symbol (right side) */}
+          <g className="relay-contact">
+            {/* Contact terminals */}
+            <circle cx={10} cy={-10} r={3} className="relay-terminal" />
+            <circle cx={10} cy={10} r={3} className="relay-terminal" />
+            {/* Contact arm - straight when closed, angled when open */}
+            <line 
+              x1={10} y1={-7} 
+              x2={bgcsRelayClosed ? 10 : 20} 
+              y2={bgcsRelayClosed ? 7 : -3} 
+              className={`relay-arm ${bgcsRelayClosed ? 'closed' : 'open'}`}
+            />
+            {/* Common terminal */}
+            <circle cx={10} cy={10} r={2} className="relay-common" />
+          </g>
+          
+          {/* Status indicator LED */}
+          <circle cx={22} cy={-15} r={4} className={`bgcs-relay-led ${bgcsRelayLedClass}`} />
+          
+          {/* Label - positioned below the relay */}
+          <text x={0} y={35} textAnchor="middle" className="bgcs-relay-label">BGCS Relay</text>
+          <text x={0} y={48} textAnchor="middle" className="bgcs-relay-status">{bgcsRelayStatus}</text>
+        </g>
+        
+        {/* Flow line from BGCS Relay to Grid */}
+        <HorizontalFlowLine
+          startX={405}
+          startY={200}
           endX={500}
           endY={200}
-          isActive={gridIsActive}
+          isActive={gridIsActive && bgcsRelayClosed}
           color="#22c55e"
           flowDirection={anyProducing ? 'right' : 'left'}
         />
