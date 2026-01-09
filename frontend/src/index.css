@@ -1552,3 +1552,122 @@ a:hover {
   0%, 100% { filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6)); }
   50% { filter: drop-shadow(0 0 14px rgba(239, 68, 68, 1)); }
 }
+
+/* ============================================================================
+   WIFI SIGNAL INDICATOR STYLES
+   ============================================================================ */
+
+.wifi-indicator-group {
+  transition: all 0.3s ease;
+}
+
+.wifi-bg {
+  fill: rgba(15, 23, 42, 0.8);
+  stroke: rgba(71, 85, 105, 0.5);
+  stroke-width: 1;
+}
+
+.wifi-signal {
+  transition: all 0.3s ease;
+}
+
+.wifi-signal.loading {
+  opacity: 0.5;
+  animation: wifi-loading-pulse 1s ease-in-out infinite;
+}
+
+/* WiFi dot (connection indicator) */
+.wifi-dot {
+  fill: #4b5563;
+  transition: all 0.3s ease;
+}
+
+.wifi-dot.active {
+  fill: #22c55e;
+  filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.6));
+}
+
+/* WiFi signal arcs */
+.wifi-arc {
+  stroke: #4b5563;
+  transition: all 0.3s ease;
+}
+
+.wifi-arc.active {
+  stroke: #22c55e;
+  filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.4));
+}
+
+/* WiFi arc animation - stagger the activation */
+.wifi-arc-1.active {
+  animation: wifi-arc-pulse 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.wifi-arc-2.active {
+  animation: wifi-arc-pulse 2s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+
+.wifi-arc-3.active {
+  animation: wifi-arc-pulse 2s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.wifi-arc-4.active {
+  animation: wifi-arc-pulse 2s ease-in-out infinite;
+  animation-delay: 0.45s;
+}
+
+/* WiFi signal strength colors */
+.wifi-arc-1.active { stroke: #22c55e; } /* Always green if level >= 1 */
+.wifi-arc-2.active { stroke: #22c55e; } /* Green if level >= 2 */
+.wifi-arc-3.active { stroke: #22c55e; } /* Green if level >= 3 */
+.wifi-arc-4.active { stroke: #22c55e; } /* Green if level >= 4 */
+
+/* Weak signal warning colors (override for levels 1-2) */
+.wifi-signal[data-level="1"] .wifi-arc-1.active {
+  stroke: #ef4444;
+}
+
+.wifi-signal[data-level="2"] .wifi-arc-1.active,
+.wifi-signal[data-level="2"] .wifi-arc-2.active {
+  stroke: #f59e0b;
+}
+
+/* WiFi value display */
+.wifi-value-bg {
+  fill: rgba(15, 23, 42, 0.9);
+  stroke: rgba(71, 85, 105, 0.5);
+  stroke-width: 1;
+}
+
+.wifi-value-text {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.wifi-status-text {
+  font-size: 9px;
+  fill: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* Animations */
+@keyframes wifi-arc-pulse {
+  0%, 100% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.3));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6));
+  }
+}
+
+@keyframes wifi-loading-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
