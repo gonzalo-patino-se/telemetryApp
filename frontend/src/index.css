@@ -1016,3 +1016,123 @@ a:hover {
   from { left: 0; }
   to { left: 18px; }
 }
+
+/* ============================================
+   BATTERY MODULE STYLES
+   ============================================ */
+
+.battery-module-group {
+  transition: all 0.3s ease;
+}
+
+.battery-terminal {
+  fill: #374151;
+  stroke: #6b7280;
+  stroke-width: 1;
+}
+
+.battery-body {
+  fill: var(--bg-primary);
+  stroke: #6b7280;
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.battery-icon.active .battery-body {
+  stroke: #f59e0b;
+}
+
+.battery-fill {
+  transition: all 0.5s ease;
+}
+
+.battery-charging-glow {
+  fill: none;
+  stroke: #fbbf24;
+  stroke-width: 2;
+  opacity: 0.5;
+  animation: battery-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes battery-pulse {
+  0%, 100% { opacity: 0.3; stroke-width: 2; }
+  50% { opacity: 0.7; stroke-width: 3; }
+}
+
+.charging-bolt {
+  animation: bolt-flash 0.8s ease-in-out infinite;
+}
+
+@keyframes bolt-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.bolt-icon {
+  filter: drop-shadow(0 0 3px #fbbf24);
+}
+
+.battery-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.battery-values-panel {
+  fill: var(--bg-primary);
+  stroke: var(--border-medium);
+  stroke-width: 1;
+}
+
+.battery-soc-value {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.battery-value-label {
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--text-tertiary);
+}
+
+.battery-value-text {
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--text-primary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.battery-value-text.charging {
+  fill: #22c55e;
+}
+
+.battery-value-text.discharging {
+  fill: #f59e0b;
+}
+
+/* Battery bus bar (parallel connection) */
+.bus-bar {
+  stroke: #f59e0b;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.bus-connector {
+  stroke: #f59e0b;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* Legend additions for battery */
+.legend-dot.battery-charging {
+  background: #fbbf24;
+  box-shadow: 0 0 6px #fbbf24;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.legend-line.battery {
+  background: #f59e0b;
+}

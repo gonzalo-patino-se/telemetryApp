@@ -53,8 +53,32 @@ const GRID_CONFIGS: TelemetryConfig[] = [
   { id: 'gridFreq', label: 'Freq', telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL', unit: 'Hz', category: 'grid', decimals: 2 },
 ];
 
+// ============================================================================
+// Battery Configurations (3 modules)
+// ============================================================================
+
+const BATTERY_CONFIGS: TelemetryConfig[] = [
+  // Battery Module 1
+  { id: 'bat1V', label: 'Bat 1 V', telemetryName: '/BMS/MODULE1/STAT/V', unit: 'V', category: 'battery1', decimals: 1 },
+  { id: 'bat1Temp', label: 'Bat 1 Temp', telemetryName: '/BMS/MODULE1/STAT/TEMP', unit: '°C', category: 'battery1', decimals: 1 },
+  { id: 'bat1SoC', label: 'Bat 1 SoC', telemetryName: '/BMS/MODULE1/STAT/USER_SOC', unit: '%', category: 'battery1', decimals: 0 },
+  { id: 'bat1I', label: 'Bat 1 I', telemetryName: '/BMS/MODULE1/STAT/I', unit: 'A', category: 'battery1', decimals: 2 },
+  
+  // Battery Module 2
+  { id: 'bat2V', label: 'Bat 2 V', telemetryName: '/BMS/MODULE2/STAT/V', unit: 'V', category: 'battery2', decimals: 1 },
+  { id: 'bat2Temp', label: 'Bat 2 Temp', telemetryName: '/BMS/MODULE2/STAT/TEMP', unit: '°C', category: 'battery2', decimals: 1 },
+  { id: 'bat2SoC', label: 'Bat 2 SoC', telemetryName: '/BMS/MODULE2/STAT/USER_SOC', unit: '%', category: 'battery2', decimals: 0 },
+  { id: 'bat2I', label: 'Bat 2 I', telemetryName: '/BMS/MODULE2/STAT/I', unit: 'A', category: 'battery2', decimals: 2 },
+  
+  // Battery Module 3
+  { id: 'bat3V', label: 'Bat 3 V', telemetryName: '/BMS/MODULE3/STAT/V', unit: 'V', category: 'battery3', decimals: 1 },
+  { id: 'bat3Temp', label: 'Bat 3 Temp', telemetryName: '/BMS/MODULE3/STAT/TEMP', unit: '°C', category: 'battery3', decimals: 1 },
+  { id: 'bat3SoC', label: 'Bat 3 SoC', telemetryName: '/BMS/MODULE3/STAT/USER_SOC', unit: '%', category: 'battery3', decimals: 0 },
+  { id: 'bat3I', label: 'Bat 3 I', telemetryName: '/BMS/MODULE3/STAT/I', unit: 'A', category: 'battery3', decimals: 2 },
+];
+
 // Combined configs for fetching
-const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS];
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS];
 
 const QUERY_PATH = '/query_adx/';
 const REFRESH_INTERVAL = 10000; // 10 seconds
@@ -444,6 +468,122 @@ const GridComponent: React.FC<GridComponentProps> = ({
 };
 
 // ============================================================================
+// Battery Module SVG Component
+// ============================================================================
+
+interface BatteryModuleProps {
+  x: number;
+  y: number;
+  moduleNumber: number;
+  voltage: number | null;
+  temperature: number | null;
+  soc: number | null;
+  current: number | null;
+  loading: boolean;
+  isActive: boolean;
+  isCharging: boolean;
+}
+
+const BatteryModule: React.FC<BatteryModuleProps> = ({
+  x, y, moduleNumber, voltage, temperature, soc, current, loading, isActive, isCharging
+}) => {
+  const formatValue = (val: number | null, decimals: number = 1) =>
+    val !== null ? val.toFixed(decimals) : '--';
+  
+  // Calculate SoC percentage for fill level (0-100)
+  const socPercent = soc !== null ? Math.max(0, Math.min(100, soc)) : 0;
+  const fillHeight = (socPercent / 100) * 50; // Max height 50px
+  
+  // Determine battery color based on SoC
+  const getBatteryColor = () => {
+    if (soc === null) return '#6b7280'; // gray
+    if (soc <= 20) return '#ef4444'; // red - critical
+    if (soc <= 40) return '#f59e0b'; // orange - low
+    return '#22c55e'; // green - good
+  };
+
+  return (
+    <g transform={`translate(${x}, ${y})`} className="battery-module-group">
+      {/* Battery icon */}
+      <g className={`battery-icon ${isActive ? 'active' : ''}`}>
+        {/* Battery terminal */}
+        <rect x={25} y={0} width={20} height={6} rx={2} className="battery-terminal" />
+        
+        {/* Battery body */}
+        <rect x={15} y={6} width={40} height={54} rx={4} className="battery-body" />
+        
+        {/* Battery fill level based on SoC */}
+        <rect
+          x={18}
+          y={57 - fillHeight}
+          width={34}
+          height={fillHeight}
+          rx={2}
+          fill={getBatteryColor()}
+          className="battery-fill"
+        />
+        
+        {/* Battery glow when charging */}
+        {isCharging && (
+          <rect
+            x={12}
+            y={3}
+            width={46}
+            height={60}
+            rx={6}
+            className="battery-charging-glow"
+          />
+        )}
+        
+        {/* Charging indicator */}
+        {isCharging && (
+          <g transform="translate(35, 35)" className="charging-bolt">
+            <path
+              d="M -5 -8 L 2 -2 L -1 0 L 5 8 L -2 2 L 1 0 Z"
+              fill="#fbbf24"
+              className="bolt-icon"
+            />
+          </g>
+        )}
+      </g>
+      
+      {/* Module label */}
+      <text x={35} y={-8} textAnchor="middle" className="battery-label">
+        BAT {moduleNumber}
+      </text>
+      
+      {/* Values panel */}
+      <g transform="translate(-5, 65)">
+        <rect x={0} y={0} width={80} height={62} rx={4} className="battery-values-panel" />
+        
+        {/* SoC - prominent display */}
+        <text x={40} y={16} textAnchor="middle" className="battery-soc-value" fill={getBatteryColor()}>
+          {loading ? '...' : `${formatValue(soc, 0)}%`}
+        </text>
+        
+        {/* Voltage */}
+        <text x={8} y={32} className="battery-value-label">V:</text>
+        <text x={22} y={32} className="battery-value-text">
+          {loading ? '...' : `${formatValue(voltage, 1)}V`}
+        </text>
+        
+        {/* Current */}
+        <text x={8} y={44} className="battery-value-label">I:</text>
+        <text x={22} y={44} className={`battery-value-text ${isCharging ? 'charging' : 'discharging'}`}>
+          {loading ? '...' : `${formatValue(current, 2)}A`}
+        </text>
+        
+        {/* Temperature */}
+        <text x={8} y={56} className="battery-value-label">T:</text>
+        <text x={22} y={56} className="battery-value-text">
+          {loading ? '...' : `${formatValue(temperature, 1)}°C`}
+        </text>
+      </g>
+    </g>
+  );
+};
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -561,6 +701,38 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     frequency: telemetryData.gridFreq?.value ?? null,
   };
   
+  // Battery values (3 modules)
+  const batteryValues = {
+    bat1: {
+      voltage: telemetryData.bat1V?.value ?? null,
+      temperature: telemetryData.bat1Temp?.value ?? null,
+      soc: telemetryData.bat1SoC?.value ?? null,
+      current: telemetryData.bat1I?.value ?? null,
+    },
+    bat2: {
+      voltage: telemetryData.bat2V?.value ?? null,
+      temperature: telemetryData.bat2Temp?.value ?? null,
+      soc: telemetryData.bat2SoC?.value ?? null,
+      current: telemetryData.bat2I?.value ?? null,
+    },
+    bat3: {
+      voltage: telemetryData.bat3V?.value ?? null,
+      temperature: telemetryData.bat3Temp?.value ?? null,
+      soc: telemetryData.bat3SoC?.value ?? null,
+      current: telemetryData.bat3I?.value ?? null,
+    },
+  };
+  
+  // Battery status - active if voltage > 40V, charging if current > 0
+  const bat1Active = (batteryValues.bat1.voltage ?? 0) > 40;
+  const bat2Active = (batteryValues.bat2.voltage ?? 0) > 40;
+  const bat3Active = (batteryValues.bat3.voltage ?? 0) > 40;
+  const bat1Charging = (batteryValues.bat1.current ?? 0) > 0;
+  const bat2Charging = (batteryValues.bat2.current ?? 0) > 0;
+  const bat3Charging = (batteryValues.bat3.current ?? 0) > 0;
+  const anyBatteryActive = bat1Active || bat2Active || bat3Active;
+  const anyBatteryCharging = bat1Charging || bat2Charging || bat3Charging;
+  
   // Grid is active if we have voltage readings
   const gridIsActive = (gridValues.voltageL1 ?? 0) > 100 || (gridValues.voltageL2 ?? 0) > 100;
   
@@ -630,7 +802,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       )}
       
       {/* SVG Diagram */}
-      <svg viewBox="0 0 620 360" className="energy-flow-svg">
+      <svg viewBox="0 0 700 450" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">
@@ -742,13 +914,13 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         />
         
         {/* Inverter */}
-        <Inverter x={200} y={220} isActive={anyProducing || gridIsActive} />
+        <Inverter x={250} y={220} isActive={anyProducing || gridIsActive || anyBatteryActive} />
         
         {/* Grid Connection Line (Inverter to Grid) */}
         <HorizontalFlowLine
-          startX={300}
+          startX={350}
           startY={255}
-          endX={450}
+          endX={500}
           endY={255}
           isActive={gridIsActive}
           color="#22c55e"
@@ -757,7 +929,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         
         {/* Grid Component */}
         <GridComponent
-          x={450}
+          x={500}
           y={170}
           voltageL1={gridValues.voltageL1}
           voltageL2={gridValues.voltageL2}
@@ -766,6 +938,72 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           frequency={gridValues.frequency}
           loading={telemetryData.gridVL1?.loading ?? true}
           isActive={gridIsActive}
+        />
+        
+        {/* ==================== BATTERY SECTION ==================== */}
+        
+        {/* Battery 1 */}
+        <BatteryModule
+          x={20}
+          y={250}
+          moduleNumber={1}
+          voltage={batteryValues.bat1.voltage}
+          temperature={batteryValues.bat1.temperature}
+          soc={batteryValues.bat1.soc}
+          current={batteryValues.bat1.current}
+          loading={telemetryData.bat1V?.loading ?? true}
+          isActive={bat1Active}
+          isCharging={bat1Charging}
+        />
+        
+        {/* Battery 2 */}
+        <BatteryModule
+          x={110}
+          y={250}
+          moduleNumber={2}
+          voltage={batteryValues.bat2.voltage}
+          temperature={batteryValues.bat2.temperature}
+          soc={batteryValues.bat2.soc}
+          current={batteryValues.bat2.current}
+          loading={telemetryData.bat2V?.loading ?? true}
+          isActive={bat2Active}
+          isCharging={bat2Charging}
+        />
+        
+        {/* Battery 3 */}
+        <BatteryModule
+          x={200}
+          y={250}
+          moduleNumber={3}
+          voltage={batteryValues.bat3.voltage}
+          temperature={batteryValues.bat3.temperature}
+          soc={batteryValues.bat3.soc}
+          current={batteryValues.bat3.current}
+          loading={telemetryData.bat3V?.loading ?? true}
+          isActive={bat3Active}
+          isCharging={bat3Charging}
+        />
+        
+        {/* Battery to Inverter connection - parallel bus bar */}
+        <g className="battery-bus">
+          {/* Horizontal bus bar connecting all batteries */}
+          <line x1={55} y1={245} x2={235} y2={245} className="bus-bar" />
+          
+          {/* Vertical connections from each battery to bus */}
+          <line x1={55} y1={245} x2={55} y2={255} className="bus-connector" />
+          <line x1={145} y1={245} x2={145} y2={255} className="bus-connector" />
+          <line x1={235} y1={245} x2={235} y2={255} className="bus-connector" />
+        </g>
+        
+        {/* Flow line from battery bus to inverter */}
+        <HorizontalFlowLine
+          startX={235}
+          startY={245}
+          endX={250}
+          endY={255}
+          isActive={anyBatteryActive}
+          color="#f59e0b"
+          flowDirection={anyBatteryCharging ? 'left' : 'right'}
         />
       </svg>
       
@@ -790,6 +1028,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         <div className="legend-item">
           <div className="legend-line grid" />
           <span>Grid Flow</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-dot battery-charging" />
+          <span>Battery Charging</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-line battery" />
+          <span>Battery Flow</span>
         </div>
       </div>
     </div>
