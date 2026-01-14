@@ -287,7 +287,7 @@ const telemetryNameMap: Record<TelemetryType, string> = {
   pv4_voltage: '/INV/DCPORT/STAT/PV4/V',
   battery_voltage: '/INV/DCPORT/STAT/BATTERY/V',
   grid_power: '/INV/ACPORT/STAT/GRID/P',
-  load_power: '/INV/ACPORT/STAT/LOAD/P',
+  load_power: '/SYS/MEAS/STAT/LOAD/P_TOTAL',
 };
 
 /**
@@ -448,7 +448,7 @@ export function buildLoadVoltageL1Query(serial: string, startDate: Date, endDate
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N',
   });
 }
 
@@ -460,7 +460,7 @@ export function buildLoadVoltageL2Query(serial: string, startDate: Date, endDate
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N',
   });
 }
 
@@ -472,7 +472,7 @@ export function buildLoadFrequencyTotalQuery(serial: string, startDate: Date, en
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
   });
 }
 
@@ -489,7 +489,7 @@ export function buildLoadVoltageL1NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N',
   });
 }
 
@@ -501,7 +501,7 @@ export function buildLoadVoltageL2NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N',
   });
 }
 
@@ -513,7 +513,7 @@ export function buildLoadFrequencyTotalNormalQuery(serial: string, startDate: Da
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL',
+    telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
   });
 }
 
