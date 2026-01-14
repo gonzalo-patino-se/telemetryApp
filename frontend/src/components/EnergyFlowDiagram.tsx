@@ -85,11 +85,11 @@ const BATTERY_CONFIGS: TelemetryConfig[] = [
 // ============================================================================
 
 const LOAD_CONFIGS: TelemetryConfig[] = [
-  { id: 'loadVL1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N', unit: 'V', category: 'load', decimals: 1 },
-  { id: 'loadVL2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N', unit: 'V', category: 'load', decimals: 1 },
-  { id: 'loadIL1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1N', unit: 'A', category: 'load', decimals: 2 },
-  { id: 'loadIL2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2N', unit: 'A', category: 'load', decimals: 2 },
-  { id: 'loadFreq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', category: 'load', decimals: 2 },
+  { id: 'loadVL1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N', unit: 'V', category: 'load', decimals: 1 },
+  { id: 'loadVL2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N', unit: 'V', category: 'load', decimals: 1 },
+  { id: 'loadIL1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1', unit: 'A', category: 'load', decimals: 2 },
+  { id: 'loadIL2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2', unit: 'A', category: 'load', decimals: 2 },
+  { id: 'loadFreq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL', unit: 'Hz', category: 'load', decimals: 2 },
 ];
 
 // ============================================================================
