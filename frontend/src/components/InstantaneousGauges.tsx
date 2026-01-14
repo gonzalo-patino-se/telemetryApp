@@ -74,11 +74,11 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
   { id: 'bat3_i', label: 'Bat 3 Current', telemetryName: '/BMS/MODULE3/STAT/I', unit: 'A', min: -50, max: 50, category: 'battery', colorStart: '#eab308', colorEnd: '#facc15', decimals: 2 },
   
   // Load (using normal telemetry for instantaneous - fast telemetry requires different query)
-  { id: 'load_v_l1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L1N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
-  { id: 'load_v_l2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/LOAD/VRMS_L2N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
-  { id: 'load_i_l1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1N', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
-  { id: 'load_i_l2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2N', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
-  { id: 'load_freq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/LOAD/FREQ_TOTAL', unit: 'Hz', min: 55, max: 65, category: 'load', colorStart: '#06b6d4', colorEnd: '#22d3ee', decimals: 2 },
+  { id: 'load_v_l1', label: 'Load V L1', telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
+  { id: 'load_v_l2', label: 'Load V L2', telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N', unit: 'V', min: 0, max: 280, category: 'load', colorStart: '#ec4899', colorEnd: '#f472b6' },
+  { id: 'load_i_l1', label: 'Load I L1', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
+  { id: 'load_i_l2', label: 'Load I L2', telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2', unit: 'A', min: 0, max: 100, category: 'load', colorStart: '#a855f7', colorEnd: '#c084fc', decimals: 2 },
+  { id: 'load_freq', label: 'Load Freq', telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL', unit: 'Hz', min: 55, max: 65, category: 'load', colorStart: '#06b6d4', colorEnd: '#22d3ee', decimals: 2 },
   
   // Battery Relay (uses Alarms table - value is 0=Inactive, 1=Active)
   { id: 'bat_main_relay', label: 'Battery Relay', telemetryName: '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR', unit: '', min: 0, max: 1, category: 'battery', colorStart: '#22c55e', colorEnd: '#4ade80' },
