@@ -1524,7 +1524,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
             endY={200}
             isActive={loadIsActive}
             color="#ec4899"
-            flowDirection="left"
+            flowDirection="right"
           />
         </g>
       </svg>
