@@ -11,7 +11,7 @@ import {
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
   buildGridVoltageL1FastQuery, buildGridVoltageL2FastQuery, buildGridCurrentL1FastQuery, buildGridCurrentL2FastQuery, buildGridFrequencyTotalFastQuery,
   // Load queries (normal + fast)
-  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
+  buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadVoltageL1FastQuery, buildLoadVoltageL2FastQuery, buildLoadFrequencyTotalFastQuery,buildLoadFrequencyTotalNormalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
   // Battery queries (normal + fast)
   buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
@@ -327,7 +327,7 @@ export const loadVoltageL1Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l1',
   buildQuery: buildLoadVoltageL1NormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadVoltageL1Query,     // Fast telemetry (15s)
+  buildFastQuery: buildLoadVoltageL1FastQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 
@@ -337,7 +337,7 @@ export const loadVoltageL2Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l2',
   buildQuery: buildLoadVoltageL2NormalQuery, // Normal telemetry (15min)
-  buildFastQuery: buildLoadVoltageL2Query,     // Fast telemetry (15s)
+  buildFastQuery: buildLoadVoltageL2NormalQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 
@@ -367,7 +367,7 @@ export const loadFrequencyTotalConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'load_frequency_total',
   buildQuery: buildLoadFrequencyTotalNormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadFrequencyTotalQuery,     // Fast telemetry (15s)
+  buildFastQuery: buildLoadFrequencyTotalFastQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 

@@ -443,7 +443,7 @@ export function buildFastTelemetryQuery(params: FastTelemetryQueryParams): strin
 /**
  * Build query for L1 RMS Voltage Load from Inverter (fast-telemetry)
  */
-export function buildLoadVoltageL1Query(serial: string, startDate: Date, endDate: Date): string {
+export function buildLoadVoltageL1FastQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildFastTelemetryQuery({
     serial,
     startDate,
@@ -455,7 +455,7 @@ export function buildLoadVoltageL1Query(serial: string, startDate: Date, endDate
 /**
  * Build query for L2 RMS Voltage Load from Inverter (fast-telemetry)
  */
-export function buildLoadVoltageL2Query(serial: string, startDate: Date, endDate: Date): string {
+export function buildLoadVoltageL2FastQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildFastTelemetryQuery({
     serial,
     startDate,
@@ -467,7 +467,7 @@ export function buildLoadVoltageL2Query(serial: string, startDate: Date, endDate
 /**
  * Build query for Load Frequency Total from Inverter (fast-telemetry)
  */
-export function buildLoadFrequencyTotalQuery(serial: string, startDate: Date, endDate: Date): string {
+export function buildLoadFrequencyTotalFastQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildFastTelemetryQuery({
     serial,
     startDate,
