@@ -15,6 +15,7 @@ import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
 import LoadCurrentL1Widget from './widgets/LoadCurrentL1Widget';
+import LoadCurrentL2Widget from './widgets/LoadCurrentL2Widget';
 
 const Dashboard = () => {
     // Use global serial context - persists across all tabs
@@ -91,6 +92,8 @@ const Dashboard = () => {
     const [loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal] = useState(0);
     const [loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch] = useState(true);
     const [loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal] = useState(0);
+    const [loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch] = useState(true);
+    const [loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal] = useState(0);
     const [loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch] = useState(true);
     const [loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal] = useState(0);
     const [devInfoAutoFetch, setDevInfoAutoFetch] = useState(true);
@@ -519,6 +522,7 @@ const Dashboard = () => {
                 {renderWidgetCard("Load Voltage L2", LoadVoltageL2Widget, loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch, loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal)}
                 {renderWidgetCard("Load Frequency", LoadFrequencyTotalWidget, loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch, loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal)}
                 {renderWidgetCard("Load Current L1", LoadCurrentL1Widget, loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch, loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal)}
+                {renderWidgetCard("Load Current L2", LoadCurrentL2Widget, loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch, loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal)}
             </div>
 
             {/* ==================== BATTERY MODULE 1 ==================== */}

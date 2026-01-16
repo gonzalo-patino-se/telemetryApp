@@ -602,7 +602,7 @@ export function buildGridCurrentL1FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/IRMS_L1',
+    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L1',
   });
 }
 
@@ -614,7 +614,7 @@ export function buildGridCurrentL2FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/IRMS_L2',
+    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L2',
   });
 }
 
