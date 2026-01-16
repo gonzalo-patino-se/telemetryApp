@@ -347,7 +347,7 @@ export const loadCurrentL1Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_current_l1',
   buildQuery: buildLoadCurrentL1NormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadCurrentL1NormalQuery,     // Fast telemetry (15s)
+  buildFastQuery: buildLoadCurrentL1FastQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 
