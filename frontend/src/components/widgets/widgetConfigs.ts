@@ -11,8 +11,7 @@ import {
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
   buildGridVoltageL1FastQuery, buildGridVoltageL2FastQuery, buildGridCurrentL1FastQuery, buildGridCurrentL2FastQuery, buildGridFrequencyTotalFastQuery,
   // Load queries (normal + fast)
-  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery,
-  buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadFrequencyTotalNormalQuery,
+  buildLoadVoltageL1Query, buildLoadVoltageL2Query, buildLoadFrequencyTotalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
   // Battery queries (normal + fast)
   buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
@@ -337,8 +336,28 @@ export const loadVoltageL2Config: WidgetConfig = {
   unit: 'V',
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l2',
-  buildQuery: buildLoadVoltageL2NormalQuery,  // Normal telemetry (15min)
+  buildQuery: buildLoadVoltageL2NormalQuery, // Normal telemetry (15min)
   buildFastQuery: buildLoadVoltageL2Query,     // Fast telemetry (15s)
+  defaultMode: 'fast',  // Default to fast telemetry
+};
+
+export const loadCurrentL1Config: WidgetConfig = {
+  label: 'Load Current L1 RMS',
+  unit: 'A',
+  colorScheme: 'purple',
+  csvPrefix: 'load_current_l1',
+  buildQuery: buildLoadCurrentL1NormalQuery,  // Normal telemetry (15min)
+  buildFastQuery: buildLoadCurrentL1FastQuery,     // Fast telemetry (15s)
+  defaultMode: 'fast',  // Default to fast telemetry
+};
+
+export const loadCurrentL2Config: WidgetConfig = {
+  label: 'Load Current L2 RMS',
+  unit: 'A',
+  colorScheme: 'purple',
+  csvPrefix: 'load_current_l2',
+  buildQuery: buildLoadCurrentL2NormalQuery,  // Normal telemetry (15min)
+  buildFastQuery: buildLoadCurrentL2FastQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 
@@ -391,6 +410,8 @@ export const allWidgetConfigs = {
   // Load Measurements (Fast Telemetry)
   loadVoltageL1: loadVoltageL1Config,
   loadVoltageL2: loadVoltageL2Config,
+  loadCurrentL1: loadCurrentL1Config,
+  loadCurrentL2: loadCurrentL2Config,
   loadFrequencyTotal: loadFrequencyTotalConfig,
 } as const;
 
