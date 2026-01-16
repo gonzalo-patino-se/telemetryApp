@@ -476,6 +476,30 @@ export function buildLoadFrequencyTotalQuery(serial: string, startDate: Date, en
   });
 }
 
+/** 
+ * Build query for Load Current L1 from Inverter (fast-telemetry)
+ */
+export function buildLoadCurrentL1Query(serial: string, startDate: Date, endDate: Date): string {   
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L1',
+  });
+}
+
+/** 
+ * Build query for Load Current L1 from Inverter (fast-telemetry)
+ */
+export function buildLoadCurrentL2Query(serial: string, startDate: Date, endDate: Date): string {   
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L2',
+  });
+}
+
 // ============================================================================
 // Normal Telemetry Versions of Load Measurements
 // Uses standard Telemetry table (sampled every 15 min)
@@ -514,6 +538,30 @@ export function buildLoadFrequencyTotalNormalQuery(serial: string, startDate: Da
     startDate,
     endDate,
     telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
+  });
+}
+
+/**
+ * Build query for L1 RMS Current Load (normal telemetry - 15 min sampling)
+ */
+export function buildLoadCurrentL1NormalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1',
+  });
+}
+
+/**
+ * Build query for L2 RMS Current Load (normal telemetry - 15 min sampling)
+ */
+export function buildLoadCurrentL2NormalQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2',
   });
 }
 
@@ -579,6 +627,30 @@ export function buildGridFrequencyTotalFastQuery(serial: string, startDate: Date
     startDate,
     endDate,
     telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
+  });
+}
+
+/**
+ * Build query for Load Current L1 (fast-telemetry - 15 sec sampling)
+ */
+export function buildLoadCurrentL1FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L1',
+  });
+}
+
+/**
+ * Build query for Load Current L2 (fast-telemetry - 15 sec sampling)
+ */
+export function buildLoadCurrentL2FastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L2',
   });
 }
 
