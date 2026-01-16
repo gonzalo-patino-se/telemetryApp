@@ -327,8 +327,8 @@ export const loadVoltageL1Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l1',
   buildQuery: buildLoadVoltageL1NormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadVoltageL1FastQuery,     // Fast telemetry (15s)
-  defaultMode: 'fast',  // Default to fast telemetry
+  //buildFastQuery: buildLoadVoltageL1FastQuery,     // Fast telemetry (15s)
+  defaultMode: 'normal',  // Default to fast telemetry
 };
 
 export const loadVoltageL2Config: WidgetConfig = {
@@ -337,8 +337,8 @@ export const loadVoltageL2Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_voltage_l2',
   buildQuery: buildLoadVoltageL2NormalQuery, // Normal telemetry (15min)
-  buildFastQuery: buildLoadVoltageL2NormalQuery,     // Fast telemetry (15s)
-  defaultMode: 'fast',  // Default to fast telemetry
+  //buildFastQuery: buildLoadVoltageL2NormalQuery,     // Fast telemetry (15s)
+  defaultMode: 'normal',  // Default to fast telemetry
 };
 
 export const loadCurrentL1Config: WidgetConfig = {
@@ -347,7 +347,7 @@ export const loadCurrentL1Config: WidgetConfig = {
   colorScheme: 'purple',
   csvPrefix: 'load_current_l1',
   buildQuery: buildLoadCurrentL1NormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadCurrentL1FastQuery,     // Fast telemetry (15s)
+  buildFastQuery: buildLoadCurrentL1NormalQuery,     // Fast telemetry (15s)
   defaultMode: 'fast',  // Default to fast telemetry
 };
 
@@ -367,8 +367,8 @@ export const loadFrequencyTotalConfig: WidgetConfig = {
   colorScheme: 'blue',
   csvPrefix: 'load_frequency_total',
   buildQuery: buildLoadFrequencyTotalNormalQuery,  // Normal telemetry (15min)
-  buildFastQuery: buildLoadFrequencyTotalFastQuery,     // Fast telemetry (15s)
-  defaultMode: 'fast',  // Default to fast telemetry
+  //buildFastQuery: buildLoadFrequencyTotalFastQuery,     // Fast telemetry (15s)
+  defaultMode: 'normal',  // Default to fast telemetry
 };
 
 // ============================================================================
