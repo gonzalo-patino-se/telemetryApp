@@ -17,7 +17,7 @@ interface GaugeConfig {
   unit: string;
   min: number;
   max: number;
-  category: 'wifi' | 'solar' | 'grid' | 'battery' | 'load';
+  category: 'wifi' | 'solar' | 'grid' | 'battery' | 'load' | 'inverter';
   colorStart: string;
   colorEnd: string;
   decimals?: number;
@@ -41,6 +41,7 @@ interface InstantaneousGaugesProps {
 const GAUGE_CONFIGS: GaugeConfig[] = [
   // WiFi
   { id: 'wifi', label: 'WiFi Signal', telemetryName: '/SCC/WIFI/STAT/SIGNAL_STRENGTH', unit: 'dBm', min: -100, max: 0, category: 'wifi', colorStart: '#3b82f6', colorEnd: '#06b6d4' },
+  { id: 'inv_mode', label: 'Inverter Mode', telemetryName: 'INV/DEV/STAT/OPERATING_STATE', unit: '', min:-1, max:9, category: 'inverter', colorStart: '#6366f1', colorEnd: '#818cf8', decimals: 0,},
   
   // Solar PV
   { id: 'pv1', label: 'PV1 Voltage', telemetryName: '/INV/DCPORT/STAT/PV1/V', unit: 'V', min: 0, max: 500, category: 'solar', colorStart: '#f59e0b', colorEnd: '#fbbf24' },
@@ -165,11 +166,33 @@ const AnimatedGauge: React.FC<GaugeProps> = ({ config, data }) => {
     if (val === 0) return 'Not Activated';
     return 'Invalid';
   };
+
+  const isInverterModeGauge = config.id === 'inv_mode';
+
+  const getInverterModeString = (val: number) => {
+    switch (val) {
+        case -1: return 'INVALID';
+        case 0: return 'UNDEFINED';
+        case 1: return 'OFFLINE';
+        case 2: return 'DISABLED';
+        case 3: return 'STANDBY';
+        case 4: return 'NORMAL';
+        case 5: return 'LIMP_MODE';
+        case 6: return 'FAULT_AUTO_CLEAR';
+        case 7: return 'FAULT_MANUAL_CLEAR';
+        case 8: return 'FW_UPDATE_IN_PROGRESS';
+        case 9: return 'SELF_TESTING';
+        default: return '--';
+    }
+};
+
   const displayValue = !hasValue 
     ? '--' 
     : isRelayGauge 
       ? getRelayDisplayValue(value)
-      : value.toFixed(decimals);
+      : isInverterModeGauge
+        ? getInverterModeString(value)
+        : value.toFixed(decimals);
   
   return (
     <div style={{
@@ -325,6 +348,7 @@ function describeArc(x: number, y: number, radius: number, startAngle: number, e
 
 const categoryConfig: Record<string, { icon: string; label: string; color: string }> = {
   wifi: { icon: '📶', label: 'WiFi', color: '#3b82f6' },
+  inverter: { icon: '⚙️', label: 'Inverter', color: '#6366f1' },
   solar: { icon: '☀️', label: 'Solar PV', color: '#f59e0b' },
   grid: { icon: '⚡', label: 'Grid', color: '#10b981' },
   battery: { icon: '🔋', label: 'Battery', color: '#ef4444' },
@@ -466,7 +490,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     return acc;
   }, {} as Record<string, GaugeConfig[]>);
 
-  const categoryOrder = ['wifi', 'solar', 'grid', 'battery', 'load'];
+  const categoryOrder = ['wifi', 'inverter', 'solar', 'grid', 'battery', 'load'];
 
   return (
     <div style={{
