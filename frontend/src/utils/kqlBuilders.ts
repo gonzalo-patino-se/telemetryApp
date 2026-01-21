@@ -336,6 +336,10 @@ export type TelemetryType =
   | 'pv2_voltage'
   | 'pv3_voltage'
   | 'pv4_voltage'
+  | 'pv1_current'
+  | 'pv2_current'
+  | 'pv3_current'
+  | 'pv4_current'
   | 'battery_voltage'
   | 'grid_power'
   | 'load_power';
@@ -346,6 +350,10 @@ const telemetryNameMap: Record<TelemetryType, string> = {
   pv2_voltage: '/INV/DCPORT/STAT/PV2/V',
   pv3_voltage: '/INV/DCPORT/STAT/PV3/V',
   pv4_voltage: '/INV/DCPORT/STAT/PV4/V',
+  pv1_current: '/INV/DCPORT/STAT/PV1/I',
+  pv2_current: '/INV/DCPORT/STAT/PV2/I',
+  pv3_current: '/INV/DCPORT/STAT/PV3/I',
+  pv4_current: '/INV/DCPORT/STAT/PV4/I',
   battery_voltage: '/INV/DCPORT/STAT/BATTERY/V',
   grid_power: '/INV/ACPORT/STAT/GRID/P',
   load_power: '/SYS/MEAS/STAT/LOAD/P_TOTAL',
@@ -767,6 +775,56 @@ export function buildPV4VoltageFastQuery(serial: string, startDate: Date, endDat
     telemetryName: '/INV/DCPORT/STAT/PV4/V',
   });
 }
+
+/**
+ * Build query for PV1 Current (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV1CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV1/I',
+  });
+}
+
+/**
+ * Build query for PV2 Current (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV2CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV2/I',
+  });
+}
+
+/**
+ * Build query for PV3 Current (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV3CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV3/I',
+  });
+}
+
+/**
+ * Build query for PV4 Current (fast-telemetry - 15 sec sampling)
+ */
+export function buildPV4CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/INV/DCPORT/STAT/PV4/I',
+  });
+}
+
+
 
 // ============================================================================
 // Fast Telemetry Versions of Battery Measurements
