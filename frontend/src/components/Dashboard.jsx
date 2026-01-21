@@ -7,7 +7,7 @@ import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
-import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
+import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
@@ -39,7 +39,7 @@ const Dashboard = () => {
     const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
 
-
+    // PV Voltages
     const [pv1AutoFetch, setPv1AutoFetch] = useState(true);
     const [pv1FetchSignal, setPv1FetchSignal] = useState(0);
     const [pv2AutoFetch, setPv2AutoFetch] = useState(true);
@@ -48,8 +48,16 @@ const Dashboard = () => {
     const [pv3FetchSignal, setPv3FetchSignal] = useState(0);
     const [pv4AutoFetch, setPv4AutoFetch] = useState(true);
     const [pv4FetchSignal, setPv4FetchSignal] = useState(0);
+    // PV Currents
     const [pv1CurrentAutoFetch, setPv1CurrentAutoFetch] = useState(true);
     const [pv1CurrentFetchSignal, setPv1CurrentFetchSignal] = useState(0);
+    const [pv2CurrentAutoFetch, setPv2CurrentAutoFetch] = useState(true);
+    const [pv2CurrentFetchSignal, setPv2CurrentFetchSignal] = useState(0);
+    const [pv3CurrentAutoFetch, setPv3CurrentAutoFetch] = useState(true);
+    const [pv3CurrentFetchSignal, setPv3CurrentFetchSignal] = useState(0);
+    const [pv4CurrentAutoFetch, setPv4CurrentAutoFetch] = useState(true);
+    const [pv4CurrentFetchSignal, setPv4CurrentFetchSignal] = useState(0);
+    
 
     const [gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch] = useState(true);
     const [gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal] = useState(0);
@@ -137,6 +145,10 @@ const Dashboard = () => {
                 setPv2FetchSignal((n) => n + 1);
                 setPv3FetchSignal((n) => n + 1);
                 setPv4FetchSignal((n) => n + 1);
+                setPv1CurrentFetchSignal((n) => n + 1);
+                setPv2CurrentFetchSignal((n) => n + 1);
+                setPv3CurrentFetchSignal((n) => n + 1);
+                setPv4CurrentFetchSignal((n) => n + 1);
             }, 150);
             
             // Batch 3: Grid widgets (200ms delay)
@@ -498,6 +510,9 @@ const Dashboard = () => {
                 {renderWidgetCard("PV3 Voltage", PV3VoltageWidget, pv3AutoFetch, setPv3AutoFetch, pv3FetchSignal, setPv3FetchSignal)}
                 {renderWidgetCard("PV4 Voltage", PV4VoltageWidget, pv4AutoFetch, setPv4AutoFetch, pv4FetchSignal, setPv4FetchSignal)}
                 {renderWidgetCard("PV1 Current", PV1CurrentWidget, pv1CurrentAutoFetch, setPv1CurrentAutoFetch, pv1CurrentFetchSignal, setPv1CurrentFetchSignal)}
+                {renderWidgetCard("PV2 Current", PV2CurrentWidget, pv2CurrentAutoFetch, setPv2CurrentAutoFetch, pv2CurrentFetchSignal, setPv2CurrentFetchSignal)}
+                {renderWidgetCard("PV3 Current", PV3CurrentWidget, pv3CurrentAutoFetch, setPv3CurrentAutoFetch, pv3CurrentFetchSignal, setPv3CurrentFetchSignal)}
+                {renderWidgetCard("PV4 Current", PV4CurrentWidget, pv4CurrentAutoFetch, setPv4CurrentAutoFetch, pv4CurrentFetchSignal, setPv4CurrentFetchSignal)}
             </div>
 
             {/* ==================== GRID MEASUREMENTS ==================== */}

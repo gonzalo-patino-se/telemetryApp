@@ -14,6 +14,9 @@ export { PV2VoltageWidget } from './PV2VoltageWidget';
 export { PV3VoltageWidget } from './PV3VoltageWidget';
 export { PV4VoltageWidget } from './PV4VoltageWidget';
 export { PV1CurrentWidget } from './PV1CurrentWidget';
+export { PV2CurrentWidget } from './PV2CurrentWidget';
+export { PV3CurrentWidget } from './PV3CurrentWidget';
+export { PV4CurrentWidget } from './PV4CurrentWidget';
 export { BatteryVoltageWidget } from './BatteryVoltageWidget';
 export { GridPowerWidget } from './GridPowerWidget';
 export { LoadPowerWidget } from './LoadPowerWidget';
@@ -22,6 +25,7 @@ export { GridVoltageL2Widget } from './GridVoltageL2Widget';
 export { GridCurrentL1Widget } from './GridCurrentL1Widget';
 export { GridCurrentL2Widget } from './GridCurrentL2Widget';
 export { GridFrequencyTotalWidget } from './GridFrequencyTotalWidget';
+
 
 // Battery Module 1
 export { Battery1VoltageWidget } from './Battery1VoltageWidget';
