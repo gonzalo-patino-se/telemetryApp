@@ -7,7 +7,7 @@ import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
-import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
+import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
@@ -16,6 +16,7 @@ import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
 import LoadCurrentL1Widget from './widgets/LoadCurrentL1Widget';
 import LoadCurrentL2Widget from './widgets/LoadCurrentL2Widget';
+
 
 const Dashboard = () => {
     // Use global serial context - persists across all tabs
@@ -37,6 +38,8 @@ const Dashboard = () => {
     // Widget refresh controls
     const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
+
+
     const [pv1AutoFetch, setPv1AutoFetch] = useState(true);
     const [pv1FetchSignal, setPv1FetchSignal] = useState(0);
     const [pv2AutoFetch, setPv2AutoFetch] = useState(true);
@@ -45,6 +48,9 @@ const Dashboard = () => {
     const [pv3FetchSignal, setPv3FetchSignal] = useState(0);
     const [pv4AutoFetch, setPv4AutoFetch] = useState(true);
     const [pv4FetchSignal, setPv4FetchSignal] = useState(0);
+    const [pv1CurrentAutoFetch, setPv1CurrentAutoFetch] = useState(true);
+    const [pv1CurrentFetchSignal, setPv1CurrentFetchSignal] = useState(0);
+
     const [gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch] = useState(true);
     const [gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal] = useState(0);
     const [gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch] = useState(true);
@@ -491,6 +497,7 @@ const Dashboard = () => {
                 {renderWidgetCard("PV2 Voltage", PV2VoltageWidget, pv2AutoFetch, setPv2AutoFetch, pv2FetchSignal, setPv2FetchSignal)}
                 {renderWidgetCard("PV3 Voltage", PV3VoltageWidget, pv3AutoFetch, setPv3AutoFetch, pv3FetchSignal, setPv3FetchSignal)}
                 {renderWidgetCard("PV4 Voltage", PV4VoltageWidget, pv4AutoFetch, setPv4AutoFetch, pv4FetchSignal, setPv4FetchSignal)}
+                {renderWidgetCard("PV1 Current", PV1CurrentWidget, pv1CurrentAutoFetch, setPv1CurrentAutoFetch, pv1CurrentFetchSignal, setPv1CurrentFetchSignal)}
             </div>
 
             {/* ==================== GRID MEASUREMENTS ==================== */}

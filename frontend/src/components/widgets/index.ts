@@ -13,6 +13,7 @@ export { PV1VoltageWidget } from './PV1VoltageWidget';
 export { PV2VoltageWidget } from './PV2VoltageWidget';
 export { PV3VoltageWidget } from './PV3VoltageWidget';
 export { PV4VoltageWidget } from './PV4VoltageWidget';
+export { PV1CurrentWidget } from './PV1CurrentWidget';
 export { BatteryVoltageWidget } from './BatteryVoltageWidget';
 export { GridPowerWidget } from './GridPowerWidget';
 export { LoadPowerWidget } from './LoadPowerWidget';
