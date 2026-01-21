@@ -7,6 +7,7 @@ import {
   // PV Voltage queries (normal + fast)
   buildPV1VoltageQuery, buildPV2VoltageQuery, buildPV3VoltageQuery, buildPV4VoltageQuery, 
   buildPV1VoltageFastQuery, buildPV2VoltageFastQuery, buildPV3VoltageFastQuery, buildPV4VoltageFastQuery,
+  buildPV1CurrentQuery, buildPV2CurrentQuery, buildPV3CurrentQuery, buildPV4CurrentQuery,
   // Grid queries (normal + fast)
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
   buildGridVoltageL1FastQuery, buildGridVoltageL2FastQuery, buildGridCurrentL1FastQuery, buildGridCurrentL2FastQuery, buildGridFrequencyTotalFastQuery,
@@ -149,6 +150,58 @@ export const pv4VoltageConfig: WidgetConfig = {
   csvPrefix: 'pv4_voltage',
   buildQuery: buildPV4VoltageQuery,
   buildFastQuery: buildPV4VoltageFastQuery,
+};
+
+// ============================================================================
+// PV1 Current Widget
+// ============================================================================
+export const pv1CurrentConfig: WidgetConfig = {
+  label: 'PV1 Current',
+  unit: 'A',
+  colorScheme: 'green',
+  csvPrefix: 'pv1_current',
+  buildQuery: buildPV1CurrentQuery,
+  // buildFastQuery: buildPV1CurrentFastQuery, // If you have fast telemetry, add this
+  defaultMode: 'normal',
+};
+
+// ============================================================================
+// PV2 Current Widget
+// ============================================================================
+export const pv2CurrentConfig: WidgetConfig = {
+  label: 'PV2 Current',
+  unit: 'A',
+  colorScheme: 'green',
+  csvPrefix: 'pv2_current',
+  buildQuery: buildPV2CurrentQuery,
+  // buildFastQuery: buildPV2CurrentFastQuery, // If you have fast telemetry, add this
+  defaultMode: 'normal',
+};
+
+// ============================================================================
+// PV3 Current Widget
+// ============================================================================
+export const pv3CurrentConfig: WidgetConfig = {
+  label: 'PV3 Current',
+  unit: 'A',
+  colorScheme: 'green',
+  csvPrefix: 'pv3_current',
+  buildQuery: buildPV3CurrentQuery,
+  // buildFastQuery: buildPV3CurrentFastQuery, // If you have fast telemetry, add this
+  defaultMode: 'normal',
+};
+
+// ============================================================================
+// PV4 Current Widget
+// ============================================================================
+export const pv4CurrentConfig: WidgetConfig = {
+  label: 'PV4 Current',
+  unit: 'A',
+  colorScheme: 'green',
+  csvPrefix: 'pv4_current',
+  buildQuery: buildPV4CurrentQuery,
+  // buildFastQuery: buildPV4CurrentFastQuery, // If you have fast telemetry, add this
+  defaultMode: 'normal',
 };
 
 // ============================================================================
@@ -382,6 +435,12 @@ export const allWidgetConfigs = {
   pv2Voltage: pv2VoltageConfig,
   pv3Voltage: pv3VoltageConfig,
   pv4Voltage: pv4VoltageConfig,
+  
+  pv1Current: pv1CurrentConfig,
+  pv2Current: pv2CurrentConfig,
+  pv3Current: pv3CurrentConfig,
+  pv4Current: pv4CurrentConfig,
+  // Grid Measurements
   gridVoltageL1: gridVoltageL1Config,
   gridVoltageL2: gridVoltageL2Config,
   gridCurrentL1: gridCurrentL1Config,

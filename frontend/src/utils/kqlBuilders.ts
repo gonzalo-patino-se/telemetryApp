@@ -206,6 +206,67 @@ export function buildPV4VoltageQuery(
 }
 
 /**
+ * Build query specifically for PV1 current
+ */
+export function buildPV1CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return `
+  let s = '${serial}';
+    Telemetry
+    | where comms_serial contains s
+    | where name contains '/INV/DCPORT/STAT/PV1/I'
+    | where localtime between (datetime(${startDate.toISOString()}) .. datetime(${endDate.toISOString()}))
+    | project localtime, value_double
+    | order by localtime asc
+  `.trim();
+}
+
+/**
+ * Build query specifically for PV2 current
+ */
+export function buildPV2CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return `
+  let s = '${serial}';
+    Telemetry
+    | where comms_serial contains s
+    | where name contains '/INV/DCPORT/STAT/PV2/I'
+    | where localtime between (datetime(${startDate.toISOString()}) .. datetime(${endDate.toISOString()}))
+    | project localtime, value_double
+    | order by localtime asc
+  `.trim();
+}
+
+/**
+ * Build query specifically for PV3 current
+ */
+export function buildPV3CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return `
+  let s = '${serial}';
+    Telemetry
+    | where comms_serial contains s
+    | where name contains '/INV/DCPORT/STAT/PV3/I'
+    | where localtime between (datetime(${startDate.toISOString()}) .. datetime(${endDate.toISOString()}))
+    | project localtime, value_double
+    | order by localtime asc
+  `.trim();
+}
+
+/**
+ * Build query specifically for PV4 current
+ */
+export function buildPV4CurrentQuery(serial: string, startDate: Date, endDate: Date): string {
+  return `
+  let s = '${serial}';
+    Telemetry
+    | where comms_serial contains s
+    | where name contains '/INV/DCPORT/STAT/PV4/I'
+    | where localtime between (datetime(${startDate.toISOString()}) .. datetime(${endDate.toISOString()}))
+    | project localtime, value_double
+    | order by localtime asc
+  `.trim();
+}
+
+
+/**
  * Build query specifically for battery voltage
  */
 export function buildBatteryVoltageQuery(
