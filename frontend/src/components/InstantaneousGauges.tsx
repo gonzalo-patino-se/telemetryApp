@@ -48,6 +48,10 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
   { id: 'pv2', label: 'PV2 Voltage', telemetryName: '/INV/DCPORT/STAT/PV2/V', unit: 'V', min: 0, max: 500, category: 'solar', colorStart: '#f59e0b', colorEnd: '#fbbf24' },
   { id: 'pv3', label: 'PV3 Voltage', telemetryName: '/INV/DCPORT/STAT/PV3/V', unit: 'V', min: 0, max: 500, category: 'solar', colorStart: '#f59e0b', colorEnd: '#fbbf24' },
   { id: 'pv4', label: 'PV4 Voltage', telemetryName: '/INV/DCPORT/STAT/PV4/V', unit: 'V', min: 0, max: 500, category: 'solar', colorStart: '#f59e0b', colorEnd: '#fbbf24' },
+  { id: 'pv1_i', label: 'PV1 Current', telemetryName: '/INV/DCPORT/STAT/PV1/I', unit: 'A', min: 0, max: 20, category: 'solar', colorStart: '#f97316', colorEnd: '#fb923c', decimals: 2 },
+  { id: 'pv2_i', label: 'PV2 Current', telemetryName: '/INV/DCPORT/STAT/PV2/I', unit: 'A', min: 0, max: 20, category: 'solar', colorStart: '#f97316', colorEnd: '#fb923c', decimals: 2 },
+  { id: 'pv3_i', label: 'PV3 Current', telemetryName: '/INV/DCPORT/STAT/PV3/I', unit: 'A', min: 0, max: 20, category: 'solar', colorStart: '#f97316', colorEnd: '#fb923c', decimals: 2 },
+  { id: 'pv4_i', label: 'PV4 Current', telemetryName: '/INV/DCPORT/STAT/PV4/I', unit: 'A', min: 0, max: 20, category: 'solar', colorStart: '#f97316', colorEnd: '#fb923c', decimals: 2 },
   
   // Grid
   { id: 'grid_v_l1', label: 'Grid V L1', telemetryName: '/INV/ACPORT/STAT/VRMS_L1N', unit: 'V', min: 0, max: 280, category: 'grid', colorStart: '#10b981', colorEnd: '#34d399' },
