@@ -3,6 +3,7 @@
     import React, { useEffect, useMemo, useState } from 'react';
     import api from '../services/api';
     import { useAuth } from '../context/AuthContext';
+    import { useTimeRangeOptional } from '../context/TimeRangeContext';
     import DatePicker from 'react-datepicker';
     import 'react-datepicker/dist/react-datepicker.css';
     import { calculatePointStatistics, formatStatValue } from '../utils/chartHelpers';
@@ -49,6 +50,9 @@
 
     /** Optional: increment to trigger a fetch from parent (e.g., header button click) */
     fetchSignal?: number;
+
+    /** Whether to use global time range from MasterTimeRangeWidget (default: true) */
+    useGlobalRange?: boolean;
     }
 
     type AdxRow = {
@@ -151,14 +155,36 @@
     autoFetchProp,
     onAutoFetchChange,
     fetchSignal,
+    useGlobalRange = true,
     }) => {
     const { accessToken, logout } = useAuth();
+    
+    // Global time range context
+    const timeRangeContext = useTimeRangeOptional();
+    
+    // Whether this widget is currently linked to global range
+    const [isLinkedToGlobal, setIsLinkedToGlobal] = useState(useGlobalRange);
 
-    // Default range: Last 24 hours
-    const [{ fromDT, toDT }, setRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
+    // Default range: Last 24 hours (used when not linked to global)
+    const [{ fromDT: localFromDT, toDT: localToDT }, setRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
     const { start, end } = lastHours(24);
     return { fromDT: start, toDT: end };
     });
+    
+    // Effective time range - use global if linked, otherwise local
+    const fromDT = useMemo(() => {
+    if (isLinkedToGlobal && timeRangeContext) {
+        return timeRangeContext.globalTimeRange.startDate;
+    }
+    return localFromDT;
+    }, [isLinkedToGlobal, timeRangeContext, localFromDT]);
+    
+    const toDT = useMemo(() => {
+    if (isLinkedToGlobal && timeRangeContext) {
+        return timeRangeContext.globalTimeRange.endDate;
+    }
+    return localToDT;
+    }, [isLinkedToGlobal, timeRangeContext, localToDT]);
 
     const [rows, setRows] = useState<AdxRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -217,6 +243,14 @@
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchSignal]);
+    
+    // Refetch when global range signal changes (from MasterTimeRangeWidget)
+    useEffect(() => {
+    if (!isLinkedToGlobal || !timeRangeContext) return;
+    if (!canFetch) return;
+    // The auto-fetch effect will handle this since fromDT/toDT will change
+    // when globalTimeRange changes
+    }, [timeRangeContext?.globalRangeSignal, isLinkedToGlobal, canFetch]);
 
     async function fetchData() {
     if (!kql) return;
@@ -454,72 +488,107 @@
     // ---------------------------- UI (no outer card container/title)
     return (
     <>
-        {/* Range selectors */}
+        {/* Global link toggle + Range selectors */}
         <div className="flex flex-wrap items-end gap-4 mb-4">
-        <div className="flex flex-col">
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From (local)</span>
-            <DatePicker
-            selected={fromDT}
-            onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
-            placeholderText="Start date & time"
-            className="widget-datepicker-input"
-            showTimeSelect
-            timeIntervals={15}
-            dateFormat="yyyy-MM-dd HH:mm"
-            isClearable={false}
-            portalId="root"
-            />
-        </div>
+        
+        {/* Link/Unlink toggle when context is available */}
+        {timeRangeContext && (
+            <div className="flex flex-col">
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Master Range</span>
+            <button
+                type="button"
+                onClick={() => setIsLinkedToGlobal(!isLinkedToGlobal)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                isLinkedToGlobal 
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30' 
+                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/30 hover:bg-gray-500/30'
+                }`}
+                title={isLinkedToGlobal ? 'Using global time range - click to unlink' : 'Using local time range - click to link'}
+            >
+                <span>{isLinkedToGlobal ? '🔗' : '🔓'}</span>
+                <span>{isLinkedToGlobal ? 'Linked' : 'Unlinked'}</span>
+            </button>
+            </div>
+        )}
+        
+        {/* Show date pickers only when NOT linked to global (or context not available) */}
+        {(!timeRangeContext || !isLinkedToGlobal) && (
+            <>
+            <div className="flex flex-col">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From (local)</span>
+                <DatePicker
+                selected={localFromDT}
+                onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
+                placeholderText="Start date & time"
+                className="widget-datepicker-input"
+                showTimeSelect
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                isClearable={false}
+                portalId="root"
+                />
+            </div>
 
-        <div className="flex flex-col">
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To (local)</span>
-            <DatePicker
-            selected={toDT}
-            onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
-            placeholderText="End date & time"
-            className="widget-datepicker-input"
-            showTimeSelect
-            timeIntervals={15}
-            dateFormat="yyyy-MM-dd HH:mm"
-            isClearable={false}
-            minDate={fromDT ?? undefined}
-            portalId="root"
-            />
-        </div>
+            <div className="flex flex-col">
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To (local)</span>
+                <DatePicker
+                selected={localToDT}
+                onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
+                placeholderText="End date & time"
+                className="widget-datepicker-input"
+                showTimeSelect
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                isClearable={false}
+                minDate={localFromDT ?? undefined}
+                portalId="root"
+                />
+            </div>
 
-        {/* Quick presets with modern styling */}
-        <div className="flex items-center gap-2">
-            <button
-            type="button"
-            className="widget-preset-btn"
-            onClick={() => {
-                const { start, end } = lastHours(6);
-                setRange({ fromDT: start, toDT: end });
-            }}
-            >
-            Last 6h
-            </button>
-            <button
-            type="button"
-            className="widget-preset-btn"
-            onClick={() => {
-                const { start, end } = lastHours(24);
-                setRange({ fromDT: start, toDT: end });
-            }}
-            >
-            Last 24h
-            </button>
-            <button
-            type="button"
-            className="widget-preset-btn"
-            onClick={() => {
-                const { start, end } = lastHours(24 * 7);
-                setRange({ fromDT: start, toDT: end });
-            }}
-            >
-            Last 7d
-            </button>
-        </div>
+            {/* Quick presets with modern styling */}
+            <div className="flex items-center gap-2">
+                <button
+                type="button"
+                className="widget-preset-btn"
+                onClick={() => {
+                    const { start, end } = lastHours(6);
+                    setRange({ fromDT: start, toDT: end });
+                }}
+                >
+                Last 6h
+                </button>
+                <button
+                type="button"
+                className="widget-preset-btn"
+                onClick={() => {
+                    const { start, end } = lastHours(24);
+                    setRange({ fromDT: start, toDT: end });
+                }}
+                >
+                Last 24h
+                </button>
+                <button
+                type="button"
+                className="widget-preset-btn"
+                onClick={() => {
+                    const { start, end } = lastHours(24 * 7);
+                    setRange({ fromDT: start, toDT: end });
+                }}
+                >
+                Last 7d
+                </button>
+            </div>
+            </>
+        )}
+        
+        {/* When linked, show the current global range as read-only info */}
+        {timeRangeContext && isLinkedToGlobal && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                📅 {fromDT?.toLocaleString()} — {toDT?.toLocaleString()}
+            </span>
+            </div>
+        )}
 
         {/* Fetch controls — hidden if parent renders them in header */}
         {showControls && (

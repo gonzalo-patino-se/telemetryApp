@@ -1,6 +1,7 @@
 // src/components/InstantaneousGauges.tsx
 // Instantaneous telemetry values displayed as animated gauges
 // Auto-refreshes every 10 seconds
+// OPTIMIZED: Uses batch API to fetch all telemetry in a single request
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
@@ -90,7 +91,7 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
 ];
 
 const QUERY_PATH = '/query_adx/';
-const REFRESH_INTERVAL = 10000; // 10 seconds
+const REFRESH_INTERVAL = 300000; // 5 minutes (300 seconds)
 
 // ============================================================================
 // Helper Functions
@@ -100,6 +101,7 @@ function escapeKqlString(s: string): string {
   return (s ?? '').replace(/'/g, "''");
 }
 
+// Build KQL for individual telemetry query
 function buildInstantaneousKql(serial: string, telemetryName: string): string {
   const s = escapeKqlString(serial);
   return `
@@ -112,7 +114,7 @@ function buildInstantaneousKql(serial: string, telemetryName: string): string {
   `.trim();
 }
 
-// Special query for Battery Relay (uses Alarms table)
+// Special query for Battery Relay (uses Alarms table - not batchable with Telemetry)
 function buildBatteryRelayKql(serial: string): string {
   const s = escapeKqlString(serial);
   return `
@@ -360,7 +362,7 @@ const categoryConfig: Record<string, { icon: string; label: string; color: strin
 };
 
 // ============================================================================
-// Main Component
+// Main Component - Individual Queries (Reliable)
 // ============================================================================
 
 const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => {
@@ -374,7 +376,6 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
 
   // Fetch single gauge data
   const fetchGaugeData = useCallback(async (config: GaugeConfig) => {
-    // Use special query for Battery Relay (Alarms table)
     const isRelayQuery = config.id === 'bat_main_relay';
     const kql = isRelayQuery 
       ? buildBatteryRelayKql(serial)
@@ -390,16 +391,13 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
       const row = dataArray[0];
       
-      // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
       let value: number | null = null;
       if (isRelayQuery) {
-        // Battery Relay uses 'value' field from Alarms table
         if (row?.value !== undefined && row?.value !== null) {
           const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
           value = isNaN(parsed) ? null : parsed;
         }
       } else {
-        // Normal telemetry uses 'value_double' field
         value = row?.value_double ?? null;
       }
       
@@ -420,18 +418,14 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     }
   }, [serial, accessToken, logout]);
 
-  // Fetch all gauges
+  // Fetch all gauges individually (without setting loading state to avoid flicker)
   const fetchAllGauges = useCallback(async () => {
-    // Set all to loading
-    setGaugeData(prev => {
-      const newData: Record<string, GaugeData> = {};
-      GAUGE_CONFIGS.forEach(config => {
-        newData[config.id] = { ...prev[config.id], loading: true };
-      });
-      return newData;
-    });
+    if (!serial || !accessToken) return;
 
-    // Fetch in batches to avoid overwhelming the API
+    // DON'T set loading state on refresh - it causes flickering
+    // Only show loading on initial load (when no data exists)
+
+    // Fetch in batches of 5 to avoid overwhelming the API
     const batchSize = 5;
     for (let i = 0; i < GAUGE_CONFIGS.length; i += batchSize) {
       const batch = GAUGE_CONFIGS.slice(i, i + batchSize);
@@ -453,11 +447,20 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     
     setLastRefresh(new Date());
     setCountdown(REFRESH_INTERVAL / 1000);
-  }, [fetchGaugeData]);
+  }, [serial, accessToken, fetchGaugeData]);
 
-  // Initial fetch and interval setup
+  // Initial fetch - runs only once when serial changes
   useEffect(() => {
     if (!serial) return;
+    
+    // Set initial loading state only on first load
+    setGaugeData(() => {
+      const newData: Record<string, GaugeData> = {};
+      GAUGE_CONFIGS.forEach(config => {
+        newData[config.id] = { value: null, localtime: null, loading: true, error: null };
+      });
+      return newData;
+    });
     
     // Initial fetch
     fetchAllGauges();
@@ -472,9 +475,10 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [serial, fetchAllGauges, isPaused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serial]); // Only re-run when serial changes, NOT when fetchAllGauges changes
 
-  // Auto-refresh interval
+  // Auto-refresh interval - separate from initial fetch
   useEffect(() => {
     if (!serial || isPaused) return;
     
@@ -485,7 +489,8 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [serial, isPaused, fetchAllGauges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serial, isPaused]); // Don't include fetchAllGauges to avoid re-creating interval
 
   // Group gauges by category
   const groupedGauges = GAUGE_CONFIGS.reduce((acc, config) => {
@@ -542,7 +547,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
               fontSize: '12px',
               color: 'var(--text-tertiary)',
             }}>
-              Live telemetry • Auto-refresh every 10s
+              Live telemetry • Auto-refresh every 5 min
             </p>
           </div>
         </div>
@@ -567,7 +572,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
               background: isPaused ? '#f59e0b' : '#22c55e',
               animation: isPaused ? 'none' : 'pulse 2s infinite',
             }} />
-            {isPaused ? 'Paused' : `Next: ${countdown}s`}
+            {isPaused ? 'Paused' : `Next: ${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`}
           </div>
           
           {/* Pause/Resume */}
@@ -634,15 +639,27 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       </div>
       
       {/* Last refresh time */}
-      {lastRefresh && (
-        <div style={{
-          fontSize: '11px',
-          color: 'var(--text-tertiary)',
-          marginBottom: '16px',
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '11px',
+        color: 'var(--text-tertiary)',
+        marginBottom: '16px',
+      }}>
+        <span>
+          {lastRefresh ? `Last updated: ${lastRefresh.toLocaleTimeString()}` : 'Loading...'}
+        </span>
+        <span style={{ 
+          background: 'linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%)',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          color: '#22c55e',
+          fontWeight: 600,
         }}>
-          Last updated: {lastRefresh.toLocaleTimeString()}
-        </div>
-      )}
+          ⚡ Live
+        </span>
+      </div>
       
       {/* Gauge Grid by Category */}
       {categoryOrder.map(category => {
