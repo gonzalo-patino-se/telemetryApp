@@ -1,19 +1,55 @@
 # Environment variables
 .env
+.env.local
+.env.production
 
 # Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Virtual environment
 venv/
 .venv/
+env/
 
-# Django static files
-staticfiles/
+# Django static files (collected)
+backend/staticfiles/
 
-# SQLite database (optional)
-db.sqlite3
+# SQLite database (development only)
+backend/db.sqlite3
 
 # Logs
 *.log
+backend/logs/
+
+# Media files (user uploads)
+backend/media/
+
+# Backups
+backups/
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# Frontend build
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.tar
+
+# SSL certificates (if stored locally)
+deploy/ssl/
