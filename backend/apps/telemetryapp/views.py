@@ -120,11 +120,114 @@ def query_adx_view(request):
         return Response({"error": "KQL query is required"}, status=400)
 
     try:
-        print(f"Executing KQL Query 2: {kql_query}")
+        # Reduced logging - only log errors, not every query
         data = query_adx(kql_query)
         return Response(data)
     except Exception as e:
+        print(f"KQL Query Error: {str(e)}")
         return Response({"error querying KQL": str(e)}, status=500)
+
+
+# =============================================================================
+# OPTIMIZED Batch Telemetry Endpoint (Cost-Efficient)
+# =============================================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def batch_telemetry_view(request):
+    """
+    Fetch multiple telemetry metrics in a SINGLE optimized ADX query.
+    
+    This endpoint reduces ADX costs by:
+    1. Combining multiple metric requests into one query
+    2. Server-side caching (30 second TTL by default)
+    3. Rate limiting to prevent query storms
+    
+    Request body:
+    {
+        "serial": "device_serial_number",
+        "telemetry_names": ["/INV/DCPORT/STAT/PV1/V", "/BMS/MODULE1/STAT/V", ...],
+        "alarm_names": ["/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR", ...]  // optional
+    }
+    
+    Response:
+    {
+        "telemetry": {
+            "/INV/DCPORT/STAT/PV1/V": {"value": 123.45, "localtime": "2024-..."},
+            ...
+        },
+        "alarms": {
+            "/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR": {"value": 0, "localtime": "..."},
+            ...
+        },
+        "meta": {
+            "cached": false,
+            "query_count": 2,
+            "rate_limit_remaining": 58
+        }
+    }
+    """
+    from .adx_optimized import (
+        query_latest_telemetry_batch,
+        query_latest_alarms_batch,
+        get_query_stats
+    )
+    
+    serial = request.data.get('serial')
+    telemetry_names = request.data.get('telemetry_names', [])
+    alarm_names = request.data.get('alarm_names', [])
+    
+    if not serial:
+        return Response({"error": "Serial number is required"}, status=400)
+    
+    if not telemetry_names and not alarm_names:
+        return Response({"error": "At least one telemetry_names or alarm_names required"}, status=400)
+    
+    try:
+        result = {
+            'telemetry': {},
+            'alarms': {},
+            'meta': {}
+        }
+        
+        query_count = 0
+        
+        # Fetch telemetry batch (single query for all metrics)
+        if telemetry_names:
+            result['telemetry'] = query_latest_telemetry_batch(serial, telemetry_names)
+            query_count += 1
+        
+        # Fetch alarms batch (single query for all alarms)
+        if alarm_names:
+            result['alarms'] = query_latest_alarms_batch(serial, alarm_names)
+            query_count += 1
+        
+        # Add metadata
+        stats = get_query_stats()
+        result['meta'] = {
+            'query_count': query_count,
+            'queries_last_minute': stats['queries_last_minute'],
+            'rate_limit_max': stats['max_queries_per_minute'],
+        }
+        
+        return Response(result)
+        
+    except Exception as e:
+        import traceback
+        print(f"ERROR in batch_telemetry_view: {str(e)}")
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def adx_stats_view(request):
+    """
+    Get ADX query statistics for monitoring costs.
+    """
+    from .adx_optimized import get_query_stats
+    
+    stats = get_query_stats()
+    return Response(stats)
 
 
 # =============================================================================

@@ -2,7 +2,9 @@ import os
 from azure.kusto.data import KustoConnectionStringBuilder, KustoClient
 from dotenv import load_dotenv
 import logging
-logger = logging
+
+# Configure logging - reduce verbosity for production
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -20,16 +22,14 @@ kcsb = KustoConnectionStringBuilder.with_aad_application_key_authentication(
 client = KustoClient(kcsb)
 
 def query_adx(kql_query):
+    """Execute a KQL query against Azure Data Explorer."""
     try:
         response = client.execute(database, kql_query)
-        logger.info(f"Query executed successfully: {kql_query}")
         table = response.primary_results[0]
         rows = table.to_dict()
-        
-        for row in rows:
-            print(row)
-        return rows # Return all rows to the caller
+        # Return the data portion of the result
+        return rows
     except Exception as e:
-        logger.error(f"ADX query failed {e}. Query: {kql_query}")
+        logger.error(f"ADX query failed: {e}")
         return []
         
