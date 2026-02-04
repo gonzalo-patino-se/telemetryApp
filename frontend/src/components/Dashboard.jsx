@@ -11,6 +11,7 @@ import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget,
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
+import MasterTimeRangeWidget from './MasterTimeRangeWidget';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -482,6 +483,11 @@ const Dashboard = () => {
             {/* ==================== INSTANTANEOUS VALUES ==================== */}
             {hasActiveSerial && (
                 <InstantaneousGauges serial={activeSerial} />
+            )}
+
+            {/* ==================== MASTER TIME RANGE CONTROL ==================== */}
+            {hasActiveSerial && (
+                <MasterTimeRangeWidget />
             )}
 
             {/* ==================== SYSTEM STATUS ==================== */}

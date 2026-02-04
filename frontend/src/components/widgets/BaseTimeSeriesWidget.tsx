@@ -1,10 +1,12 @@
 // src/components/widgets/BaseTimeSeriesWidget.tsx
 // Base component for time-series telemetry widgets
 // Provides common functionality: date range, auto-fetch, chart, CSV export
+// Supports global time range from MasterTimeRangeWidget with individual override
 
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useTimeRangeOptional } from '../../context/TimeRangeContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -92,6 +94,8 @@ export interface BaseTimeSeriesWidgetProps {
   /** Controlled telemetry mode from parent (optional) */
   telemetryModeProp?: TelemetryMode;
   onTelemetryModeChange?: (mode: TelemetryMode) => void;
+  /** Whether to use global time range from TimeRangeContext (default: true) */
+  useGlobalTimeRange?: boolean;
 }
 
 const QUERY_PATH = '/query_adx/';
@@ -151,8 +155,10 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   fetchSignal,
   telemetryModeProp,
   onTelemetryModeChange,
+  useGlobalTimeRange = true,
 }) => {
   const { accessToken, logout } = useAuth();
+  const timeRangeContext = useTimeRangeOptional();
   const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode } = config;
   const colors = chartColorSchemes[colorScheme];
   
@@ -166,11 +172,46 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   // Get the appropriate query builder based on mode
   const activeQueryBuilder = telemetryMode === 'fast' && buildFastQuery ? buildFastQuery : buildQuery;
 
-  // State
-  const [{ fromDT, toDT }, setRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
+  // Track whether widget is linked to global time range or using local override
+  const [isLinkedToGlobal, setIsLinkedToGlobal] = useState(true);
+
+  // Local time range state (used when unlinked or no global context)
+  const [localRange, setLocalRange] = useState<{ fromDT: Date | null; toDT: Date | null }>(() => {
     const { start, end } = getLastHours(6); // Default to 6 hours for faster loading
     return { fromDT: start, toDT: end };
   });
+
+  // Determine effective time range (global vs local)
+  const effectiveRange = useMemo(() => {
+    if (useGlobalTimeRange && isLinkedToGlobal && timeRangeContext) {
+      return {
+        fromDT: timeRangeContext.globalTimeRange.startDate,
+        toDT: timeRangeContext.globalTimeRange.endDate,
+      };
+    }
+    return localRange;
+  }, [useGlobalTimeRange, isLinkedToGlobal, timeRangeContext, localRange]);
+
+  const { fromDT, toDT } = effectiveRange;
+
+  // Sync local range when global changes (for smooth unlinking)
+  useEffect(() => {
+    if (useGlobalTimeRange && isLinkedToGlobal && timeRangeContext) {
+      setLocalRange({
+        fromDT: timeRangeContext.globalTimeRange.startDate,
+        toDT: timeRangeContext.globalTimeRange.endDate,
+      });
+    }
+  }, [useGlobalTimeRange, isLinkedToGlobal, timeRangeContext]);
+
+  // Helper to set range (updates local, and re-links if setting while unlinked)
+  const setRange = (newRange: { fromDT: Date | null; toDT: Date | null }) => {
+    setLocalRange(newRange);
+    // If user manually sets range, unlink from global
+    if (isLinkedToGlobal) {
+      setIsLinkedToGlobal(false);
+    }
+  };
 
   const [rows, setRows] = useState<AdxRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -421,6 +462,52 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         borderRadius: '10px',
         border: '1px solid rgba(148, 163, 184, 0.1)',
       }}>
+        {/* Link/Unlink to Global Time Range */}
+        {useGlobalTimeRange && timeRangeContext && (
+          <button
+            type="button"
+            onClick={() => setIsLinkedToGlobal(!isLinkedToGlobal)}
+            title={isLinkedToGlobal ? 'Linked to master time range - click to use custom range' : 'Using custom range - click to sync with master'}
+            style={{
+              padding: '6px 10px',
+              fontSize: '11px',
+              fontWeight: 600,
+              borderRadius: '6px',
+              border: isLinkedToGlobal 
+                ? '1px solid rgba(139, 92, 246, 0.4)' 
+                : '1px solid rgba(148, 163, 184, 0.2)',
+              background: isLinkedToGlobal 
+                ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%)' 
+                : 'transparent',
+              color: isLinkedToGlobal ? '#a78bfa' : '#64748b',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            {isLinkedToGlobal ? (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                Linked
+              </>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18.84 12.25l1.72-1.71a5 5 0 0 0-7.07-7.07l-3 3"/>
+                  <path d="M5.16 11.75l-1.72 1.71a5 5 0 0 0 7.07 7.07l3-3"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+                Custom
+              </>
+            )}
+          </button>
+        )}
+
         {/* From Date */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <span style={{ 
@@ -432,7 +519,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           }}>From</span>
           <DatePicker
             selected={fromDT}
-            onChange={(d: Date | null) => setRange(r => ({ ...r, fromDT: d }))}
+            onChange={(d: Date | null) => setRange({ fromDT: d, toDT })}
             placeholderText="Start"
             className="modern-datepicker"
             showTimeSelect
@@ -457,7 +544,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           }}>To</span>
           <DatePicker
             selected={toDT}
-            onChange={(d: Date | null) => setRange(r => ({ ...r, toDT: d }))}
+            onChange={(d: Date | null) => setRange({ fromDT, toDT: d })}
             placeholderText="End"
             className="modern-datepicker"
             showTimeSelect

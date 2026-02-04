@@ -37,36 +37,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Logout function: clears tokens from state and localStorage
     const logout = async() => {
-        try {
-            if (refreshToken) {
+        // Only try to call server logout if we have a token
+        // This prevents infinite loop when interceptor calls logout on 401
+        if (refreshToken) {
+            try {
                 await api.post('/logout/', { refresh: refreshToken });
-            }    
-        } catch (err){
-            console.error('Logout error:', err);
-        } finally {
-            setAccessToken(null);
-            setRefreshToken(null);
-            setIsAuthenticated(false);
-            // Remove Authorization header
-            delete api.defaults.headers.common['Authorization'];
-            clearTokenExpiryTimer();
+            } catch (err){
+                // Ignore logout errors - we're logging out anyway
+                console.debug('Logout API call failed (expected if token expired):', err);
+            }
         }
-
+        
+        // Always clear local state
+        setAccessToken(null);
+        setRefreshToken(null);
+        setIsAuthenticated(false);
+        // Remove Authorization header
+        delete api.defaults.headers.common['Authorization'];
+        clearTokenExpiryTimer();
     };
 
     // Axios interceptor: Logout on 401 Unauthorized response
+    // But skip logout calls to avoid infinite loop
     useEffect(() => {
         const interceptor = api.interceptors.response.use(
             (response) => response,
             async (error) => {
-                if (error.response?.status === 401) {
+                const requestUrl = error.config?.url || '';
+                // Don't trigger logout for the logout endpoint itself (prevents infinite loop)
+                // Also don't trigger for login/register endpoints
+                const isAuthEndpoint = requestUrl.includes('/logout') || 
+                                       requestUrl.includes('/login') || 
+                                       requestUrl.includes('/register') ||
+                                       requestUrl.includes('/token');
+                
+                if (error.response?.status === 401 && !isAuthEndpoint && accessToken) {
+                    // Only logout if we thought we were logged in
                     await logout();
                 }
                 return Promise.reject(error);
             }
         );
         return () => api.interceptors.response.eject(interceptor);
-    }, [refreshToken]);
+    }, [refreshToken, accessToken]);
 
     // Token expiry timer
     let expiryTimer : ReturnType<typeof setTimeout> | null = null;

@@ -122,7 +122,7 @@ const WIFI_CONFIG: TelemetryConfig = {
 const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG, WIFI_CONFIG];
 
 const QUERY_PATH = '/query_adx/';
-const REFRESH_INTERVAL = 10000; // 10 seconds
+const REFRESH_INTERVAL = 300000; // 5 minutes (300 seconds)
 
 // ============================================================================
 // Helper Functions
@@ -931,16 +931,11 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     }
   }, [serial, accessToken, logout]);
 
-  // Fetch all telemetry
+  // Fetch all telemetry (without setting loading state on refresh to avoid flicker)
   const fetchAllTelemetry = useCallback(async () => {
-    // Set all to loading
-    setTelemetryData(prev => {
-      const newData: Record<string, TelemetryData> = {};
-      ALL_CONFIGS.forEach(config => {
-        newData[config.id] = { ...prev[config.id], loading: true };
-      });
-      return newData;
-    });
+    if (!serial || !accessToken) return; // Guard against unauthorized calls
+
+    // DON'T set loading state on refresh - it causes flickering
 
     // Fetch all in parallel
     const results = await Promise.all(ALL_CONFIGS.map(fetchTelemetryData));
@@ -955,11 +950,20 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     
     setLastRefresh(new Date());
     setCountdown(REFRESH_INTERVAL / 1000);
-  }, [fetchTelemetryData]);
+  }, [serial, accessToken, fetchTelemetryData]);
 
-  // Initial fetch and countdown timer
+  // Initial fetch and countdown timer - runs only once when serial changes
   useEffect(() => {
     if (!serial) return;
+    
+    // Set initial loading state only on first load
+    setTelemetryData(() => {
+      const newData: Record<string, TelemetryData> = {};
+      ALL_CONFIGS.forEach(config => {
+        newData[config.id] = { value: null, localtime: null, loading: true, error: null };
+      });
+      return newData;
+    });
     
     fetchAllTelemetry();
     
@@ -972,9 +976,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [serial, fetchAllTelemetry, isPaused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serial]); // Only re-run when serial changes
 
-  // Auto-refresh interval
+  // Auto-refresh interval - separate from initial fetch
   useEffect(() => {
     if (!serial || isPaused) return;
     
@@ -985,7 +990,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [serial, isPaused, fetchAllTelemetry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serial, isPaused]); // Don't include fetchAllTelemetry to avoid re-creating interval
 
   // Determine if panels are producing (voltage > 50V threshold)
   const PRODUCING_THRESHOLD = 50;
@@ -1114,7 +1120,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           </div>
           <div>
             <h3 className="header-title">Flow Diagram</h3>
-            <p className="header-subtitle">Live telemetry • Auto-refresh every 10s</p>
+            <p className="header-subtitle">Live telemetry • Auto-refresh every 5 min</p>
           </div>
         </div>
         
@@ -1122,7 +1128,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         <div className="header-controls">
           <div className="countdown-badge">
             <div className={`status-dot ${isPaused ? 'paused' : 'active'}`} />
-            {isPaused ? 'Paused' : `Next: ${countdown}s`}
+            {isPaused ? 'Paused' : `Next: ${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`}
           </div>
           
           <button
