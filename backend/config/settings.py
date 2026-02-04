@@ -287,3 +287,41 @@ LOGGING = {
 
 # Create logs directory if it doesn't exist
 (BASE_DIR / 'logs').mkdir(exist_ok=True)
+
+# =============================================================================
+# CACHING CONFIGURATION
+# =============================================================================
+# Redis cache for production (recommended for ADX query optimization)
+# Falls back to local memory cache for development
+
+CACHE_BACKEND = os.getenv('CACHE_BACKEND', 'memory')
+
+if CACHE_BACKEND == 'redis':
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'telemetry',
+            'TIMEOUT': 30,  # Default cache timeout of 30 seconds
+        }
+    }
+else:
+    # Local memory cache for development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'telemetry-cache',
+            'TIMEOUT': 30,
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000
+            }
+        }
+    }
+
+# ADX Query Optimization Settings
+ADX_CACHE_TTL = int(os.getenv('ADX_CACHE_TTL', '30'))  # seconds
+ADX_RATE_LIMIT = int(os.getenv('ADX_RATE_LIMIT', '100'))  # requests per minute
+ADX_BATCH_TIMEOUT = float(os.getenv('ADX_BATCH_TIMEOUT', '0.5'))  # seconds
