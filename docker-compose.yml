@@ -1,0 +1,132 @@
+# =============================================================================
+# mysite Docker Compose Configuration
+# =============================================================================
+# Usage:
+#   Development: docker-compose up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: mysite-db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mysite_db}
+      POSTGRES_USER: ${DB_USER:-mysite_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mysite_user} -d ${DB_NAME:-mysite_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mysite-network
+
+  # ===========================================================================
+  # Redis (optional - for caching/celery)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: mysite-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mysite-network
+
+  # ===========================================================================
+  # Django Backend
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mysite-backend
+    restart: unless-stopped
+    volumes:
+      - static_files:/app/backend/staticfiles
+      - media_files:/app/backend/media
+      - ./backend/logs:/app/backend/logs
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
+      - DJANGO_ENVIRONMENT=${DJANGO_ENVIRONMENT:-production}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost}
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME:-mysite_db}
+      - DB_USER=${DB_USER:-mysite_user}
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      # Azure ADX
+      - ADX_CLUSTER_URL=${ADX_CLUSTER_URL}
+      - ADX_DATABASE=${ADX_DATABASE}
+      - ADX_CLIENT_ID=${ADX_CLIENT_ID}
+      - ADX_CLIENT_SECRET=${ADX_CLIENT_SECRET}
+      - ADX_TENANT_ID=${ADX_TENANT_ID}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mysite-network
+
+  # ===========================================================================
+  # Nginx Reverse Proxy
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: mysite-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/config/nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_files:/app/backend/staticfiles:ro
+      - media_files:/app/backend/media:ro
+      # Uncomment for SSL
+      # - ./deploy/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - mysite-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  mysite-network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  static_files:
+  media_files:
