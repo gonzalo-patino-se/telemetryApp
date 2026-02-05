@@ -35,10 +35,16 @@ interface EnergyFlowDiagramProps {
 // ============================================================================
 
 const SOLAR_CONFIGS: TelemetryConfig[] = [
-  { id: 'pv1', label: 'PV1', telemetryName: '/INV/DCPORT/STAT/PV1/V', unit: 'V', category: 'solar', decimals: 0 },
-  { id: 'pv2', label: 'PV2', telemetryName: '/INV/DCPORT/STAT/PV2/V', unit: 'V', category: 'solar', decimals: 0 },
-  { id: 'pv3', label: 'PV3', telemetryName: '/INV/DCPORT/STAT/PV3/V', unit: 'V', category: 'solar', decimals: 0 },
-  { id: 'pv4', label: 'PV4', telemetryName: '/INV/DCPORT/STAT/PV4/V', unit: 'V', category: 'solar', decimals: 0 },
+  // PV Voltages
+  { id: 'pv1V', label: 'PV1 V', telemetryName: '/INV/DCPORT/STAT/PV1/V', unit: 'V', category: 'solar', decimals: 0 },
+  { id: 'pv2V', label: 'PV2 V', telemetryName: '/INV/DCPORT/STAT/PV2/V', unit: 'V', category: 'solar', decimals: 0 },
+  { id: 'pv3V', label: 'PV3 V', telemetryName: '/INV/DCPORT/STAT/PV3/V', unit: 'V', category: 'solar', decimals: 0 },
+  { id: 'pv4V', label: 'PV4 V', telemetryName: '/INV/DCPORT/STAT/PV4/V', unit: 'V', category: 'solar', decimals: 0 },
+  // PV Currents
+  { id: 'pv1I', label: 'PV1 I', telemetryName: '/INV/DCPORT/STAT/PV1/I', unit: 'A', category: 'solar', decimals: 2 },
+  { id: 'pv2I', label: 'PV2 I', telemetryName: '/INV/DCPORT/STAT/PV2/I', unit: 'A', category: 'solar', decimals: 2 },
+  { id: 'pv3I', label: 'PV3 I', telemetryName: '/INV/DCPORT/STAT/PV3/I', unit: 'A', category: 'solar', decimals: 2 },
+  { id: 'pv4I', label: 'PV4 I', telemetryName: '/INV/DCPORT/STAT/PV4/I', unit: 'A', category: 'solar', decimals: 2 },
 ];
 
 // ============================================================================
@@ -207,14 +213,15 @@ interface SolarPanelProps {
   x: number;
   y: number;
   label: string;
-  value: number | null;
-  unit: string;
+  voltage: number | null;
+  current: number | null;
   loading: boolean;
   isProducing: boolean;
 }
 
-const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, value, unit, loading, isProducing }) => {
-  const displayValue = value !== null ? value.toFixed(0) : '--';
+const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, voltage, current, loading, isProducing }) => {
+  const displayVoltage = voltage !== null ? voltage.toFixed(0) : '--';
+  const displayCurrent = current !== null ? current.toFixed(2) : '--';
   
   return (
     <g transform={`translate(${x}, ${y})`} className="solar-panel-group">
@@ -251,17 +258,20 @@ const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, value, unit, loadi
         {label}
       </text>
       
-      {/* Value display - enlarged */}
+      {/* Value display - Voltage and Current */}
       <rect
-        x={10}
+        x={5}
         y={55}
-        width={60}
-        height={26}
+        width={70}
+        height={38}
         rx={4}
         className="value-badge"
       />
-      <text x={40} y={73} textAnchor="middle" className="value-text-lg">
-        {loading ? '...' : `${displayValue}${unit}`}
+      <text x={40} y={70} textAnchor="middle" className="value-text-lg">
+        {loading ? '...' : `${displayVoltage} V`}
+      </text>
+      <text x={40} y={86} textAnchor="middle" className="value-text-sm">
+        {loading ? '...' : `${displayCurrent} A`}
       </text>
       
       {/* Sun icon when producing */}
@@ -1074,10 +1084,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // Determine if panels are producing (voltage > 50V threshold)
   const PRODUCING_THRESHOLD = 50;
   const pvValues = {
-    pv1: telemetryData.pv1?.value ?? 0,
-    pv2: telemetryData.pv2?.value ?? 0,
-    pv3: telemetryData.pv3?.value ?? 0,
-    pv4: telemetryData.pv4?.value ?? 0,
+    pv1: { voltage: telemetryData.pv1V?.value ?? 0, current: telemetryData.pv1I?.value ?? null },
+    pv2: { voltage: telemetryData.pv2V?.value ?? 0, current: telemetryData.pv2I?.value ?? null },
+    pv3: { voltage: telemetryData.pv3V?.value ?? 0, current: telemetryData.pv3I?.value ?? null },
+    pv4: { voltage: telemetryData.pv4V?.value ?? 0, current: telemetryData.pv4I?.value ?? null },
   };
   
   // Grid values
@@ -1200,7 +1210,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // Grid is active if we have voltage readings
   const gridIsActive = (gridValues.voltageL1 ?? 0) > 100 || (gridValues.voltageL2 ?? 0) > 100;
   
-  const anyProducing = Object.values(pvValues).some(v => v > PRODUCING_THRESHOLD);
+  const anyProducing = Object.values(pvValues).some(v => v.voltage > PRODUCING_THRESHOLD);
 
   return (
     <div className="energy-flow-container">
@@ -1335,37 +1345,37 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           x={25}
           y={30}
           label="PV1"
-          value={telemetryData.pv1?.value ?? null}
-          unit="V"
-          loading={telemetryData.pv1?.loading ?? true}
-          isProducing={pvValues.pv1 > PRODUCING_THRESHOLD}
+          voltage={pvValues.pv1.voltage}
+          current={pvValues.pv1.current}
+          loading={telemetryData.pv1V?.loading ?? true}
+          isProducing={pvValues.pv1.voltage > PRODUCING_THRESHOLD}
         />
         <SolarPanel
           x={125}
           y={30}
           label="PV2"
-          value={telemetryData.pv2?.value ?? null}
-          unit="V"
-          loading={telemetryData.pv2?.loading ?? true}
-          isProducing={pvValues.pv2 > PRODUCING_THRESHOLD}
+          voltage={pvValues.pv2.voltage}
+          current={pvValues.pv2.current}
+          loading={telemetryData.pv2V?.loading ?? true}
+          isProducing={pvValues.pv2.voltage > PRODUCING_THRESHOLD}
         />
         <SolarPanel
           x={225}
           y={30}
           label="PV3"
-          value={telemetryData.pv3?.value ?? null}
-          unit="V"
-          loading={telemetryData.pv3?.loading ?? true}
-          isProducing={pvValues.pv3 > PRODUCING_THRESHOLD}
+          voltage={pvValues.pv3.voltage}
+          current={pvValues.pv3.current}
+          loading={telemetryData.pv3V?.loading ?? true}
+          isProducing={pvValues.pv3.voltage > PRODUCING_THRESHOLD}
         />
         <SolarPanel
           x={325}
           y={30}
           label="PV4"
-          value={telemetryData.pv4?.value ?? null}
-          unit="V"
-          loading={telemetryData.pv4?.loading ?? true}
-          isProducing={pvValues.pv4 > PRODUCING_THRESHOLD}
+          voltage={pvValues.pv4.voltage}
+          current={pvValues.pv4.current}
+          loading={telemetryData.pv4V?.loading ?? true}
+          isProducing={pvValues.pv4.voltage > PRODUCING_THRESHOLD}
         />
         
         {/* Flow Lines from each panel to inverter */}
@@ -1374,7 +1384,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           startY={110}
           endX={180}
           endY={165}
-          isActive={pvValues.pv1 > PRODUCING_THRESHOLD}
+          isActive={pvValues.pv1.voltage > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
@@ -1382,7 +1392,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           startY={110}
           endX={200}
           endY={165}
-          isActive={pvValues.pv2 > PRODUCING_THRESHOLD}
+          isActive={pvValues.pv2.voltage > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
@@ -1390,7 +1400,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           startY={110}
           endX={230}
           endY={165}
-          isActive={pvValues.pv3 > PRODUCING_THRESHOLD}
+          isActive={pvValues.pv3.voltage > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         <FlowLine
@@ -1398,7 +1408,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           startY={110}
           endX={260}
           endY={165}
-          isActive={pvValues.pv4 > PRODUCING_THRESHOLD}
+          isActive={pvValues.pv4.voltage > PRODUCING_THRESHOLD}
           color="#f59e0b"
         />
         
