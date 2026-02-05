@@ -206,11 +206,46 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-#CORS
-_cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
-CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+# =============================================================================
+# CORS Configuration
+# =============================================================================
+# SECURITY: Never use CORS_ALLOW_ALL_ORIGINS = True in production!
+# Always explicitly whitelist allowed origins.
+
+_cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if IS_PRODUCTION:
+    # In production, CORS_ALLOWED_ORIGINS must be explicitly set via environment
+    if not _cors_origins_env:
+        raise ValueError(
+            "CORS_ALLOWED_ORIGINS environment variable is required in production! "
+            "Set it to your frontend URL(s), e.g., 'https://your-domain.com'"
+        )
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_env.split(',') if o.strip()]
+else:
+    # Development: default to localhost:5173 (Vite dev server)
+    _cors_default = 'http://localhost:5173,http://127.0.0.1:5173'
+    _cors_origins = _cors_origins_env or _cors_default
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+
+# Allow credentials (cookies, authorization headers) - required for JWT auth
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = list(default_headers) + ['authorization']
+
+# Additional headers allowed in CORS requests
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'authorization',
+    'content-type',
+    'x-requested-with',
+]
+
+# HTTP methods allowed in CORS requests
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 
 # Internationalization
