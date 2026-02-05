@@ -726,6 +726,14 @@ a:hover {
   font-family: 'SF Mono', 'Monaco', monospace;
 }
 
+/* Smaller value text for solar panel current */
+.value-text-sm {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
 /* Sun icon animation */
 .sun-icon {
   animation: sun-rotate 10s linear infinite;
@@ -1775,4 +1783,268 @@ a:hover {
 @keyframes wifi-loading-pulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.7; }
+}
+
+/* ============================================================================
+   PRINT STYLES (Ctrl+P Support)
+   Optimized for printing the dashboard on paper
+   ============================================================================ */
+
+@media print {
+  /* Reset page settings */
+  @page {
+    size: A4 landscape;
+    margin: 0.5cm;
+  }
+  
+  /* Force light background for printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Hide non-essential UI elements */
+  .no-print,
+  nav,
+  header,
+  footer,
+  .sidebar,
+  .navigation,
+  .navbar,
+  .toast-container,
+  .modal-overlay,
+  button:not(.print-visible),
+  .refresh-controls,
+  .countdown-timer,
+  .action-buttons,
+  .download-button,
+  .export-button,
+  .pdf-export-button,
+  .hamburger-menu,
+  .theme-toggle,
+  [data-print="false"] {
+    display: none !important;
+  }
+  
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Body and container adjustments */
+  body {
+    background: white !important;
+    color: #1f2937 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Dashboard container */
+  .dashboard-container,
+  .dashboard-content,
+  .main-content {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Cards and panels */
+  .card,
+  .panel,
+  .widget,
+  .dashboard-card,
+  .collapsible-section {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 8px !important;
+    padding: 8px !important;
+  }
+  
+  /* Section headers */
+  .section-title,
+  .card-title,
+  .widget-title {
+    color: #1f2937 !important;
+    font-size: 11pt !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Text colors for print */
+  .text-primary,
+  .value-text,
+  .label-text {
+    color: #1f2937 !important;
+  }
+  
+  .text-secondary,
+  .text-muted {
+    color: #6b7280 !important;
+  }
+  
+  /* Energy Flow Diagram */
+  .energy-flow-diagram-container {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    page-break-inside: avoid;
+  }
+  
+  .energy-flow-svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* SVG elements for print */
+  .energy-flow-svg text {
+    fill: #1f2937 !important;
+  }
+  
+  .energy-flow-svg .panel-label-lg,
+  .energy-flow-svg .battery-label-lg,
+  .energy-flow-svg .inverter-label {
+    fill: #1f2937 !important;
+  }
+  
+  /* Gauges and charts */
+  .gauge-container,
+  .chart-container {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Grid layout adjustments for print */
+  .dashboard-grid,
+  .widgets-grid,
+  .grid {
+    display: block !important;
+  }
+  
+  .grid > * {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+  }
+  
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 4px 6px !important;
+    text-align: left !important;
+    color: #1f2937 !important;
+  }
+  
+  th {
+    background: #f3f4f6 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Device info */
+  .device-info-widget {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Instantaneous gauges - fit on page */
+  .instantaneous-gauges-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .instantaneous-gauges-container > * {
+    flex: 1 1 200px !important;
+    max-width: 250px !important;
+  }
+  
+  /* Status indicators - ensure colors print */
+  .status-healthy,
+  .status-online,
+  .status-good {
+    color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.1) !important;
+  }
+  
+  .status-warning,
+  .status-fair {
+    color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.1) !important;
+  }
+  
+  .status-critical,
+  .status-error,
+  .status-poor {
+    color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+  }
+  
+  /* Links */
+  a {
+    color: #1f2937 !important;
+    text-decoration: none !important;
+  }
+  
+  /* Print header/footer info */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #1f2937;
+  }
+  
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 8pt;
+    color: #6b7280;
+    margin-top: 10px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 5px;
+  }
+  
+  /* Collapsible sections - expand all for print */
+  .collapsible-content {
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  .collapse-toggle,
+  .expand-collapse-btn {
+    display: none !important;
+  }
+  
+  /* Animations - disable for print */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Scrollbars - hide */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  /* Overflow - allow content to flow */
+  .overflow-hidden,
+  .overflow-auto,
+  .overflow-scroll {
+    overflow: visible !important;
+  }
 }
