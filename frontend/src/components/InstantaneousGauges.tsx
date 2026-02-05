@@ -7,6 +7,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { AnalogNeedleGauge, InverterModeDisplay, DigitalValueDisplay, BatterySoCGauge } from './gauges';
+import { formatTimestamp } from './gauges/utils';
 
 // ============================================================================
 // Types
@@ -129,16 +130,80 @@ function buildBatteryRelayKql(serial: string): string {
 }
 
 // ============================================================================
-// Category Header Component
+// Category Header Component - Professional SVG Icons
 // ============================================================================
 
-const categoryConfig: Record<string, { icon: string; label: string; color: string }> = {
-  wifi: { icon: '📶', label: 'WiFi', color: '#3b82f6' },
-  inverter: { icon: '⚙️', label: 'Inverter', color: '#6366f1' },
-  solar: { icon: '☀️', label: 'Solar PV', color: '#f59e0b' },
-  grid: { icon: '⚡', label: 'Grid', color: '#10b981' },
-  battery: { icon: '🔋', label: 'Battery', color: '#ef4444' },
-  load: { icon: '🏠', label: 'Load', color: '#ec4899' },
+const CategoryIcon: React.FC<{ category: string; color: string }> = ({ category, color }) => {
+  const iconStyle = { width: '18px', height: '18px', color };
+  
+  switch (category) {
+    case 'wifi':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+          <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+          <circle cx="12" cy="20" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'inverter':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2" />
+          <path d="M12 12h.01" />
+          <path d="M17 12h.01" />
+          <path d="M7 12h.01" />
+        </svg>
+      );
+    case 'solar':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+      );
+    case 'grid':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+      );
+    case 'battery':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="18" height="10" rx="2" />
+          <path d="M22 11v2" />
+          <path d="M6 11v2" />
+          <path d="M10 11v2" />
+          <path d="M14 11v2" />
+        </svg>
+      );
+    case 'load':
+      return (
+        <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
+const categoryConfig: Record<string, { label: string; color: string }> = {
+  wifi: { label: 'WiFi', color: '#3b82f6' },
+  inverter: { label: 'Inverter', color: '#6366f1' },
+  solar: { label: 'Solar PV', color: '#f59e0b' },
+  grid: { label: 'Grid', color: '#10b981' },
+  battery: { label: 'Battery', color: '#ef4444' },
+  load: { label: 'Load', color: '#ec4899' },
 };
 
 // ============================================================================
@@ -150,7 +215,6 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
   const [gaugeData, setGaugeData] = useState<Record<string, GaugeData>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -225,7 +289,6 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       }
     }
     
-    setLastRefresh(new Date());
     setCountdown(REFRESH_INTERVAL / 1000);
   }, [serial, accessToken, fetchGaugeData]);
 
@@ -418,7 +481,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
         </div>
       </div>
       
-      {/* Last refresh time */}
+      {/* Last refresh time - show most recent ADX timestamp */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -428,7 +491,16 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
         marginBottom: '16px',
       }}>
         <span>
-          {lastRefresh ? `Last updated: ${lastRefresh.toLocaleTimeString()}` : 'Loading...'}
+          {(() => {
+            // Find the most recent localtime from all gauge data
+            const timestamps = Object.values(gaugeData)
+              .map(d => d.localtime)
+              .filter((t): t is string => !!t);
+            if (timestamps.length === 0) return 'Loading...';
+            // Sort descending to get most recent
+            timestamps.sort((a, b) => b.localeCompare(a));
+            return `Last Retrieved: ${formatTimestamp(timestamps[0])}`;
+          })()}
         </span>
         <span style={{ 
           background: 'linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%)',
@@ -457,7 +529,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
               gap: '8px',
               marginBottom: '12px',
             }}>
-              <span style={{ fontSize: '16px' }}>{catConfig.icon}</span>
+              <CategoryIcon category={category} color={catConfig.color} />
               <span style={{
                 fontSize: '13px',
                 fontWeight: 600,
@@ -474,20 +546,68 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
               }} />
             </div>
             
-            {/* Gauges Grid - Use specialized components */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}>
-              {configs.map(config => {
+            {/* Render gauges in responsive grid with subgroup badges */}
+            {(() => {
+              // Get subgroup label for each config
+              const getSubgroupLabel = (cat: string, configId: string): string => {
+                switch (cat) {
+                  case 'battery':
+                    if (configId.startsWith('bat1')) return 'M1';
+                    if (configId.startsWith('bat2')) return 'M2';
+                    if (configId.startsWith('bat3')) return 'M3';
+                    if (configId === 'bat_main_relay') return 'SYS';
+                    return '';
+                  case 'solar':
+                    if (configId === 'pv1' || configId === 'pv1_i') return 'CH1';
+                    if (configId === 'pv2' || configId === 'pv2_i') return 'CH2';
+                    if (configId === 'pv3' || configId === 'pv3_i') return 'CH3';
+                    if (configId === 'pv4' || configId === 'pv4_i') return 'CH4';
+                    return '';
+                  case 'grid':
+                  case 'load':
+                    if (configId.includes('_l1')) return 'L1';
+                    if (configId.includes('_l2')) return 'L2';
+                    if (configId.includes('_freq')) return 'F';
+                    return '';
+                  default:
+                    return '';
+                }
+              };
+
+              // Render gauge with optional subgroup badge
+              const renderGaugeWithBadge = (config: GaugeConfig) => {
                 const data = gaugeData[config.id] || { value: null, localtime: null, loading: true, error: null };
+                const subgroupLabel = getSubgroupLabel(category, config.id);
+                
+                // Wrapper with subgroup badge
+                const wrapWithBadge = (gaugeElement: React.ReactNode) => (
+                  <div key={config.id} style={{ position: 'relative' }}>
+                    {subgroupLabel && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        background: `${catConfig.color}20`,
+                        color: catConfig.color,
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        padding: '2px 5px',
+                        borderRadius: '4px',
+                        letterSpacing: '0.5px',
+                        zIndex: 10,
+                        border: `1px solid ${catConfig.color}30`,
+                      }}>
+                        {subgroupLabel}
+                      </div>
+                    )}
+                    {gaugeElement}
+                  </div>
+                );
                 
                 // WiFi Signal - Use Analog Needle Gauge
                 if (config.id === 'wifi') {
-                  return (
+                  return wrapWithBadge(
                     <AnalogNeedleGauge
-                      key={config.id}
                       value={data.value}
                       min={config.min}
                       max={config.max}
@@ -502,9 +622,8 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
                 
                 // Inverter Mode - Use specialized display
                 if (config.id === 'inv_mode') {
-                  return (
+                  return wrapWithBadge(
                     <InverterModeDisplay
-                      key={config.id}
                       value={data.value}
                       loading={data.loading}
                       error={data.error}
@@ -513,25 +632,25 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
                   );
                 }
                 
-                // Battery SoC - Use circular gauge
+                // Battery SoC - Use circular gauge (no badge - already has module number built-in)
                 if (config.id.includes('_soc')) {
                   const moduleNum = config.id.includes('bat1') ? 1 : config.id.includes('bat2') ? 2 : 3;
                   return (
-                    <BatterySoCGauge
-                      key={config.id}
-                      value={data.value}
-                      moduleNumber={moduleNum}
-                      loading={data.loading}
-                      error={data.error}
-                      timestamp={data.localtime}
-                    />
+                    <div key={config.id} style={{ position: 'relative' }}>
+                      <BatterySoCGauge
+                        value={data.value}
+                        moduleNumber={moduleNum}
+                        loading={data.loading}
+                        error={data.error}
+                        timestamp={data.localtime}
+                      />
+                    </div>
                   );
                 }
                 
                 // All other metrics - Use Digital Value Display
-                return (
+                return wrapWithBadge(
                   <DigitalValueDisplay
-                    key={config.id}
                     value={data.value}
                     unit={config.unit}
                     label={config.label}
@@ -545,8 +664,19 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
                     colorEnd={config.colorEnd}
                   />
                 );
-              })}
-            </div>
+              };
+
+              return (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gap: '24px',
+                  padding: '8px 0',
+                }}>
+                  {configs.map(renderGaugeWithBadge)}
+                </div>
+              );
+            })()}
           </div>
         );
       })}

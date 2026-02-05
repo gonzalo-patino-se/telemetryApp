@@ -2,6 +2,7 @@
 // Professional inverter operating mode status display
 
 import React from 'react';
+import { formatTimestamp, isTimestampStale } from './utils';
 
 interface InverterModeDisplayProps {
   value: number | null;
@@ -46,10 +47,12 @@ const InverterModeDisplay: React.FC<InverterModeDisplayProps> = ({
       alignItems: 'center',
       padding: '16px',
       background: 'var(--bg-surface)',
-      borderRadius: '16px',
+      borderRadius: '12px',
       border: '1px solid var(--border-subtle)',
-      minWidth: '180px',
+      width: '180px',
+      height: '200px',
       position: 'relative',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     }}>
       {/* Loading overlay */}
       {loading && (
@@ -176,9 +179,9 @@ const InverterModeDisplay: React.FC<InverterModeDisplayProps> = ({
       <div style={{
         marginTop: '4px',
         fontSize: '10px',
-        color: 'var(--text-tertiary)',
+        color: isTimestampStale(timestamp) ? '#f59e0b' : 'var(--text-tertiary)',
       }}>
-        {error ? '⚠️ Error' : (timestamp ? new Date(timestamp).toLocaleTimeString() : '--')}
+        {error ? '⚠️ Error' : formatTimestamp(timestamp)}
       </div>
       
       {/* CSS Animations */}

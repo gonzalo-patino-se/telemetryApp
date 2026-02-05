@@ -118,6 +118,7 @@
      * - autoFetchProp: parent-controlled Auto‑fetch toggle (optional).
      * - onAutoFetchChange: callback when auto-fetch changes (only relevant when parent controls).
      * - fetchSignal: bump this number from parent to trigger a fetch on demand.
+     * - onDataLoaded: callback when data is loaded, passes the data to parent.
      */
     const DeviceInfoWidget = ({
     serial,
@@ -125,6 +126,7 @@
     autoFetchProp,
     onAutoFetchChange,
     fetchSignal,
+    onDataLoaded,
     }) => {
     const { runQuery } = useAdxQuery();
     const [data, setData] = useState(null);
@@ -150,6 +152,10 @@
         const result = await runQuery(kql);
         // console.debug('DeviceInfoWidget Query Result:', result);
         setData(result);
+        // Notify parent about loaded data (for PDF export)
+        if (onDataLoaded && result) {
+            onDataLoaded(result);
+        }
     } catch (err) {
         setError('Failed to load device info.');
         console.error(err);

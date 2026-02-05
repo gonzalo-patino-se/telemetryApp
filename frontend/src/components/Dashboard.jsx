@@ -2,7 +2,7 @@
 // Dashboard component - displays device telemetry data from Azure ADX
 // All data is fetched from cloud - no mock/hardcoded values
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
@@ -13,6 +13,7 @@ import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
 import MasterTimeRangeWidget from './MasterTimeRangeWidget';
+import DashboardPDFExport from './DashboardPDFExport';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -28,6 +29,18 @@ const Dashboard = () => {
         clearSerial, 
         hasSerial,
     } = useSerial();
+    
+    // Ref for PDF export capture
+    const dashboardContentRef = useRef(null);
+    
+    // Device info state for PDF export
+    const [deviceInfo, setDeviceInfo] = useState({
+        serial: '',
+        firmware: '',
+        mac: '',
+        model: '',
+        lastSeen: ''
+    });
     
     // Local input state for the search field
     const [serialInput, setSerialInput] = useState(globalSerial || '');
@@ -386,6 +399,31 @@ const Dashboard = () => {
 
     return (
         <DashboardLayout showFilters={false}>
+            {/* Dashboard Actions Bar */}
+            {hasActiveSerial && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    marginBottom: spacing.md,
+                    gap: spacing.md,
+                }}>
+                    <DashboardPDFExport 
+                        deviceInfo={{
+                            serial: activeSerial,
+                            firmware: deviceInfo.firmware,
+                            mac: deviceInfo.mac,
+                            model: 'Prosumer Inverter',
+                            lastSeen: deviceInfo.lastSeen,
+                        }}
+                        targetRef={dashboardContentRef}
+                        filename="telemetry-dashboard"
+                    />
+                </div>
+            )}
+            
+            {/* Main Dashboard Content - wrapped in ref for PDF capture */}
+            <div ref={dashboardContentRef} data-pdf-capture="true">
             {/* Device Search Section */}
             <div style={styles.searchSection}>
                 <WidgetCard title="Device Finder">
@@ -717,9 +755,21 @@ const Dashboard = () => {
                         autoFetchProp={devInfoAutoFetch}
                         onAutoFetchChange={setDevInfoAutoFetch}
                         fetchSignal={devInfoFetchSignal}
+                        onDataLoaded={(data) => {
+                            if (data && data.data && data.data[0]) {
+                                setDeviceInfo({
+                                    serial: activeSerial,
+                                    firmware: data.data[0].firmware_version || '',
+                                    mac: data.data[0].mac_address || '',
+                                    model: 'Prosumer Inverter',
+                                    lastSeen: data.data[0].localtime || ''
+                                });
+                            }
+                        }}
                     />
                 )}
             </WidgetCard>
+            </div>{/* End dashboardContentRef */}
         </DashboardLayout>
     );
 };

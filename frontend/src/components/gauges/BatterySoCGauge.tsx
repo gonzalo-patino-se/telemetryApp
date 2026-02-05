@@ -1,7 +1,8 @@
 // src/components/gauges/BatterySoCGauge.tsx
-// Professional circular battery state of charge gauge
+// Professional battery state of charge gauge - clean modern design
 
 import React from 'react';
+import { formatTimestamp, isTimestampStale } from './utils';
 
 interface BatterySoCGaugeProps {
   value: number | null;
@@ -30,26 +31,28 @@ const BatterySoCGauge: React.FC<BatterySoCGaugeProps> = ({
     return '#ef4444'; // Red
   };
   
-  const color = hasValue ? getColor(percentage) : '#6b7280';
+  const getStatus = (soc: number) => {
+    if (soc >= 80) return 'Full';
+    if (soc >= 50) return 'Good';
+    if (soc >= 30) return 'Low';
+    if (soc >= 15) return 'Very Low';
+    return 'Critical';
+  };
   
-  // SVG circle calculations
-  const size = 100;
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
+  const color = hasValue ? getColor(percentage) : '#6b7280';
 
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      padding: '12px',
+      padding: '16px',
       background: 'var(--bg-surface)',
       borderRadius: '12px',
       border: '1px solid var(--border-subtle)',
-      minWidth: '120px',
+      width: '180px',
+      height: '200px',
       position: 'relative',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     }}>
       {/* Loading overlay */}
       {loading && (
@@ -67,113 +70,118 @@ const BatterySoCGauge: React.FC<BatterySoCGaugeProps> = ({
         </div>
       )}
       
-      {/* Module badge */}
+      {/* Header with module number */}
       <div style={{
-        position: 'absolute',
-        top: '8px',
-        right: '8px',
-        padding: '2px 6px',
-        borderRadius: '4px',
-        background: 'var(--bg-input)',
-        fontSize: '9px',
-        fontWeight: 600,
-        color: 'var(--text-tertiary)',
-      }}>
-        M{moduleNumber}
-      </div>
-      
-      {/* Circular gauge */}
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--border-subtle)"
-          strokeWidth={strokeWidth}
-        />
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          style={{
-            transition: 'stroke-dashoffset 0.8s ease-out, stroke 0.3s ease',
-            filter: `drop-shadow(0 0 6px ${color}60)`,
-          }}
-        />
-      </svg>
-      
-      {/* Center value */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -70%)',
-        textAlign: 'center',
-      }}>
-        <div style={{
-          fontSize: '22px',
-          fontWeight: 700,
-          color: hasValue ? color : 'var(--text-tertiary)',
-          lineHeight: 1,
-        }}>
-          {hasValue ? Math.round(percentage) : '--'}
-        </div>
-        <div style={{
-          fontSize: '11px',
-          color: 'var(--text-tertiary)',
-          marginTop: '2px',
-        }}>
-          %
-        </div>
-      </div>
-      
-      {/* Battery icon indicator */}
-      <div style={{
-        marginTop: '-10px',
         display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: '4px',
+        marginBottom: '12px',
       }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill={color}>
-          <rect x="2" y="7" width="18" height="10" rx="1" stroke={color} strokeWidth="1.5" fill="none"/>
-          <rect x="4" y="9" width={14 * (percentage / 100)} height="6" rx="0.5" fill={color}/>
-          <rect x="20" y="10" width="2" height="4" rx="0.5" fill={color}/>
-        </svg>
         <span style={{
-          fontSize: '10px',
+          fontSize: '11px',
+          fontWeight: 600,
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}>
+          Battery {moduleNumber}
+        </span>
+        <span style={{
+          fontSize: '9px',
           fontWeight: 600,
           color: color,
+          padding: '2px 6px',
+          borderRadius: '4px',
+          background: `${color}15`,
         }}>
-          {percentage >= 80 ? 'Full' : percentage >= 50 ? 'Good' : percentage >= 30 ? 'Low' : percentage >= 15 ? 'Very Low' : 'Critical'}
+          {hasValue ? getStatus(percentage) : '--'}
         </span>
       </div>
       
-      {/* Label */}
+      {/* Large Battery Visual */}
       <div style={{
-        marginTop: '6px',
-        fontSize: '11px',
-        fontWeight: 600,
-        color: 'var(--text-secondary)',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
-        Battery {moduleNumber} SoC
+        {/* Battery container */}
+        <div style={{ position: 'relative' }}>
+          {/* Battery body */}
+          <div style={{
+            width: '70px',
+            height: '100px',
+            border: `3px solid ${color}`,
+            borderRadius: '8px',
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'var(--bg-input)',
+          }}>
+            {/* Fill level */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: `${percentage}%`,
+              background: `linear-gradient(180deg, ${color}cc 0%, ${color} 100%)`,
+              transition: 'height 0.8s ease-out',
+              borderRadius: '0 0 4px 4px',
+            }} />
+            
+            {/* Percentage text overlay */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+            }}>
+              <span style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: percentage > 50 ? '#fff' : color,
+                textShadow: percentage > 50 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                lineHeight: 1,
+              }}>
+                {hasValue ? Math.round(percentage) : '--'}
+              </span>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: percentage > 50 ? '#fff' : color,
+                textShadow: percentage > 50 ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                opacity: 0.9,
+              }}>
+                %
+              </span>
+            </div>
+          </div>
+          
+          {/* Battery cap (positive terminal) */}
+          <div style={{
+            position: 'absolute',
+            top: '-6px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '24px',
+            height: '8px',
+            background: color,
+            borderRadius: '3px 3px 0 0',
+          }} />
+        </div>
       </div>
       
       {/* Timestamp */}
       <div style={{
-        marginTop: '2px',
+        marginTop: '8px',
         fontSize: '9px',
-        color: 'var(--text-tertiary)',
+        color: isTimestampStale(timestamp) ? '#f59e0b' : 'var(--text-tertiary)',
+        textAlign: 'center',
       }}>
-        {error ? '⚠️ Error' : (timestamp ? new Date(timestamp).toLocaleTimeString() : '--')}
+        {error ? '⚠️ Error' : formatTimestamp(timestamp)}
       </div>
     </div>
   );
