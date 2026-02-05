@@ -130,7 +130,18 @@ const WIFI_CONFIG: TelemetryConfig = {
 // Combined configs for fetching
 const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG, WIFI_CONFIG];
 
-const QUERY_PATH = '/query_adx/';
+// IDs that use Alarms table (not Telemetry table)
+// All battery relay statuses are in the Alarms table
+// All battery relay statuses use Alarms table
+// batMainRelay: /BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR
+// batXRelay: /BMS/MODULE*/EVENT/INFO/MAIN_RELAY_STATUS (despite INFO in path, stored in Alarms)
+const ALARM_IDS = ['batMainRelay', 'bat1Relay', 'bat2Relay', 'bat3Relay'];
+
+// WiFi uses TelemetryLive table (requires separate query)
+const WIFI_ID = 'wifiSignal';
+
+const BATCH_TELEMETRY_PATH = '/batch_telemetry/';
+const QUERY_PATH = '/query_adx/'; // Only for WiFi (TelemetryLive table)
 const REFRESH_INTERVAL = 300000; // 5 minutes (300 seconds)
 
 // ============================================================================
@@ -141,58 +152,7 @@ function escapeKqlString(s: string): string {
   return (s ?? '').replace(/'/g, "''");
 }
 
-function buildInstantaneousKql(serial: string, telemetryName: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Telemetry
-    | where comms_serial contains s
-    | where name contains '${telemetryName}'
-    | top 1 by localtime desc
-    | project localtime, value_double
-  `.trim();
-}
-
-// Special query for Battery Relay (uses Alarms table instead of Telemetry)
-function buildBatteryRelayKql(serial: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Alarms
-    | where comms_serial contains s
-    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
-    | top 1 by localtime desc
-    | project localtime, value
-  `.trim();
-}
-
-// Special query for Battery Module Relay Status (uses Alarms table with value field)
-function buildModuleRelayKql(serial: string, moduleName: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Alarms
-    | where comms_serial contains s
-    | where name contains '${moduleName}'
-    | top 1 by localtime desc
-    | project localtime, value
-  `.trim();
-}
-
-// Special query for BGCS Relay Status (instantaneous from Telemetry table)
-function buildBgcsRelayKql(serial: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Telemetry
-    | where comms_serial contains s
-    | where name has '/BGCS/GRID/STAT/RELAY_STATUS'
-    | top 1 by localtime desc
-    | project localtime, value_double, name
-  `.trim();
-}
-
-// Special query for WiFi Signal Strength (uses TelemetryLive table for real-time data)
+// WiFi Signal Strength - only query that needs TelemetryLive table (not supported by batch)
 function buildWifiSignalKql(serial: string): string {
   const s = escapeKqlString(serial);
   return `
@@ -949,96 +909,121 @@ const LoadComponent: React.FC<LoadComponentProps> = ({
 // ============================================================================
 
 const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
-  const { accessToken, logout } = useAuth();
+  const { logout } = useAuth();
   const [telemetryData, setTelemetryData] = useState<Record<string, TelemetryData>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch single telemetry value
-  const fetchTelemetryData = useCallback(async (config: TelemetryConfig) => {
-    // Use special query for Battery Relay (from Alarms table)
-    const isBatteryRelayQuery = config.id === 'batMainRelay';
-    // Use special query for BGCS Relay
-    const isBgcsRelayQuery = config.id === 'bgcsRelay';
-    // Use special query for WiFi Signal (from TelemetryLive table)
-    const isWifiQuery = config.id === 'wifiSignal';
-    // Use special query for Module Relays (from Telemetry table with 'value' field)
-    const isModuleRelayQuery = ['bat1Relay', 'bat2Relay', 'bat3Relay'].includes(config.id);
+  // =========================================================================
+  // OPTIMIZED: Fetch ALL telemetry in batch API calls
+  // Reduces 30+ individual API calls to just 3 (telemetry + alarms + wifi)
+  // =========================================================================
+  const fetchAllTelemetryBatch = useCallback(async () => {
+    if (!serial) return;
+
+    // Separate configs by data source
+    const telemetryNames: string[] = [];
+    const alarmNames: string[] = [];
     
-    let kql: string;
-    if (isBatteryRelayQuery) {
-      kql = buildBatteryRelayKql(serial);
-    } else if (isBgcsRelayQuery) {
-      kql = buildBgcsRelayKql(serial);
-    } else if (isWifiQuery) {
-      kql = buildWifiSignalKql(serial);
-    } else if (isModuleRelayQuery) {
-      kql = buildModuleRelayKql(serial, config.telemetryName);
-    } else {
-      kql = buildInstantaneousKql(serial, config.telemetryName);
-    }
-    
-    try {
-      const res = await api.post(
-        QUERY_PATH,
-        { kql },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      
-      const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
-      const row = dataArray[0];
-      
-      // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
-      let value: number | null = null;
-      if (isBatteryRelayQuery || isModuleRelayQuery) {
-        // Battery Main Relay and Module Relays use 'value' field from Alarms table
-        if (row?.value !== undefined && row?.value !== null) {
-          const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
-          value = isNaN(parsed) ? null : parsed;
-        }
+    ALL_CONFIGS.forEach(config => {
+      if (config.id === WIFI_ID) {
+        // WiFi uses TelemetryLive - handled separately
+        return;
+      } else if (ALARM_IDS.includes(config.id)) {
+        // Alarm-based metrics
+        alarmNames.push(config.telemetryName);
       } else {
-        // All Telemetry queries (BGCS relay, WiFi, etc.) use 'value_double' field
-        value = row?.value_double ?? null;
+        // Standard telemetry
+        telemetryNames.push(config.telemetryName);
       }
+    });
+
+    const newData: Record<string, TelemetryData> = {};
+
+    try {
+      // 1. Batch fetch telemetry and alarms in a single API call
+      const batchRes = await api.post(BATCH_TELEMETRY_PATH, {
+        serial,
+        telemetry_names: telemetryNames,
+        alarm_names: alarmNames,
+      });
+
+      const { telemetry = {}, alarms = {} } = batchRes.data || {};
+
+      // Map batch response to telemetry data format
+      ALL_CONFIGS.forEach(config => {
+        if (config.id === WIFI_ID) return; // Handled separately
+        
+        const isAlarm = ALARM_IDS.includes(config.id);
+        const dataSource = isAlarm ? alarms : telemetry;
+        const result = dataSource[config.telemetryName];
+        
+        if (result) {
+          newData[config.id] = {
+            value: result.value ?? null,
+            localtime: result.localtime ?? null,
+            loading: false,
+            error: null,
+          };
+        } else {
+          newData[config.id] = {
+            value: null,
+            localtime: null,
+            loading: false,
+            error: null,
+          };
+        }
+      });
+
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        await logout();
+        return;
+      }
+      // On batch error, set error for all non-wifi configs
+      ALL_CONFIGS.forEach(config => {
+        if (config.id !== WIFI_ID) {
+          newData[config.id] = {
+            value: null,
+            localtime: null,
+            loading: false,
+            error: err?.response?.data?.error ?? 'Error',
+          };
+        }
+      });
+    }
+
+    // 2. Fetch WiFi separately (uses TelemetryLive table)
+    try {
+      const wifiKql = buildWifiSignalKql(serial);
+      const wifiRes = await api.post(QUERY_PATH, { kql: wifiKql });
+      const wifiArray = Array.isArray(wifiRes.data?.data) ? wifiRes.data.data : [];
+      const wifiRow = wifiArray[0];
       
-      return {
-        value,
-        localtime: row?.localtime ?? null,
+      newData[WIFI_ID] = {
+        value: wifiRow?.value_double ?? null,
+        localtime: wifiRow?.localtime ?? null,
         loading: false,
         error: null,
       };
     } catch (err: any) {
-      if (err?.response?.status === 401) await logout();
-      return {
+      if (err?.response?.status === 401) {
+        await logout();
+        return;
+      }
+      newData[WIFI_ID] = {
         value: null,
         localtime: null,
         loading: false,
         error: err?.response?.data?.error ?? 'Error',
       };
     }
-  }, [serial, accessToken, logout]);
 
-  // Fetch all telemetry (without setting loading state on refresh to avoid flicker)
-  const fetchAllTelemetry = useCallback(async () => {
-    if (!serial || !accessToken) return; // Guard against unauthorized calls
-
-    // DON'T set loading state on refresh - it causes flickering
-
-    // Fetch all in parallel
-    const results = await Promise.all(ALL_CONFIGS.map(fetchTelemetryData));
-    
-    setTelemetryData(prev => {
-      const newData = { ...prev };
-      ALL_CONFIGS.forEach((config, idx) => {
-        newData[config.id] = results[idx];
-      });
-      return newData;
-    });
-    
+    setTelemetryData(newData);
     setCountdown(REFRESH_INTERVAL / 1000);
-  }, [serial, accessToken, fetchTelemetryData]);
+  }, [serial, logout]);
 
   // Initial fetch and countdown timer - runs only once when serial changes
   useEffect(() => {
@@ -1053,7 +1038,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       return newData;
     });
     
-    fetchAllTelemetry();
+    fetchAllTelemetryBatch();
     
     countdownRef.current = setInterval(() => {
       if (!isPaused) {
@@ -1072,14 +1057,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     if (!serial || isPaused) return;
     
     intervalRef.current = setInterval(() => {
-      fetchAllTelemetry();
+      fetchAllTelemetryBatch();
     }, REFRESH_INTERVAL);
     
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serial, isPaused]); // Don't include fetchAllTelemetry to avoid re-creating interval
+  }, [serial, isPaused]); // Don't include fetchAllTelemetryBatch to avoid re-creating interval
 
   // Determine if panels are producing (voltage > 50V threshold)
   const PRODUCING_THRESHOLD = 50;
@@ -1142,6 +1127,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   };
   
   const bat1RelayValue = telemetryData.bat1Relay?.value ?? null;
+<<<<<<< HEAD
 
   // Ensure relay values are numbers (not strings)
   const bat1RelayValueRaw = telemetryData.bat1Relay?.value ?? null;
@@ -1151,6 +1137,15 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const bat1RelayValue = bat1RelayValueRaw !== null ? Number(bat1RelayValueRaw) : null;
   const bat2RelayValue = bat2RelayValueRaw !== null ? Number(bat2RelayValueRaw) : null;
   const bat3RelayValue = bat3RelayValueRaw !== null ? Number(bat3RelayValueRaw) : null;
+=======
+  const bat2RelayValue = telemetryData.bat2Relay?.value ?? null;
+  const bat3RelayValue = telemetryData.bat3Relay?.value ?? null;
+
+  // Debug: Check relay values
+  if (bat1RelayValue !== null || bat2RelayValue !== null || bat3RelayValue !== null) {
+    console.log('Module relay values:', { bat1RelayValue, bat2RelayValue, bat3RelayValue });
+  }
+>>>>>>> chore/security
 
   const bat1RelayInfo = getModuleRelayStatus(bat1RelayValue);
   const bat2RelayInfo = getModuleRelayStatus(bat2RelayValue);
@@ -1259,7 +1254,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
             )}
           </button>
           
-          <button onClick={fetchAllTelemetry} className="control-btn refresh">
+          <button onClick={fetchAllTelemetryBatch} className="control-btn refresh">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="23 4 23 10 17 10"/>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>

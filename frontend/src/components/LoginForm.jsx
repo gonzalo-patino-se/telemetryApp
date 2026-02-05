@@ -1,6 +1,5 @@
 ﻿// src/components/LoginForm.jsx
 import React, { useState } from 'react';
-import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from './common/Logo';
@@ -20,9 +19,8 @@ const LoginForm = () => {
         setError('');
         setLoading(true);
         try {
-            const response = await api.post('/login/', { username, password });
-            const { access, refresh } = response.data;
-            login(access, refresh);
+            // New: login function handles the API call and cookie-based auth
+            await login(username, password);
             navigate('/dashboard');
         } catch (err) {
             if (err.response && err.response.status === 401) {

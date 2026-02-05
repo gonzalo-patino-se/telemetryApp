@@ -40,11 +40,19 @@ IS_PRODUCTION = ENVIRONMENT == 'production'
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-insecure')
+_secret_key = os.getenv('DJANGO_SECRET_KEY')
+if IS_PRODUCTION and not _secret_key:
+    raise ValueError("DJANGO_SECRET_KEY environment variable is required in production!")
+SECRET_KEY = _secret_key or 'dev-insecure-key-for-local-development-only'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+if IS_PRODUCTION and DEBUG:
+    raise ValueError("DEBUG must be False in production!")
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h]
+if IS_PRODUCTION and '*' in ALLOWED_HOSTS:
+    raise ValueError("Wildcard '*' in ALLOWED_HOSTS is not permitted in production!")
 
 # Application definition
 
@@ -181,6 +189,9 @@ AUTH_PASSWORD_VALIDATORS = [
 #REST Framework & JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # Use cookie-based JWT authentication (XSS-safe)
+        'telemetryapp.authentication.CookieJWTAuthentication',
+        # Fallback to header-based for API testing tools
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -196,13 +207,55 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    # Cookie settings (used by custom authentication)
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'AUTH_COOKIE_SECURE': IS_PRODUCTION,
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_PATH': '/',
+    'AUTH_COOKIE_SAMESITE': 'Lax',
 }
 
-#CORS
-_cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
-CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+# =============================================================================
+# CORS Configuration
+# =============================================================================
+# SECURITY: Never use CORS_ALLOW_ALL_ORIGINS = True in production!
+# Always explicitly whitelist allowed origins.
+
+_cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if IS_PRODUCTION:
+    # In production, CORS_ALLOWED_ORIGINS must be explicitly set via environment
+    if not _cors_origins_env:
+        raise ValueError(
+            "CORS_ALLOWED_ORIGINS environment variable is required in production! "
+            "Set it to your frontend URL(s), e.g., 'https://your-domain.com'"
+        )
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_env.split(',') if o.strip()]
+else:
+    # Development: default to localhost:5173 (Vite dev server)
+    _cors_default = 'http://localhost:5173,http://127.0.0.1:5173'
+    _cors_origins = _cors_origins_env or _cors_default
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+
+# Allow credentials (cookies, authorization headers) - required for JWT auth
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = list(default_headers) + ['authorization']
+
+# Additional headers allowed in CORS requests
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'authorization',
+    'content-type',
+    'x-requested-with',
+]
+
+# HTTP methods allowed in CORS requests
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 
 # Internationalization

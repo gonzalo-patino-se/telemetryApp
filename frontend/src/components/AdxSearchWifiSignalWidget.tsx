@@ -167,7 +167,7 @@
     fetchSignal,
     useGlobalRange = true,
     }) => {
-    const { accessToken, logout } = useAuth();
+    const { logout } = useAuth();
     
     // Global time range context
     const timeRangeContext = useTimeRangeOptional();
@@ -224,15 +224,13 @@
     const doFetch = async () => {
         setLoading(true);
         setError('');
-        console.log('WiFi Signal KQL Query:', currentKql);
         try {
+        // Cookies sent automatically with withCredentials: true
         const res = await api.post(
             QUERY_PATH,
-            { kql: currentKql },
-            { headers: { Authorization: `Bearer ${accessToken}` } }
+            { kql: currentKql }
         );
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
-        console.log('WiFi Signal Response:', dataArray.length, 'rows');
         setRows(dataArray);
         } catch (err: any) {
         if (err?.response?.status === 401) await logout();
@@ -244,7 +242,7 @@
     };
     
     void doFetch();
-    }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout]);
+    }, [autoFetch, canFetch, serial, fromDT, toDT, logout]);
 
     // Parent-triggered fetch via fetchSignal bump
     useEffect(() => {
@@ -266,15 +264,13 @@
     if (!kql) return;
     setLoading(true);
     setError('');
-    console.log('WiFi Signal KQL Query (manual):', kql);
     try {
+        // Cookies sent automatically with withCredentials: true
         const res = await api.post(
         QUERY_PATH,
-        { kql },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { kql }
         );
         const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
-        console.log('WiFi Signal Response:', dataArray.length, 'rows');
         setRows(dataArray);
     } catch (err: any) {
         if (err?.response?.status === 401) await logout();
