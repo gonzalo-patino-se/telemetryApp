@@ -267,8 +267,6 @@ def batch_telemetry_view(request):
     
     This endpoint reduces ADX costs by:
     1. Combining multiple metric requests into one query
-    2. Server-side caching (30 second TTL by default)
-    3. Rate limiting to prevent query storms
     
     Request body:
     {
@@ -286,20 +284,9 @@ def batch_telemetry_view(request):
         "alarms": {
             "/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR": {"value": 0, "localtime": "..."},
             ...
-        },
-        "meta": {
-            "cached": false,
-            "query_count": 2,
-            "rate_limit_remaining": 58
         }
     }
     """
-    from .adx_optimized import (
-        query_latest_telemetry_batch,
-        query_latest_alarms_batch,
-        get_query_stats
-    )
-    
     serial = request.data.get('serial')
     telemetry_names = request.data.get('telemetry_names', [])
     alarm_names = request.data.get('alarm_names', [])
@@ -314,28 +301,73 @@ def batch_telemetry_view(request):
         result = {
             'telemetry': {},
             'alarms': {},
-            'meta': {}
         }
         
-        query_count = 0
+        # Escape serial for KQL
+        safe_serial = serial.replace("'", "''")
         
         # Fetch telemetry batch (single query for all metrics)
         if telemetry_names:
-            result['telemetry'] = query_latest_telemetry_batch(serial, telemetry_names)
-            query_count += 1
+            # Build filter: name contains 'x' or name contains 'y' ...
+            names_filter = " or ".join([f"name contains '{n}'" for n in telemetry_names])
+            
+            kql_query = f"""
+            Telemetry
+            | where comms_serial contains '{safe_serial}'
+            | where {names_filter}
+            | summarize arg_max(localtime, value_double) by name
+            | project name, localtime, value_double
+            """.strip()
+            
+            try:
+                data = query_adx(kql_query)
+                rows = data.get('data', []) if isinstance(data, dict) else data
+                
+                for row in rows:
+                    name = row.get('name')
+                    if name:
+                        # Map back to requested names (handle contains matching)
+                        for requested in telemetry_names:
+                            if requested in name or name in requested:
+                                result['telemetry'][requested] = {
+                                    'value': row.get('value_double'),
+                                    'localtime': row.get('localtime'),
+                                }
+                                break
+            except Exception as e:
+                print(f"Error fetching telemetry batch: {e}")
         
         # Fetch alarms batch (single query for all alarms)
         if alarm_names:
-            result['alarms'] = query_latest_alarms_batch(serial, alarm_names)
-            query_count += 1
-        
-        # Add metadata
-        stats = get_query_stats()
-        result['meta'] = {
-            'query_count': query_count,
-            'queries_last_minute': stats['queries_last_minute'],
-            'rate_limit_max': stats['max_queries_per_minute'],
-        }
+            names_filter = " or ".join([f"name has '{n}'" for n in alarm_names])
+            
+            kql_query = f"""
+            Alarms
+            | where comms_serial contains '{safe_serial}'
+            | where {names_filter}
+            | summarize arg_max(localtime, value) by name
+            | project name, localtime, value
+            """.strip()
+            
+            try:
+                data = query_adx(kql_query)
+                rows = data.get('data', []) if isinstance(data, dict) else data
+                print(f"DEBUG alarms: got {len(rows)} rows for alarm_names={alarm_names}")
+                
+                for row in rows:
+                    name = row.get('name')
+                    print(f"DEBUG alarm row: name={name}, value={row.get('value')}")
+                    if name:
+                        for requested in alarm_names:
+                            if requested in name or name in requested:
+                                result['alarms'][requested] = {
+                                    'value': row.get('value'),
+                                    'localtime': row.get('localtime'),
+                                }
+                                print(f"DEBUG: matched alarm {requested} = {row.get('value')}")
+                                break
+            except Exception as e:
+                print(f"Error fetching alarms batch: {e}")
         
         return Response(result)
         
