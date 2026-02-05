@@ -8,6 +8,7 @@ from .views import (
     health_check,
     batch_telemetry_view,  # NEW: Optimized batch endpoint
     adx_stats_view,        # NEW: Query statistics
+    auth_me_view,          # Authentication status check
 )
 
 router = DefaultRouter()
@@ -20,6 +21,9 @@ urlpatterns = [
     path('search_serial/', search_serial), # Endpoint for serial number search
     path('query_adx/', query_adx_view), # Endpoint for generic KQL query (legacy)
     path('health/', health_check),   # Health check endpoint for monitoring
+    
+    # === AUTHENTICATION ===
+    path('auth/me/', auth_me_view),  # Get current user info (verifies auth status)
     
     # === OPTIMIZED ENDPOINTS (Use these for cost efficiency) ===
     path('batch_telemetry/', batch_telemetry_view),  # Batch telemetry (RECOMMENDED)

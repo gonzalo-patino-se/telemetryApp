@@ -949,7 +949,7 @@ const LoadComponent: React.FC<LoadComponentProps> = ({
 // ============================================================================
 
 const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
-  const { accessToken, logout } = useAuth();
+  const { logout } = useAuth();
   const [telemetryData, setTelemetryData] = useState<Record<string, TelemetryData>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
@@ -981,10 +981,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     }
     
     try {
+      // Cookies sent automatically with withCredentials: true
       const res = await api.post(
         QUERY_PATH,
-        { kql },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { kql }
       );
       
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -1018,11 +1018,11 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         error: err?.response?.data?.error ?? 'Error',
       };
     }
-  }, [serial, accessToken, logout]);
+  }, [serial, logout]);
 
   // Fetch all telemetry (without setting loading state on refresh to avoid flicker)
   const fetchAllTelemetry = useCallback(async () => {
-    if (!serial || !accessToken) return; // Guard against unauthorized calls
+    if (!serial) return; // Guard - cookies handle auth automatically
 
     // DON'T set loading state on refresh - it causes flickering
 
@@ -1038,7 +1038,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     });
     
     setCountdown(REFRESH_INTERVAL / 1000);
-  }, [serial, accessToken, fetchTelemetryData]);
+  }, [serial, fetchTelemetryData]);
 
   // Initial fetch and countdown timer - runs only once when serial changes
   useEffect(() => {

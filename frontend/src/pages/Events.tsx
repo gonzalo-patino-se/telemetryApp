@@ -214,7 +214,7 @@ const ChartErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children 
 
 export default function Events() {
   const { serial, hasSerial } = useSerial();
-  const { accessToken, logout } = useAuth();
+  const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
   
   // State
@@ -265,19 +265,15 @@ export default function Events() {
     setError('');
     
     try {
-      // Fetch events
+      // Fetch events (cookies sent automatically with withCredentials: true)
       const eventsKql = buildEventsKql(serial, fromDT, toDT);
-      const eventsRes = await api.post('/query_adx/', { kql: eventsKql }, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const eventsRes = await api.post('/query_adx/', { kql: eventsKql });
       const eventsData = Array.isArray(eventsRes.data?.data) ? eventsRes.data.data : [];
       setEvents(eventsData);
       
       // Fetch aggregation
       const aggKql = buildAggregationKql(serial, fromDT, toDT);
-      const aggRes = await api.post('/query_adx/', { kql: aggKql }, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
+      const aggRes = await api.post('/query_adx/', { kql: aggKql });
       const aggData = Array.isArray(aggRes.data?.data) ? aggRes.data.data : [];
       setAggregation(aggData);
       
@@ -289,7 +285,7 @@ export default function Events() {
     } finally {
       setLoading(false);
     }
-  }, [hasSerial, serial, fromDT, toDT, accessToken, logout]);
+  }, [hasSerial, serial, fromDT, toDT, logout]);
   
   // Auto-fetch on mount and when params change
   useEffect(() => {

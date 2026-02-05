@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from .adx_service import query_adx
-
+from django.conf import settings
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 
@@ -25,6 +25,63 @@ from rest_framework.permissions import AllowAny
 from django.views.decorators.csrf import csrf_exempt
 
 
+# =============================================================================
+# Cookie Configuration for JWT tokens
+# =============================================================================
+def get_cookie_settings():
+    """Get secure cookie settings based on environment."""
+    is_production = getattr(settings, 'IS_PRODUCTION', False)
+    
+    if is_production:
+        # Production: Secure cookies with Lax SameSite
+        return {
+            'httponly': True,
+            'secure': True,  # HTTPS only
+            'samesite': 'Lax',
+            'path': '/',
+        }
+    else:
+        # Development: Allow cross-origin cookies between localhost ports
+        # SameSite=None requires Secure in modern browsers, but we're on localhost
+        # So we use Lax with domain explicitly set
+        return {
+            'httponly': True,
+            'secure': False,
+            'samesite': 'Lax',
+            'path': '/',
+        }
+
+
+def set_auth_cookies(response, access_token, refresh_token):
+    """Set httpOnly cookies for JWT tokens."""
+    cookie_settings = get_cookie_settings()
+    
+    # Access token - shorter lived
+    response.set_cookie(
+        key='access_token',
+        value=str(access_token),
+        max_age=60 * 10,  # 10 minutes (match ACCESS_TOKEN_LIFETIME)
+        **cookie_settings
+    )
+    
+    # Refresh token - longer lived
+    response.set_cookie(
+        key='refresh_token',
+        value=str(refresh_token),
+        max_age=60 * 60 * 24,  # 1 day (match REFRESH_TOKEN_LIFETIME)
+        **cookie_settings
+    )
+    
+    return response
+
+
+def clear_auth_cookies(response):
+    """Clear JWT cookies on logout."""
+    response.delete_cookie('access_token', path='/')
+    response.delete_cookie('refresh_token', path='/')
+    return response
+
+
 #Registration endpoint
 
 @api_view(['POST'])
@@ -36,7 +93,8 @@ def register_view(request):
         return Response({"detail": "User registered successfully"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#Custom Login is provided by SimpleJWT package
+
+#Custom Login - returns JWT in httpOnly cookies (XSS-safe)
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
 def login_view(request):
@@ -45,27 +103,97 @@ def login_view(request):
     
     user = authenticate(username=username, password=password)
     if user is not None:
-        # Delegate to simple JWT for token generation
+        # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+        access = refresh.access_token
+        
+        # Create response with user info (but NOT the tokens in body)
+        response = Response({
+            'detail': 'Login successful',
+            'user': {
+                'username': user.username,
+                'email': user.email,
+            }
         })
+        
+        # Set tokens in httpOnly cookies (not accessible via JavaScript)
+        set_auth_cookies(response, access, refresh)
+        
+        return response
     else:
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-# Logout (blacklist refresh token)
+
+# Logout (blacklist refresh token and clear cookies)
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])  # Allow logout even with expired token
 def logout_view(request):
     try:
-        refresh_token = request.data["refresh"]
-        token = RefreshToken(refresh_token)
-        token.blacklist()
-        return Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+        # Get refresh token from cookie (preferred) or request body (fallback)
+        refresh_token = request.COOKIES.get('refresh_token') or request.data.get("refresh")
+        
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        
+        # Always clear cookies
+        response = Response({"detail": "Logout successful"}, status=status.HTTP_200_OK)
+        clear_auth_cookies(response)
+        
+        return response
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # Even on error, clear cookies
+        response = Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
+        clear_auth_cookies(response)
+        return response
 
+
+# Token refresh endpoint - reads from cookie, returns new tokens in cookies
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def token_refresh_view(request):
+    """Refresh access token using refresh token from httpOnly cookie."""
+    refresh_token = request.COOKIES.get('refresh_token')
+    
+    if not refresh_token:
+        return Response(
+            {"error": "No refresh token found"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    try:
+        refresh = RefreshToken(refresh_token)
+        access = refresh.access_token
+        
+        # Create new refresh token if rotation is enabled
+        if getattr(settings, 'SIMPLE_JWT', {}).get('ROTATE_REFRESH_TOKENS', False):
+            refresh.blacklist()
+            refresh = RefreshToken.for_user(refresh.payload.get('user_id'))
+        
+        response = Response({"detail": "Token refreshed"})
+        set_auth_cookies(response, access, refresh)
+        
+        return response
+    except Exception as e:
+        response = Response(
+            {"error": "Invalid or expired refresh token"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+        clear_auth_cookies(response)
+        return response
+
+
+# Get current authenticated user info (for checking auth status on page load)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def auth_me_view(request):
+    """Return current user information. Used to verify authentication on page load."""
+    return Response({
+        'user': {
+            'username': request.user.username,
+            'email': request.user.email,
+        }
+    })
 
 
 #JWT-protected ADX endpoints: authentication plus roled-based authorization
