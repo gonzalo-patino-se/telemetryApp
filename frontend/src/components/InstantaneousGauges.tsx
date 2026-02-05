@@ -1,11 +1,12 @@
 // src/components/InstantaneousGauges.tsx
-// Instantaneous telemetry values displayed as animated gauges
-// Auto-refreshes every 10 seconds
+// Instantaneous telemetry values displayed as professional animated gauges
+// Auto-refreshes every 5 minutes
 // OPTIMIZED: Uses batch API to fetch all telemetry in a single request
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { AnalogNeedleGauge, InverterModeDisplay, DigitalValueDisplay, BatterySoCGauge } from './gauges';
 
 // ============================================================================
 // Types
@@ -125,227 +126,6 @@ function buildBatteryRelayKql(serial: string): string {
     | top 1 by localtime desc
     | project localtime, value
   `.trim();
-}
-
-function formatTimestamp(localtime: string | null): string {
-  if (!localtime) return '--';
-  try {
-    const date = new Date(localtime);
-    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  } catch {
-    return '--';
-  }
-}
-
-// ============================================================================
-// Animated Gauge Component
-// ============================================================================
-
-interface GaugeProps {
-  config: GaugeConfig;
-  data: GaugeData;
-}
-
-const AnimatedGauge: React.FC<GaugeProps> = ({ config, data }) => {
-  const { label, unit, min, max, colorStart, colorEnd, decimals = 0 } = config;
-  const { value, localtime, loading, error } = data;
-  
-  // Safely check if value is a valid number
-  const hasValue = value !== null && value !== undefined && Number.isFinite(value);
-  
-  // Calculate percentage for gauge fill
-  const percentage = hasValue
-    ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))
-    : 0;
-  
-  // SVG arc calculations
-  const size = 120;
-  const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * Math.PI * 1.5; // 270 degrees arc
-  const offset = circumference - (percentage / 100) * circumference;
-  
-  // Special handling for Battery Relay - show Activated/Not Activated/Invalid instead of 1/0/-1
-  const isRelayGauge = config.id === 'bat_main_relay';
-  const getRelayDisplayValue = (val: number) => {
-    if (val === 1) return 'Activated';
-    if (val === 0) return 'Not Activated';
-    return 'Invalid';
-  };
-
-  const isInverterModeGauge = config.id === 'inv_mode';
-
-  const getInverterModeString = (val: number) => {
-    switch (val) {
-        case -1: return 'INVALID';
-        case 0: return 'UNDEFINED';
-        case 1: return 'OFFLINE';
-        case 2: return 'DISABLED';
-        case 3: return 'STANDBY';
-        case 4: return 'NORMAL';
-        case 5: return 'LIMP_MODE';
-        case 6: return 'FAULT_AUTO_CLEAR';
-        case 7: return 'FAULT_MANUAL_CLEAR';
-        case 8: return 'FW_UPDATE_IN_PROGRESS';
-        case 9: return 'SELF_TESTING';
-        default: return '--';
-    }
-};
-
-  const displayValue = !hasValue 
-    ? '--' 
-    : isRelayGauge 
-      ? getRelayDisplayValue(value)
-      : isInverterModeGauge
-        ? getInverterModeString(value)
-        : value.toFixed(decimals);
-  
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '12px',
-      background: 'var(--bg-surface)',
-      borderRadius: '12px',
-      border: '1px solid var(--border-subtle)',
-      minWidth: '140px',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {/* Loading overlay */}
-      {loading && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-          borderRadius: '12px',
-        }}>
-          <div className="gauge-spinner" />
-        </div>
-      )}
-      
-      {/* Gauge SVG */}
-      <svg width={size} height={size * 0.75} viewBox={`0 0 ${size} ${size * 0.85}`} style={{ overflow: 'visible' }}>
-        <defs>
-          <linearGradient id={`gradient-${config.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={colorStart} />
-            <stop offset="100%" stopColor={colorEnd} />
-          </linearGradient>
-          <filter id={`glow-${config.id}`}>
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        {/* Background arc */}
-        <path
-          d={describeArc(size/2, size/2 + 10, radius, -135, 135)}
-          fill="none"
-          stroke="var(--border-subtle)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-        />
-        
-        {/* Animated foreground arc */}
-        <path
-          d={describeArc(size/2, size/2 + 10, radius, -135, 135)}
-          fill="none"
-          stroke={`url(#gradient-${config.id})`}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          filter={hasValue ? `url(#glow-${config.id})` : undefined}
-          style={{
-            transition: 'stroke-dashoffset 0.8s ease-out',
-          }}
-        />
-        
-        {/* Value text */}
-        <text
-          x={size/2}
-          y={size/2 + 5}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{
-            fontSize: isRelayGauge ? '12px' : '22px',
-            fontWeight: 700,
-            fill: hasValue 
-              ? (isRelayGauge 
-                  ? (value === 0 ? '#22c55e' : value === 1 ? '#f59e0b' : '#ef4444') 
-                  : colorEnd) 
-              : 'var(--text-tertiary)',
-          }}
-        >
-          {displayValue}
-        </text>
-        
-        {/* Unit text */}
-        <text
-          x={size/2}
-          y={size/2 + 25}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{
-            fontSize: '11px',
-            fontWeight: 500,
-            fill: 'var(--text-tertiary)',
-          }}
-        >
-          {unit}
-        </text>
-      </svg>
-      
-      {/* Label */}
-      <div style={{
-        marginTop: '4px',
-        fontSize: '11px',
-        fontWeight: 600,
-        color: 'var(--text-secondary)',
-        textAlign: 'center',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}>
-        {label}
-      </div>
-      
-      {/* Timestamp */}
-      <div style={{
-        marginTop: '2px',
-        fontSize: '9px',
-        color: 'var(--text-tertiary)',
-      }}>
-        {error ? '⚠️ Error' : formatTimestamp(localtime)}
-      </div>
-    </div>
-  );
-};
-
-// SVG arc path helper
-function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
-  const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-  return {
-    x: centerX + (radius * Math.cos(angleInRadians)),
-    y: centerY + (radius * Math.sin(angleInRadians))
-  };
-}
-
-function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
-  const start = polarToCartesian(x, y, radius, endAngle);
-  const end = polarToCartesian(x, y, radius, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-  return [
-    "M", start.x, start.y, 
-    "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-  ].join(" ");
 }
 
 // ============================================================================
@@ -694,19 +474,78 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
               }} />
             </div>
             
-            {/* Gauges Grid */}
+            {/* Gauges Grid - Use specialized components */}
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
               gap: '12px',
             }}>
-              {configs.map(config => (
-                <AnimatedGauge
-                  key={config.id}
-                  config={config}
-                  data={gaugeData[config.id] || { value: null, localtime: null, loading: true, error: null }}
-                />
-              ))}
+              {configs.map(config => {
+                const data = gaugeData[config.id] || { value: null, localtime: null, loading: true, error: null };
+                
+                // WiFi Signal - Use Analog Needle Gauge
+                if (config.id === 'wifi') {
+                  return (
+                    <AnalogNeedleGauge
+                      key={config.id}
+                      value={data.value}
+                      min={config.min}
+                      max={config.max}
+                      unit={config.unit}
+                      label={config.label}
+                      loading={data.loading}
+                      error={data.error}
+                      timestamp={data.localtime}
+                    />
+                  );
+                }
+                
+                // Inverter Mode - Use specialized display
+                if (config.id === 'inv_mode') {
+                  return (
+                    <InverterModeDisplay
+                      key={config.id}
+                      value={data.value}
+                      loading={data.loading}
+                      error={data.error}
+                      timestamp={data.localtime}
+                    />
+                  );
+                }
+                
+                // Battery SoC - Use circular gauge
+                if (config.id.includes('_soc')) {
+                  const moduleNum = config.id.includes('bat1') ? 1 : config.id.includes('bat2') ? 2 : 3;
+                  return (
+                    <BatterySoCGauge
+                      key={config.id}
+                      value={data.value}
+                      moduleNumber={moduleNum}
+                      loading={data.loading}
+                      error={data.error}
+                      timestamp={data.localtime}
+                    />
+                  );
+                }
+                
+                // All other metrics - Use Digital Value Display
+                return (
+                  <DigitalValueDisplay
+                    key={config.id}
+                    value={data.value}
+                    unit={config.unit}
+                    label={config.label}
+                    min={config.min}
+                    max={config.max}
+                    decimals={config.decimals || 1}
+                    loading={data.loading}
+                    error={data.error}
+                    timestamp={data.localtime}
+                    colorStart={config.colorStart}
+                    colorEnd={config.colorEnd}
+                  />
+                );
+              })}
             </div>
           </div>
         );

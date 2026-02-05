@@ -284,10 +284,14 @@ interface InverterProps {
 }
 
 // Get WiFi signal strength level (0-4 bars based on dBm)
+// Note: 0 dBm is treated as an ERROR condition (not "excellent")
+// -127 dBm indicates device offline
 const getWifiLevel = (signal: number | null): number => {
   if (signal === null) return 0;
+  if (signal === 0) return -1;  // Error - 0 dBm is invalid
+  if (signal === -127) return 0;  // Offline
   // Typical WiFi signal ranges: -30 dBm (excellent) to -90 dBm (very weak)
-  if (signal >= -50) return 4;  // Excellent
+  if (signal >= -50 && signal < 0) return 4;  // Excellent
   if (signal >= -60) return 3;  // Good
   if (signal >= -70) return 2;  // Fair
   if (signal >= -80) return 1;  // Weak
@@ -295,9 +299,12 @@ const getWifiLevel = (signal: number | null): number => {
 };
 
 // Get WiFi status text
+// Note: 0 dBm is treated as an ERROR condition
 const getWifiStatusText = (signal: number | null): string => {
   if (signal === null) return 'No Signal';
-  if (signal >= -50) return 'Excellent';
+  if (signal === 0) return 'Error';  // 0 dBm is invalid
+  if (signal === -127) return 'Offline';  // Device offline
+  if (signal >= -50 && signal < 0) return 'Excellent';
   if (signal >= -60) return 'Good';
   if (signal >= -70) return 'Fair';
   if (signal >= -80) return 'Weak';
