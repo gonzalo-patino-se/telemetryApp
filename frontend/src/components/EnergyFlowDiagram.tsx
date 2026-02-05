@@ -874,7 +874,6 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const [telemetryData, setTelemetryData] = useState<Record<string, TelemetryData>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -955,7 +954,6 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       return newData;
     });
     
-    setLastRefresh(new Date());
     setCountdown(REFRESH_INTERVAL / 1000);
   }, [serial, accessToken, fetchTelemetryData]);
 
@@ -1170,12 +1168,25 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
         </div>
       </div>
       
-      {/* Last refresh time */}
-      {lastRefresh && (
-        <div className="last-refresh">
-          Last updated: {lastRefresh.toLocaleTimeString()}
-        </div>
-      )}
+      {/* Last refresh time - use actual KQL timestamp */}
+      {(() => {
+        // Find the most recent localtime from all telemetry data
+        let latestTime: string | null = null;
+        Object.values(telemetryData).forEach((data) => {
+          if (data.localtime && (!latestTime || data.localtime > latestTime)) {
+            latestTime = data.localtime;
+          }
+        });
+        
+        if (latestTime) {
+          return (
+            <div className="last-refresh">
+              Last updated: {latestTime}
+            </div>
+          );
+        }
+        return null;
+      })()}
       
       {/* SVG Diagram */}
       <svg viewBox="-60 0 760 620" className="energy-flow-svg">

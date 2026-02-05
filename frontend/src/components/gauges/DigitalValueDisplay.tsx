@@ -2,6 +2,7 @@
 // Professional digital display for voltage, current, frequency, temperature metrics
 
 import React from 'react';
+import { formatTimestamp, isTimestampStale } from './utils';
 
 interface DigitalValueDisplayProps {
   value: number | null;
@@ -55,13 +56,15 @@ const DigitalValueDisplay: React.FC<DigitalValueDisplayProps> = ({
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      padding: '14px',
+      padding: '16px',
       background: 'var(--bg-surface)',
       borderRadius: '12px',
       border: '1px solid var(--border-subtle)',
-      minWidth: '140px',
+      width: '180px',
+      height: '200px',
       position: 'relative',
       overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     }}>
       {/* Gradient accent line */}
       <div style={{
@@ -173,10 +176,10 @@ const DigitalValueDisplay: React.FC<DigitalValueDisplayProps> = ({
       {/* Timestamp */}
       <div style={{
         fontSize: '9px',
-        color: 'var(--text-tertiary)',
+        color: isTimestampStale(timestamp) ? '#f59e0b' : 'var(--text-tertiary)',
         textAlign: 'right',
       }}>
-        {error ? '⚠️ Error' : (timestamp ? new Date(timestamp).toLocaleTimeString() : '--')}
+        {error ? '⚠️ Error' : formatTimestamp(timestamp)}
       </div>
     </div>
   );
