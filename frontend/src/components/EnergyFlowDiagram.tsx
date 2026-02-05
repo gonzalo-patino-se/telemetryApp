@@ -1142,18 +1142,19 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   };
   
   const bat1RelayValue = telemetryData.bat1Relay?.value ?? null;
-  const bat2RelayValue = telemetryData.bat2Relay?.value ?? null;
-  const bat3RelayValue = telemetryData.bat3Relay?.value ?? null;
-  
+
+  // Ensure relay values are numbers (not strings)
+  const bat1RelayValueRaw = telemetryData.bat1Relay?.value ?? null;
+  const bat2RelayValueRaw = telemetryData.bat2Relay?.value ?? null;
+  const bat3RelayValueRaw = telemetryData.bat3Relay?.value ?? null;
+
+  const bat1RelayValue = bat1RelayValueRaw !== null ? Number(bat1RelayValueRaw) : null;
+  const bat2RelayValue = bat2RelayValueRaw !== null ? Number(bat2RelayValueRaw) : null;
+  const bat3RelayValue = bat3RelayValueRaw !== null ? Number(bat3RelayValueRaw) : null;
+
   const bat1RelayInfo = getModuleRelayStatus(bat1RelayValue);
   const bat2RelayInfo = getModuleRelayStatus(bat2RelayValue);
   const bat3RelayInfo = getModuleRelayStatus(bat3RelayValue);
-  
-  // BGCS Relay status (Grid Connection Safety Relay - prevents backfeed during outages)
-  // 1: Open, 2: Closed, 3: Faulted open, 4: Faulted closed, 5: Override open, 6: Override closed, 7: Estop open, 8: Estop closed
-  const bgcsRelayValue = telemetryData.bgcsRelay?.value ?? null;
-  const getBgcsRelayStatus = (value: number | null): string => {
-    if (value === null) return '--';
     switch (value) {
       case 1: return 'Open';
       case 2: return 'Closed';
