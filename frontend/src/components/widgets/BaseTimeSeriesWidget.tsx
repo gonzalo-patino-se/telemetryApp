@@ -157,7 +157,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   onTelemetryModeChange,
   useGlobalTimeRange = true,
 }) => {
-  const { accessToken, logout } = useAuth();
+  const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
   const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode } = config;
   const colors = chartColorSchemes[colorScheme];
@@ -242,11 +242,11 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       setLoading(true);
       setError('');
       try {
+        // Cookies sent automatically with withCredentials: true
         const res = await api.post(
           QUERY_PATH,
           { kql: currentKql },
           { 
-            headers: { Authorization: `Bearer ${accessToken}` },
             signal: abortController.signal
           }
         );
@@ -267,7 +267,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     
     // Cleanup: abort pending request when dependencies change
     return () => abortController.abort();
-  }, [autoFetch, canFetch, serial, fromDT, toDT, accessToken, logout, activeQueryBuilder, telemetryMode]);
+  }, [autoFetch, canFetch, serial, fromDT, toDT, logout, activeQueryBuilder, telemetryMode]);
 
   // Parent-triggered fetch with abort controller
   useEffect(() => {
@@ -280,11 +280,11 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       setLoading(true);
       setError('');
       try {
+        // Cookies sent automatically with withCredentials: true
         const res = await api.post(
           QUERY_PATH,
           { kql },
           { 
-            headers: { Authorization: `Bearer ${accessToken}` },
             signal: abortController.signal
           }
         );
@@ -313,10 +313,10 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     setLoading(true);
     setError('');
     try {
+      // Cookies sent automatically with withCredentials: true
       const res = await api.post(
         QUERY_PATH,
-        { kql },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { kql }
       );
       const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
       setRows(dataArray);
