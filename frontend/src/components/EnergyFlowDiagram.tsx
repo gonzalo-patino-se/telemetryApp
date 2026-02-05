@@ -220,8 +220,8 @@ interface SolarPanelProps {
 }
 
 const SolarPanel: React.FC<SolarPanelProps> = ({ x, y, label, voltage, current, loading, isProducing }) => {
-  const displayVoltage = voltage !== null ? voltage.toFixed(0) : '--';
-  const displayCurrent = current !== null ? current.toFixed(2) : '--';
+  const displayVoltage = voltage != null ? voltage.toFixed(0) : '--';
+  const displayCurrent = current != null ? current.toFixed(2) : '--';
   
   return (
     <g transform={`translate(${x}, ${y})`} className="solar-panel-group">
@@ -1289,7 +1289,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       })()}
       
       {/* SVG Diagram */}
-      <svg viewBox="-60 0 760 620" className="energy-flow-svg">
+      <svg viewBox="-60 -20 760 640" className="energy-flow-svg">
         <defs>
           {/* Glow filter */}
           <filter id="glow-solar" x="-50%" y="-50%" width="200%" height="200%">

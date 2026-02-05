@@ -12,7 +12,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ProtectedAppShell from './components/layout/ProtectedAppShell';
 
 const Events   = React.lazy(() => import('./pages/Events'));
-const Firmware = React.lazy(() => import('./pages/Firmware'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const About    = React.lazy(() => import('./pages/About'));
 const StyleGuide = React.lazy(() => import('./pages/StyleGuide'));
@@ -38,7 +37,6 @@ export default function App() {
               >
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/events" element={<Events />} />
-                <Route path="/firmware" element={<Firmware />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/styleguide" element={<StyleGuide />} />
