@@ -130,7 +130,17 @@
     const csvRows = [
         headers.join(','),
         ...rows.map(r => {
-        const status = r.value_double === OFFLINE_VAL ? 'offline' : 'online';
+        // Determine signal status: 0 dBm is error, -127 is offline
+        let status: string;
+        if (r.value_double === OFFLINE_VAL) {
+            status = 'offline';
+        } else if (r.value_double === 0) {
+            status = 'error';  // 0 dBm is invalid/error
+        } else if (r.value_double !== undefined && r.value_double !== null) {
+            status = 'online';
+        } else {
+            status = 'unknown';
+        }
         return [
             r.localtime ?? '',
             r.value_double ?? '',
@@ -474,7 +484,7 @@
                 return ['⛔ Device Offline', `Signal: ${value} dBm`];
                 }
                 if (value === 0) {
-                return [`★ Zero Value Detected`, `Signal: ${value} dBm`];
+                return [`⚠️ Error: Invalid Signal (0 dBm)`, `Signal: ${value} dBm`];
                 }
                 return `Signal: ${value} dBm`;
             }

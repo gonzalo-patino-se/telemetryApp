@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import api from '../services/api';
 import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
+import CollapsibleSection from './common/CollapsibleSection';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
 import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
@@ -491,124 +492,196 @@ const Dashboard = () => {
             )}
 
             {/* ==================== SYSTEM STATUS ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                </svg>
-                <h2 style={styles.sectionTitle}>System Status</h2>
-                <span style={styles.sectionBadge}>1 widget</span>
-            </div>
-            <div style={styles.chartsGrid}>
-                {renderWidgetCard("Wi-Fi Signal Strength", AdxSearchWifiSignalWidget, wifiAutoFetch, setWifiAutoFetch, wifiFetchSignal, setWifiFetchSignal)}
-            </div>
+            <CollapsibleSection
+                title="System Status"
+                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>}
+                badge="1 widget"
+                color="#3b82f6"
+            >
+                <div style={styles.chartsGrid}>
+                    {renderWidgetCard("Wi-Fi Signal Strength", AdxSearchWifiSignalWidget, wifiAutoFetch, setWifiAutoFetch, wifiFetchSignal, setWifiFetchSignal)}
+                </div>
+            </CollapsibleSection>
 
             {/* ==================== SOLAR PV INPUTS ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Solar PV Inputs</h2>
-                <span style={styles.sectionBadge}>4 channels</span>
-            </div>
-            <div style={styles.chartsGridPaired}>
-                {renderWidgetCard("PV1 Voltage", PV1VoltageWidget, pv1AutoFetch, setPv1AutoFetch, pv1FetchSignal, setPv1FetchSignal)}
-                {renderWidgetCard("PV2 Voltage", PV2VoltageWidget, pv2AutoFetch, setPv2AutoFetch, pv2FetchSignal, setPv2FetchSignal)}
-                {renderWidgetCard("PV3 Voltage", PV3VoltageWidget, pv3AutoFetch, setPv3AutoFetch, pv3FetchSignal, setPv3FetchSignal)}
-                {renderWidgetCard("PV4 Voltage", PV4VoltageWidget, pv4AutoFetch, setPv4AutoFetch, pv4FetchSignal, setPv4FetchSignal)}
-                {renderWidgetCard("PV1 Current", PV1CurrentWidget, pv1CurrentAutoFetch, setPv1CurrentAutoFetch, pv1CurrentFetchSignal, setPv1CurrentFetchSignal)}
-                {renderWidgetCard("PV2 Current", PV2CurrentWidget, pv2CurrentAutoFetch, setPv2CurrentAutoFetch, pv2CurrentFetchSignal, setPv2CurrentFetchSignal)}
-                {renderWidgetCard("PV3 Current", PV3CurrentWidget, pv3CurrentAutoFetch, setPv3CurrentAutoFetch, pv3CurrentFetchSignal, setPv3CurrentFetchSignal)}
-                {renderWidgetCard("PV4 Current", PV4CurrentWidget, pv4CurrentAutoFetch, setPv4CurrentAutoFetch, pv4CurrentFetchSignal, setPv4CurrentFetchSignal)}
-            </div>
+            <CollapsibleSection
+                title="Solar PV Inputs"
+                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
+                badge="8 widgets"
+                color="#f59e0b"
+            >
+                <div style={styles.chartsGridPaired}>
+                    {renderWidgetCard("PV1 Voltage", PV1VoltageWidget, pv1AutoFetch, setPv1AutoFetch, pv1FetchSignal, setPv1FetchSignal)}
+                    {renderWidgetCard("PV2 Voltage", PV2VoltageWidget, pv2AutoFetch, setPv2AutoFetch, pv2FetchSignal, setPv2FetchSignal)}
+                    {renderWidgetCard("PV3 Voltage", PV3VoltageWidget, pv3AutoFetch, setPv3AutoFetch, pv3FetchSignal, setPv3FetchSignal)}
+                    {renderWidgetCard("PV4 Voltage", PV4VoltageWidget, pv4AutoFetch, setPv4AutoFetch, pv4FetchSignal, setPv4FetchSignal)}
+                    {renderWidgetCard("PV1 Current", PV1CurrentWidget, pv1CurrentAutoFetch, setPv1CurrentAutoFetch, pv1CurrentFetchSignal, setPv1CurrentFetchSignal)}
+                    {renderWidgetCard("PV2 Current", PV2CurrentWidget, pv2CurrentAutoFetch, setPv2CurrentAutoFetch, pv2CurrentFetchSignal, setPv2CurrentFetchSignal)}
+                    {renderWidgetCard("PV3 Current", PV3CurrentWidget, pv3CurrentAutoFetch, setPv3CurrentAutoFetch, pv3CurrentFetchSignal, setPv3CurrentFetchSignal)}
+                    {renderWidgetCard("PV4 Current", PV4CurrentWidget, pv4CurrentAutoFetch, setPv4CurrentAutoFetch, pv4CurrentFetchSignal, setPv4CurrentFetchSignal)}
+                </div>
+            </CollapsibleSection>
 
             {/* ==================== GRID MEASUREMENTS ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Grid Measurements</h2>
-                <span style={styles.sectionBadge}>5 parameters</span>
-            </div>
-            <div style={styles.chartsGridPaired}>
-                {renderWidgetCard("Grid Voltage L1", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
-                {renderWidgetCard("Grid Voltage L2", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
-                {renderWidgetCard("Grid Current L1", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
-                {renderWidgetCard("Grid Current L2", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
-                {renderWidgetCard("Grid Frequency", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
-            </div>
+            <CollapsibleSection
+                title="Grid Measurements"
+                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                badge="5 widgets"
+                color="#10b981"
+            >
+                <div style={styles.chartsGridPaired}>
+                    {renderWidgetCard("Grid Voltage L1", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
+                    {renderWidgetCard("Grid Voltage L2", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
+                    {renderWidgetCard("Grid Current L1", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
+                    {renderWidgetCard("Grid Current L2", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
+                    {renderWidgetCard("Grid Frequency", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
+                </div>
+            </CollapsibleSection>
 
-            {/* ==================== LOAD MEASUREMENTS (FAST TELEMETRY) ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Load Measurements</h2>
-                <span style={styles.sectionBadge}>Fast Telemetry</span>
-            </div>
-            <div style={styles.chartsGridPaired}>
-                {renderWidgetCard("Load Voltage L1", LoadVoltageL1Widget, loadVoltageL1AutoFetch, setLoadVoltageL1AutoFetch, loadVoltageL1FetchSignal, setLoadVoltageL1FetchSignal)}
-                {renderWidgetCard("Load Voltage L2", LoadVoltageL2Widget, loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch, loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal)}
-                {renderWidgetCard("Load Frequency", LoadFrequencyTotalWidget, loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch, loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal)}
-                {renderWidgetCard("Load Current L1", LoadCurrentL1Widget, loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch, loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal)}
-                {renderWidgetCard("Load Current L2", LoadCurrentL2Widget, loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch, loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal)}
-            </div>
+            {/* ==================== LOAD MEASUREMENTS ==================== */}
+            <CollapsibleSection
+                title="Load Measurements"
+                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                badge="Fast Telemetry"
+                color="#ec4899"
+            >
+                <div style={styles.chartsGridPaired}>
+                    {renderWidgetCard("Load Voltage L1", LoadVoltageL1Widget, loadVoltageL1AutoFetch, setLoadVoltageL1AutoFetch, loadVoltageL1FetchSignal, setLoadVoltageL1FetchSignal)}
+                    {renderWidgetCard("Load Voltage L2", LoadVoltageL2Widget, loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch, loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal)}
+                    {renderWidgetCard("Load Frequency", LoadFrequencyTotalWidget, loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch, loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal)}
+                    {renderWidgetCard("Load Current L1", LoadCurrentL1Widget, loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch, loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal)}
+                    {renderWidgetCard("Load Current L2", LoadCurrentL2Widget, loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch, loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal)}
+                </div>
+            </CollapsibleSection>
 
-            {/* ==================== BATTERY MODULE 1 ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M4 16v2a2 2 0 002 2h2m8-16h2a2 2 0 012 2v2m0 8v2a2 2 0 01-2 2h-2M9 12h6m-3-3v6" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Battery Module 1</h2>
-                <span style={styles.sectionBadge}>4 parameters</span>
-            </div>
-            <div style={styles.chartsGridBattery}>
-                {renderWidgetCard("Voltage", Battery1VoltageWidget, battery1VoltageAutoFetch, setBattery1VoltageAutoFetch, battery1VoltageFetchSignal, setBattery1VoltageFetchSignal)}
-                {renderWidgetCard("Temperature", Battery1TempWidget, battery1TempAutoFetch, setBattery1TempAutoFetch, battery1TempFetchSignal, setBattery1TempFetchSignal)}
-                {renderWidgetCard("State of Charge", Battery1SoCWidget, battery1SoCAutoFetch, setBattery1SoCAutoFetch, battery1SoCFetchSignal, setBattery1SoCFetchSignal)}
-                {renderWidgetCard("Current", Battery1CurrentWidget, battery1CurrentAutoFetch, setBattery1CurrentAutoFetch, battery1CurrentFetchSignal, setBattery1CurrentFetchSignal)}
-            </div>
+            {/* ==================== BATTERY MODULES ==================== */}
+            <CollapsibleSection
+                title="Battery Storage"
+                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M4 16v2a2 2 0 002 2h2m8-16h2a2 2 0 012 2v2m0 8v2a2 2 0 01-2 2h-2M9 12h6m-3-3v6" /></svg>}
+                badge="12 widgets"
+                color="#ef4444"
+            >
+                {/* Module 1 */}
+                <div style={{ marginBottom: spacing.lg }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: spacing.sm, 
+                        marginBottom: spacing.md,
+                        paddingLeft: spacing.sm,
+                    }}>
+                        <span style={{ 
+                            width: '8px', 
+                            height: '8px', 
+                            borderRadius: '50%', 
+                            background: '#22c55e' 
+                        }} />
+                        <span style={{ 
+                            fontSize: typography.fontSize.sm, 
+                            fontWeight: typography.fontWeight.semibold,
+                            color: colors.textSecondary,
+                        }}>
+                            Module 1
+                        </span>
+                    </div>
+                    <div style={styles.chartsGridBattery}>
+                        {renderWidgetCard("Voltage", Battery1VoltageWidget, battery1VoltageAutoFetch, setBattery1VoltageAutoFetch, battery1VoltageFetchSignal, setBattery1VoltageFetchSignal)}
+                        {renderWidgetCard("Temperature", Battery1TempWidget, battery1TempAutoFetch, setBattery1TempAutoFetch, battery1TempFetchSignal, setBattery1TempFetchSignal)}
+                        {renderWidgetCard("State of Charge", Battery1SoCWidget, battery1SoCAutoFetch, setBattery1SoCAutoFetch, battery1SoCFetchSignal, setBattery1SoCFetchSignal)}
+                        {renderWidgetCard("Current", Battery1CurrentWidget, battery1CurrentAutoFetch, setBattery1CurrentAutoFetch, battery1CurrentFetchSignal, setBattery1CurrentFetchSignal)}
+                    </div>
+                </div>
 
-            {/* ==================== BATTERY MODULE 2 ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M4 16v2a2 2 0 002 2h2m8-16h2a2 2 0 012 2v2m0 8v2a2 2 0 01-2 2h-2M9 12h6m-3-3v6" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Battery Module 2</h2>
-                <span style={styles.sectionBadge}>4 parameters</span>
-            </div>
-            <div style={styles.chartsGridBattery}>
-                {renderWidgetCard("Voltage", Battery2VoltageWidget, battery2VoltageAutoFetch, setBattery2VoltageAutoFetch, battery2VoltageFetchSignal, setBattery2VoltageFetchSignal)}
-                {renderWidgetCard("Temperature", Battery2TempWidget, battery2TempAutoFetch, setBattery2TempAutoFetch, battery2TempFetchSignal, setBattery2TempFetchSignal)}
-                {renderWidgetCard("State of Charge", Battery2SoCWidget, battery2SoCAutoFetch, setBattery2SoCAutoFetch, battery2SoCFetchSignal, setBattery2SoCFetchSignal)}
-                {renderWidgetCard("Current", Battery2CurrentWidget, battery2CurrentAutoFetch, setBattery2CurrentAutoFetch, battery2CurrentFetchSignal, setBattery2CurrentFetchSignal)}
-            </div>
+                {/* Module 2 */}
+                <div style={{ marginBottom: spacing.lg }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: spacing.sm, 
+                        marginBottom: spacing.md,
+                        paddingLeft: spacing.sm,
+                    }}>
+                        <span style={{ 
+                            width: '8px', 
+                            height: '8px', 
+                            borderRadius: '50%', 
+                            background: '#3b82f6' 
+                        }} />
+                        <span style={{ 
+                            fontSize: typography.fontSize.sm, 
+                            fontWeight: typography.fontWeight.semibold,
+                            color: colors.textSecondary,
+                        }}>
+                            Module 2
+                        </span>
+                    </div>
+                    <div style={styles.chartsGridBattery}>
+                        {renderWidgetCard("Voltage", Battery2VoltageWidget, battery2VoltageAutoFetch, setBattery2VoltageAutoFetch, battery2VoltageFetchSignal, setBattery2VoltageFetchSignal)}
+                        {renderWidgetCard("Temperature", Battery2TempWidget, battery2TempAutoFetch, setBattery2TempAutoFetch, battery2TempFetchSignal, setBattery2TempFetchSignal)}
+                        {renderWidgetCard("State of Charge", Battery2SoCWidget, battery2SoCAutoFetch, setBattery2SoCAutoFetch, battery2SoCFetchSignal, setBattery2SoCFetchSignal)}
+                        {renderWidgetCard("Current", Battery2CurrentWidget, battery2CurrentAutoFetch, setBattery2CurrentAutoFetch, battery2CurrentFetchSignal, setBattery2CurrentFetchSignal)}
+                    </div>
+                </div>
 
-            {/* ==================== BATTERY MODULE 3 ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V6a2 2 0 012-2h2M4 16v2a2 2 0 002 2h2m8-16h2a2 2 0 012 2v2m0 8v2a2 2 0 01-2 2h-2M9 12h6m-3-3v6" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Battery Module 3</h2>
-                <span style={styles.sectionBadge}>4 parameters</span>
-            </div>
-            <div style={styles.chartsGridBattery}>
-                {renderWidgetCard("Voltage", Battery3VoltageWidget, battery3VoltageAutoFetch, setBattery3VoltageAutoFetch, battery3VoltageFetchSignal, setBattery3VoltageFetchSignal)}
-                {renderWidgetCard("Temperature", Battery3TempWidget, battery3TempAutoFetch, setBattery3TempAutoFetch, battery3TempFetchSignal, setBattery3TempFetchSignal)}
-                {renderWidgetCard("State of Charge", Battery3SoCWidget, battery3SoCAutoFetch, setBattery3SoCAutoFetch, battery3SoCFetchSignal, setBattery3SoCFetchSignal)}
-                {renderWidgetCard("Current", Battery3CurrentWidget, battery3CurrentAutoFetch, setBattery3CurrentAutoFetch, battery3CurrentFetchSignal, setBattery3CurrentFetchSignal)}
-            </div>
+                {/* Module 3 */}
+                <div style={{ marginBottom: spacing.lg }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: spacing.sm, 
+                        marginBottom: spacing.md,
+                        paddingLeft: spacing.sm,
+                    }}>
+                        <span style={{ 
+                            width: '8px', 
+                            height: '8px', 
+                            borderRadius: '50%', 
+                            background: '#f59e0b' 
+                        }} />
+                        <span style={{ 
+                            fontSize: typography.fontSize.sm, 
+                            fontWeight: typography.fontWeight.semibold,
+                            color: colors.textSecondary,
+                        }}>
+                            Module 3
+                        </span>
+                    </div>
+                    <div style={styles.chartsGridBattery}>
+                        {renderWidgetCard("Voltage", Battery3VoltageWidget, battery3VoltageAutoFetch, setBattery3VoltageAutoFetch, battery3VoltageFetchSignal, setBattery3VoltageFetchSignal)}
+                        {renderWidgetCard("Temperature", Battery3TempWidget, battery3TempAutoFetch, setBattery3TempAutoFetch, battery3TempFetchSignal, setBattery3TempFetchSignal)}
+                        {renderWidgetCard("State of Charge", Battery3SoCWidget, battery3SoCAutoFetch, setBattery3SoCAutoFetch, battery3SoCFetchSignal, setBattery3SoCFetchSignal)}
+                        {renderWidgetCard("Current", Battery3CurrentWidget, battery3CurrentAutoFetch, setBattery3CurrentAutoFetch, battery3CurrentFetchSignal, setBattery3CurrentFetchSignal)}
+                    </div>
+                </div>
 
-            {/* ==================== BATTERY SYSTEM STATUS ==================== */}
-            <div style={styles.sectionHeader}>
-                <svg style={styles.sectionIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                <h2 style={styles.sectionTitle}>Battery System Status</h2>
-                <span style={styles.sectionBadge}>Alarms</span>
-            </div>
-            <div style={styles.chartsGrid}>
-                {renderWidgetCard("Battery Relay Status", BatteryMainRelayWidget, batteryMainRelayAutoFetch, setBatteryMainRelayAutoFetch, batteryMainRelayFetchSignal, setBatteryMainRelayFetchSignal)}
-            </div>
+                {/* System Status */}
+                <div>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: spacing.sm, 
+                        marginBottom: spacing.md,
+                        paddingLeft: spacing.sm,
+                    }}>
+                        <span style={{ 
+                            width: '8px', 
+                            height: '8px', 
+                            borderRadius: '50%', 
+                            background: '#8b5cf6' 
+                        }} />
+                        <span style={{ 
+                            fontSize: typography.fontSize.sm, 
+                            fontWeight: typography.fontWeight.semibold,
+                            color: colors.textSecondary,
+                        }}>
+                            System Status
+                        </span>
+                    </div>
+                    <div style={styles.chartsGrid}>
+                        {renderWidgetCard("Battery Relay Status", BatteryMainRelayWidget, batteryMainRelayAutoFetch, setBatteryMainRelayAutoFetch, batteryMainRelayFetchSignal, setBatteryMainRelayFetchSignal)}
+                    </div>
+                </div>
+            </CollapsibleSection>
 
             {/* Device Info Section */}
             <WidgetCard
