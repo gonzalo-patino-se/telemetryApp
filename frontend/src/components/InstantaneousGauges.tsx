@@ -92,42 +92,8 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
   { id: 'bat_main_relay', label: 'Battery Relay', telemetryName: '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR', unit: '', min: 0, max: 1, category: 'battery', colorStart: '#22c55e', colorEnd: '#4ade80' },
 ];
 
-const QUERY_PATH = '/query_adx/';
+const BATCH_TELEMETRY_PATH = '/batch_telemetry/';
 const REFRESH_INTERVAL = 300000; // 5 minutes (300 seconds)
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function escapeKqlString(s: string): string {
-  return (s ?? '').replace(/'/g, "''");
-}
-
-// Build KQL for individual telemetry query
-function buildInstantaneousKql(serial: string, telemetryName: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Telemetry
-    | where comms_serial contains s
-    | where name contains '${telemetryName}'
-    | top 1 by localtime desc
-    | project localtime, value_double
-  `.trim();
-}
-
-// Special query for Battery Relay (uses Alarms table - not batchable with Telemetry)
-function buildBatteryRelayKql(serial: string): string {
-  const s = escapeKqlString(serial);
-  return `
-    let s = '${s}';
-    Alarms
-    | where comms_serial contains s
-    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
-    | top 1 by localtime desc
-    | project localtime, value
-  `.trim();
-}
 
 // ============================================================================
 // Category Header Component - Professional SVG Icons
@@ -218,79 +184,84 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch single gauge data
-  const fetchGaugeData = useCallback(async (config: GaugeConfig) => {
-    const isRelayQuery = config.id === 'bat_main_relay';
-    const kql = isRelayQuery 
-      ? buildBatteryRelayKql(serial)
-      : buildInstantaneousKql(serial, config.telemetryName);
-    
-    try {
-      // Cookies sent automatically with withCredentials: true
-      const res = await api.post(
-        QUERY_PATH,
-        { kql }
-      );
-      
-      const dataArray = Array.isArray(res.data?.data) ? res.data.data : [];
-      const row = dataArray[0];
-      
-      let value: number | null = null;
-      if (isRelayQuery) {
-        if (row?.value !== undefined && row?.value !== null) {
-          const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
-          value = isNaN(parsed) ? null : parsed;
-        }
-      } else {
-        value = row?.value_double ?? null;
-      }
-      
-      return {
-        value,
-        localtime: row?.localtime ?? null,
-        loading: false,
-        error: null,
-      };
-    } catch (err: any) {
-      if (err?.response?.status === 401) await logout();
-      return {
-        value: null,
-        localtime: null,
-        loading: false,
-        error: err?.response?.data?.error ?? 'Error',
-      };
-    }
-  }, [serial, logout]);
-
-  // Fetch all gauges individually (without setting loading state to avoid flicker)
-  const fetchAllGauges = useCallback(async () => {
+  // =========================================================================
+  // OPTIMIZED: Fetch ALL gauges in a SINGLE batch API call
+  // Reduces 31+ individual API calls to just 2 (telemetry + alarms)
+  // =========================================================================
+  const fetchAllGaugesBatch = useCallback(async () => {
     if (!serial) return;
 
-    // DON'T set loading state on refresh - it causes flickering
-    // Only show loading on initial load (when no data exists)
-
-    // Fetch in batches of 5 to avoid overwhelming the API
-    const batchSize = 5;
-    for (let i = 0; i < GAUGE_CONFIGS.length; i += batchSize) {
-      const batch = GAUGE_CONFIGS.slice(i, i + batchSize);
-      const results = await Promise.all(batch.map(fetchGaugeData));
-      
-      setGaugeData(prev => {
-        const newData = { ...prev };
-        batch.forEach((config, idx) => {
-          newData[config.id] = results[idx];
-        });
-        return newData;
-      });
-      
-      // Small delay between batches
-      if (i + batchSize < GAUGE_CONFIGS.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
+    // Separate telemetry names from alarm names
+    const telemetryNames: string[] = [];
+    const alarmNames: string[] = [];
     
-    setCountdown(REFRESH_INTERVAL / 1000);
-  }, [serial, fetchGaugeData]);
+    GAUGE_CONFIGS.forEach(config => {
+      if (config.id === 'bat_main_relay') {
+        // Battery relay uses Alarms table
+        alarmNames.push(config.telemetryName);
+      } else {
+        telemetryNames.push(config.telemetryName);
+      }
+    });
+
+    try {
+      // Single batch API call for ALL telemetry and alarms
+      const res = await api.post(BATCH_TELEMETRY_PATH, {
+        serial,
+        telemetry_names: telemetryNames,
+        alarm_names: alarmNames,
+      });
+
+      const { telemetry = {}, alarms = {} } = res.data || {};
+
+      // Map batch response to gauge data format
+      const newData: Record<string, GaugeData> = {};
+      
+      GAUGE_CONFIGS.forEach(config => {
+        const isAlarm = config.id === 'bat_main_relay';
+        const dataSource = isAlarm ? alarms : telemetry;
+        const result = dataSource[config.telemetryName];
+        
+        if (result) {
+          newData[config.id] = {
+            value: result.value ?? null,
+            localtime: result.localtime ?? null,
+            loading: false,
+            error: null,
+          };
+        } else {
+          // No data found for this metric
+          newData[config.id] = {
+            value: null,
+            localtime: null,
+            loading: false,
+            error: null, // Not an error, just no data
+          };
+        }
+      });
+
+      setGaugeData(newData);
+      setCountdown(REFRESH_INTERVAL / 1000);
+
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        await logout();
+        return;
+      }
+      
+      // On error, set error state for all gauges
+      const errorData: Record<string, GaugeData> = {};
+      GAUGE_CONFIGS.forEach(config => {
+        errorData[config.id] = {
+          value: null,
+          localtime: null,
+          loading: false,
+          error: err?.response?.data?.error ?? 'Error fetching data',
+        };
+      });
+      setGaugeData(errorData);
+    }
+  }, [serial, logout]);
 
   // Initial fetch - runs only once when serial changes
   useEffect(() => {
@@ -305,8 +276,8 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       return newData;
     });
     
-    // Initial fetch
-    fetchAllGauges();
+    // Initial fetch using batch API
+    fetchAllGaugesBatch();
     
     // Countdown timer
     countdownRef.current = setInterval(() => {
@@ -319,21 +290,21 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serial]); // Only re-run when serial changes, NOT when fetchAllGauges changes
+  }, [serial]); // Only re-run when serial changes, NOT when fetchAllGaugesBatch changes
 
   // Auto-refresh interval - separate from initial fetch
   useEffect(() => {
     if (!serial || isPaused) return;
     
     intervalRef.current = setInterval(() => {
-      fetchAllGauges();
+      fetchAllGaugesBatch();
     }, REFRESH_INTERVAL);
     
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serial, isPaused]); // Don't include fetchAllGauges to avoid re-creating interval
+  }, [serial, isPaused]); // Don't include fetchAllGaugesBatch to avoid re-creating interval
 
   // Group gauges by category
   const groupedGauges = GAUGE_CONFIGS.reduce((acc, config) => {
@@ -456,7 +427,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
           
           {/* Manual Refresh */}
           <button
-            onClick={fetchAllGauges}
+            onClick={fetchAllGaugesBatch}
             style={{
               padding: '8px 16px',
               borderRadius: '8px',
