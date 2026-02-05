@@ -9,7 +9,6 @@ import { colors, spacing } from '../../styles/tokens';
 const tabs = [
   { label: 'Dashboard', to: '/dashboard', end: true },
   { label: 'Events', to: '/events' },
-  { label: 'Firmware', to: '/firmware' },
   { label: 'Settings', to: '/settings' },
   { label: 'About', to: '/about' },
 ];

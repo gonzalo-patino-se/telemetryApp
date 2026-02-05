@@ -2,6 +2,17 @@
 
 A full-stack web application for telemetry data visualization with Azure Data Explorer integration.
 
+## ⚠️ Important: VPN Requirement
+
+**All users must be connected to the `saturnvpnconfig` VPN to access this application.**
+
+This application is deployed on a private AWS virtual machine and connects to Azure Data Explorer for telemetry data. VPN access is required for:
+- Accessing the web dashboard
+- API connectivity to Azure Data Explorer
+- All backend services
+
+Contact your IT administrator to obtain VPN credentials and configuration files.
+
 ## 📁 Project Structure
 
 ```
@@ -202,9 +213,210 @@ docker-compose exec backend bash   # Shell into backend
 
 ## 📚 Documentation
 
+- [**VPN Access Guide**](docs/VPN_ACCESS.md) - Required for all users
 - [Deployment Guide](deploy/README.md)
 - [Project Architecture](docs/PROJECT_ARCHITECTURE.md)
 - [Dashboard Design](docs/DASHBOARD_REDESIGN_COMPLETE.md)
+
+## 🌐 AWS Deployment
+
+### Current Production Environment
+
+The application is deployed on an **AWS EC2 Virtual Machine** with the following setup:
+
+| Component | Details |
+|-----------|---------|
+| Instance Type | AWS EC2 (Ubuntu 22.04 LTS) |
+| Web Server | Nginx (reverse proxy) |
+| App Server | Gunicorn (WSGI) |
+| Process Manager | Supervisor |
+| Database | SQLite (dev) / PostgreSQL (prod) |
+| SSL | Let's Encrypt / AWS Certificate Manager |
+
+### Network Requirements
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT ACCESS                             │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Connect to saturnvpnconfig VPN                              │
+│  2. Access dashboard via internal IP/hostname                    │
+│  3. All API calls route through VPN tunnel                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     AWS EC2 INSTANCE                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Nginx (Port 80/443) → Gunicorn → Django Backend                │
+│                      → Static Files (Frontend Build)            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   AZURE DATA EXPLORER                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Telemetry & Alarms Tables                                      │
+│  (Requires Azure AD Service Principal)                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Deployment Steps (AWS EC2)
+
+#### 1. Initial Server Setup
+
+```bash
+# SSH into the EC2 instance (requires VPN)
+ssh -i your-key.pem ubuntu@<ec2-private-ip>
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install dependencies
+sudo apt install -y python3.11 python3.11-venv python3-pip nginx supervisor git
+
+# Install Node.js 18
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+#### 2. Deploy Application
+
+```bash
+# Clone repository
+cd /opt
+sudo git clone <repository-url> mysite
+sudo chown -R ubuntu:ubuntu mysite
+cd mysite
+
+# Backend setup
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install gunicorn
+
+# Configure environment
+cp ../.env.example ../.env
+nano ../.env  # Edit with production values
+
+# Run migrations and collect static
+python manage.py migrate
+python manage.py collectstatic --noinput
+
+# Frontend build
+cd ../frontend
+npm install
+npm run build
+
+# Copy build to backend static
+cp -r dist/* ../backend/staticfiles/
+```
+
+#### 3. Configure Services
+
+```bash
+# Copy Nginx config
+sudo cp deploy/config/nginx.conf /etc/nginx/sites-available/mysite
+sudo ln -s /etc/nginx/sites-available/mysite /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl restart nginx
+
+# Copy Supervisor config
+sudo cp deploy/config/supervisord.conf /etc/supervisor/conf.d/mysite.conf
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start mysite:*
+```
+
+#### 4. Verify Deployment
+
+```bash
+# Check services
+sudo systemctl status nginx
+sudo supervisorctl status
+
+# Check logs
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /opt/mysite/backend/logs/gunicorn.log
+```
+
+### Updating Production
+
+```bash
+# SSH into server (requires VPN)
+ssh -i your-key.pem ubuntu@<ec2-private-ip>
+
+cd /opt/mysite
+git pull origin main
+
+# Update backend
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+
+# Update frontend
+cd ../frontend
+npm install
+npm run build
+cp -r dist/* ../backend/staticfiles/
+
+# Restart services
+sudo supervisorctl restart mysite:*
+```
+
+## 🔐 VPN Access (saturnvpnconfig)
+
+### For End Users
+
+1. **Obtain VPN Configuration**
+   - Contact your IT administrator or team lead
+   - Request access to `saturnvpnconfig` VPN profile
+   - You will receive `.ovpn` configuration file or credentials
+
+2. **Install VPN Client**
+   - Windows: OpenVPN Connect or built-in VPN
+   - macOS: Tunnelblick or OpenVPN Connect
+   - Linux: OpenVPN (`sudo apt install openvpn`)
+
+3. **Connect to VPN**
+   ```bash
+   # Linux/macOS
+   sudo openvpn --config saturnvpnconfig.ovpn
+   
+   # Windows: Use OpenVPN GUI
+   ```
+
+4. **Access Dashboard**
+   - Once connected, navigate to the internal dashboard URL
+   - Login with your credentials
+
+### For Developers (India Team)
+
+To access the development environment and Azure resources:
+
+1. Request VPN access from project administrator
+2. Ensure your Azure AD account has appropriate permissions
+3. Configure local `.env` with provided Azure credentials
+4. Test connectivity:
+   ```bash
+   # Verify VPN connection
+   ping <ec2-private-ip>
+   
+   # Verify API access
+   curl http://<ec2-private-ip>/api/health/
+   ```
+
+### Troubleshooting VPN
+
+| Issue | Solution |
+|-------|----------|
+| Cannot connect to VPN | Check credentials, firewall rules |
+| Dashboard not loading | Verify VPN is connected, check DNS |
+| API timeout errors | VPN may have disconnected, reconnect |
+| Azure ADX errors | Check service principal permissions |
 
 ## 🤝 Contributing
 

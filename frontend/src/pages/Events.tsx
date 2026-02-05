@@ -67,8 +67,13 @@ function lastHours(h: number): { start: Date; end: Date } {
   return { start, end };
 }
 
+// Maximum events to fetch and display
+const MAX_EVENTS_FETCH = 500;  // Limit fetched from API
+const MAX_EVENTS_DISPLAY = 200; // Limit displayed in table when expanded
+const DEFAULT_EVENTS_DISPLAY = 50; // Default display when collapsed
+
 // Build KQL query for fetching events
-function buildEventsKql(serial: string, from: Date, to: Date, limit: number = 1000): string {
+function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
@@ -175,6 +180,38 @@ const PARETO_COLORS = [
 // Main Component
 // ============================================================================
 
+// Simple error boundary wrapper for charts
+const ChartErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [hasError, setHasError] = React.useState(false);
+  
+  React.useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.message?.includes('chart') || event.message?.includes('width') || event.message?.includes('height')) {
+        setHasError(true);
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+  
+  if (hasError) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+        <p>Chart could not be rendered. Try refreshing the page.</p>
+        <button 
+          onClick={() => setHasError(false)} 
+          style={{ marginTop: '10px', padding: '8px 16px', cursor: 'pointer' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  
+  return <>{children}</>;
+};
+
 export default function Events() {
   const { serial, hasSerial } = useSerial();
   const { accessToken, logout } = useAuth();
@@ -185,6 +222,14 @@ export default function Events() {
   const [aggregation, setAggregation] = useState<{ name: string; count_: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isTableExpanded, setIsTableExpanded] = useState(false);
+  const [chartsReady, setChartsReady] = useState(false);
+  
+  // Delay chart rendering to ensure container has dimensions
+  useEffect(() => {
+    const timer = setTimeout(() => setChartsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Time range - use global if available, otherwise local
   const [isLinkedToGlobal, setIsLinkedToGlobal] = useState(true);
@@ -288,44 +333,48 @@ export default function Events() {
       display: 'flex',
       flexWrap: 'wrap' as const,
       alignItems: 'flex-end',
-      gap: spacing.md,
-      marginBottom: spacing.lg,
+      gap: '24px',
+      marginBottom: '32px',
+      padding: '20px',
+      background: colors.bgInput,
+      borderRadius: '12px',
+      border: `1px solid ${colors.borderSubtle}`,
     },
     controlGroup: {
       display: 'flex',
       flexDirection: 'column' as const,
+      gap: '10px',
     },
     label: {
-      fontSize: '0.75rem',
+      fontSize: '0.85rem',
       fontWeight: 600,
       color: colors.textSecondary,
-      marginBottom: '6px',
       textTransform: 'uppercase' as const,
       letterSpacing: '0.5px',
     },
     input: {
-      padding: '10px 14px',
-      fontSize: '13px',
+      padding: '12px 16px',
+      fontSize: '14px',
       color: colors.textPrimary,
-      background: colors.bgInput,
+      background: colors.bgSurface,
       border: `1px solid ${colors.borderMedium}`,
       borderRadius: '8px',
       outline: 'none',
     },
     select: {
-      padding: '10px 14px',
-      fontSize: '13px',
+      padding: '12px 16px',
+      fontSize: '14px',
       color: colors.textPrimary,
-      background: colors.bgInput,
+      background: colors.bgSurface,
       border: `1px solid ${colors.borderMedium}`,
       borderRadius: '8px',
       outline: 'none',
       cursor: 'pointer',
-      minWidth: '140px',
+      minWidth: '160px',
     },
     button: {
-      padding: '10px 20px',
-      fontSize: '13px',
+      padding: '12px 24px',
+      fontSize: '14px',
       fontWeight: 600,
       color: 'white',
       background: colors.schneiderGreen,
@@ -335,15 +384,15 @@ export default function Events() {
       transition: 'all 0.2s',
     },
     linkButton: {
-      padding: '10px 16px',
-      fontSize: '13px',
+      padding: '12px 18px',
+      fontSize: '14px',
       fontWeight: 500,
       borderRadius: '8px',
       cursor: 'pointer',
       transition: 'all 0.2s',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
+      gap: '10px',
     },
     tableContainer: {
       overflowX: 'auto' as const,
@@ -352,64 +401,71 @@ export default function Events() {
     },
     table: {
       width: '100%',
-      borderCollapse: 'collapse' as const,
-      fontSize: '13px',
+      borderCollapse: 'separate' as const,
+      borderSpacing: '0',
+      fontSize: '14px',
     },
     th: {
       textAlign: 'left' as const,
-      padding: '12px 16px',
+      padding: '18px 24px',
       background: colors.bgInput,
       color: colors.textSecondary,
       fontWeight: 600,
-      fontSize: '11px',
+      fontSize: '13px',
       textTransform: 'uppercase' as const,
       letterSpacing: '0.5px',
-      borderBottom: `1px solid ${colors.borderSubtle}`,
+      borderBottom: `2px solid ${colors.borderMedium}`,
+      whiteSpace: 'nowrap' as const,
     },
     td: {
-      padding: '12px 16px',
+      padding: '16px 24px',
       borderBottom: `1px solid ${colors.borderSubtle}`,
       color: colors.textPrimary,
+      lineHeight: '1.5',
     },
     statusDot: (severity: string) => ({
-      width: '8px',
-      height: '8px',
+      width: '10px',
+      height: '10px',
       borderRadius: '50%',
       display: 'inline-block',
-      marginRight: '8px',
+      marginRight: '12px',
       background: getStatusColor(severity as any),
     }),
     emptyState: {
       textAlign: 'center' as const,
-      padding: spacing.xxl,
+      padding: '60px',
       color: colors.textTertiary,
     },
     chartContainer: {
-      height: '300px',
+      height: '450px',
+      minHeight: '450px',
+      minWidth: '300px',
+      padding: '20px 0',
     },
     statsGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-      gap: spacing.md,
-      marginBottom: spacing.lg,
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '24px',
+      marginBottom: '32px',
     },
     statCard: {
-      padding: spacing.md,
+      padding: '24px',
       background: colors.bgInput,
       borderRadius: '12px',
       border: `1px solid ${colors.borderSubtle}`,
       textAlign: 'center' as const,
     },
     statValue: {
-      fontSize: '24px',
+      fontSize: '32px',
       fontWeight: 700,
       color: colors.textPrimary,
+      marginBottom: '8px',
     },
     statLabel: {
-      fontSize: '11px',
+      fontSize: '13px',
       color: colors.textTertiary,
       textTransform: 'uppercase' as const,
-      marginTop: '4px',
+      letterSpacing: '0.5px',
     },
   };
   
@@ -569,24 +625,26 @@ export default function Events() {
       )}
       
       {/* Main content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.lg, marginBottom: spacing.lg }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', marginBottom: '32px' }}>
         {/* Pareto Chart */}
         <WidgetCard 
           title="Event Frequency (Pareto)"
           isEmpty={!hasSerial || paretoData.length === 0}
           emptyMessage={!hasSerial ? "Enter a serial number" : "No events in selected range"}
         >
-          {paretoData.length > 0 && (
-            <div style={styles.chartContainer}>
-              <ResponsiveContainer>
-                <ComposedChart data={paretoData} margin={{ top: 20, right: 40, bottom: 60, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={colors.borderSubtle} />
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fill: colors.textTertiary, fontSize: 10 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
+          {paretoData.length > 0 && chartsReady && (
+            <ChartErrorBoundary>
+              <div style={styles.chartContainer}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={paretoData} margin={{ top: 30, right: 80, bottom: 140, left: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.borderSubtle} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: colors.textTertiary, fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={120}
+                    interval={0}
                   />
                   <YAxis 
                     yAxisId="left"
@@ -619,6 +677,7 @@ export default function Events() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
+            </ChartErrorBoundary>
           )}
         </WidgetCard>
         
@@ -628,17 +687,18 @@ export default function Events() {
           isEmpty={!hasSerial || paretoData.length === 0}
           emptyMessage={!hasSerial ? "Enter a serial number" : "No events in selected range"}
         >
-          {paretoData.length > 0 && (
+          {paretoData.length > 0 && chartsReady && (
+            <ChartErrorBoundary>
             <div style={styles.chartContainer}>
-              <ResponsiveContainer>
-                <BarChart data={paretoData.slice(0, 10)} layout="vertical" margin={{ top: 10, right: 30, bottom: 10, left: 100 }}>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={paretoData.slice(0, 10)} layout="vertical" margin={{ top: 20, right: 40, bottom: 20, left: 220 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={colors.borderSubtle} horizontal={false} />
-                  <XAxis type="number" tick={{ fill: colors.textTertiary, fontSize: 11 }} />
+                  <XAxis type="number" tick={{ fill: colors.textTertiary, fontSize: 12 }} />
                   <YAxis 
                     dataKey="name" 
                     type="category" 
-                    tick={{ fill: colors.textSecondary, fontSize: 11 }}
-                    width={100}
+                    tick={{ fill: colors.textSecondary, fontSize: 13 }}
+                    width={200}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="count" fill={colors.accentPrimary} radius={[0, 4, 4, 0]}>
@@ -649,13 +709,36 @@ export default function Events() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            </ChartErrorBoundary>
           )}
         </WidgetCard>
       </div>
       
       {/* Events Table */}
       <WidgetCard 
-        title={`Events Log (${filteredEvents.length} of ${events.length})`}
+        title={`Events Log (${filteredEvents.length} of ${events.length}${events.length >= MAX_EVENTS_FETCH ? '+' : ''})`}
+        actions={
+          filteredEvents.length > DEFAULT_EVENTS_DISPLAY ? (
+            <button
+              onClick={() => setIsTableExpanded(!isTableExpanded)}
+              style={{
+                padding: '6px 14px',
+                fontSize: '12px',
+                fontWeight: 500,
+                color: colors.textSecondary,
+                background: 'rgba(255,255,255,0.05)',
+                border: `1px solid ${colors.borderSubtle}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              {isTableExpanded ? '▼ Collapse' : '▶ Expand'} ({isTableExpanded ? MAX_EVENTS_DISPLAY : DEFAULT_EVENTS_DISPLAY})
+            </button>
+          ) : undefined
+        }
         isEmpty={!hasSerial}
         emptyMessage="Enter a serial number to view device events"
       >
@@ -676,7 +759,7 @@ export default function Events() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEvents.slice(0, 100).map((event, index) => {
+                  {filteredEvents.slice(0, isTableExpanded ? MAX_EVENTS_DISPLAY : DEFAULT_EVENTS_DISPLAY).map((event, index) => {
                     const severity = getSeverityFromName(event.name);
                     return (
                       <tr 
@@ -685,24 +768,24 @@ export default function Events() {
                           background: index % 2 === 0 ? 'transparent' : 'rgba(15, 23, 42, 0.3)',
                         }}
                       >
-                        <td style={styles.td}>
+                        <td style={{ ...styles.td, width: '120px' }}>
                           <span style={styles.statusDot(severity)} />
                           <span style={{ 
-                            fontSize: '11px', 
-                            fontWeight: 500, 
+                            fontSize: '13px', 
+                            fontWeight: 600, 
                             color: getStatusColor(severity),
                             textTransform: 'uppercase' 
                           }}>
                             {severity}
                           </span>
                         </td>
-                        <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '12px' }}>
+                        <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'nowrap' as const, width: '200px' }}>
                           {new Date(event.localtime).toLocaleString()}
                         </td>
-                        <td style={{ ...styles.td, maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td style={{ ...styles.td, wordBreak: 'break-word' as const }}>
                           {event.name}
                         </td>
-                        <td style={{ ...styles.td, fontFamily: 'monospace' }}>
+                        <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '13px', width: '120px' }}>
                           {String(event.value)}
                         </td>
                       </tr>
@@ -711,9 +794,37 @@ export default function Events() {
                 </tbody>
               </table>
             )}
-            {filteredEvents.length > 100 && (
-              <div style={{ padding: spacing.md, textAlign: 'center', color: colors.textTertiary, fontSize: '13px' }}>
-                Showing 100 of {filteredEvents.length} events. Narrow your time range to see more details.
+            {!isTableExpanded && filteredEvents.length > DEFAULT_EVENTS_DISPLAY && (
+              <div 
+                onClick={() => setIsTableExpanded(true)}
+                style={{ 
+                  padding: '16px', 
+                  textAlign: 'center', 
+                  color: colors.accentPrimary, 
+                  fontSize: '14px', 
+                  borderTop: `1px solid ${colors.borderSubtle}`,
+                  cursor: 'pointer',
+                  background: 'rgba(59, 130, 246, 0.05)',
+                }}
+              >
+                ▶ Click to show more ({Math.min(filteredEvents.length, MAX_EVENTS_DISPLAY) - DEFAULT_EVENTS_DISPLAY} more events)
+              </div>
+            )}
+            {isTableExpanded && filteredEvents.length > MAX_EVENTS_DISPLAY && (
+              <div style={{ padding: '16px', textAlign: 'center', color: colors.textTertiary, fontSize: '14px', borderTop: `1px solid ${colors.borderSubtle}` }}>
+                Showing {MAX_EVENTS_DISPLAY} of {filteredEvents.length} events (max limit: {MAX_EVENTS_FETCH}). Narrow your time range to see more details.
+              </div>
+            )}
+            {events.length >= MAX_EVENTS_FETCH && (
+              <div style={{ 
+                padding: '12px 16px', 
+                textAlign: 'center', 
+                color: colors.statusWarning, 
+                fontSize: '13px', 
+                background: 'rgba(251, 191, 36, 0.1)',
+                borderTop: `1px solid ${colors.borderSubtle}`,
+              }}>
+                ⚠️ Results limited to {MAX_EVENTS_FETCH} events. Narrow your time range for complete data.
               </div>
             )}
           </div>

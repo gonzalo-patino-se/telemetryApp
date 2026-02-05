@@ -1,6 +1,22 @@
 # mysite - Deployment Guide
 
-This guide covers deploying the mysite application to an Azure Virtual Machine.
+This guide covers deploying the mysite application to an AWS Virtual Machine.
+
+## ⚠️ Network Requirements
+
+**IMPORTANT: All access to this application requires VPN connection.**
+
+| Requirement | Details |
+|-------------|---------|
+| VPN | `saturnvpnconfig` - Required for all access |
+| Network | Private AWS VPC |
+| Ports | 80 (HTTP), 443 (HTTPS) internal only |
+
+### Before You Begin
+
+1. Ensure you have VPN access to `saturnvpnconfig`
+2. Obtain SSH key for AWS EC2 instance
+3. Have Azure AD service principal credentials for ADX access
 
 ## 📁 Project Structure
 
@@ -74,14 +90,32 @@ docker-compose exec backend python manage.py createsuperuser
 
 ---
 
-## ☁️ Azure VM Deployment
+## ☁️ AWS EC2 Deployment
 
 ### Prerequisites
-- Azure VM (Ubuntu 22.04 LTS recommended)
+- AWS EC2 Instance (Ubuntu 22.04 LTS recommended)
 - Minimum: 2 vCPUs, 4GB RAM
-- Open ports: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+- Security Group: SSH (22) from VPN CIDR only
+- **VPN**: Connected to `saturnvpnconfig`
 
-### Step 1: Initial VM Setup
+### Network Architecture
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   Client (VPN)   │────▶│   AWS EC2 (VM)   │────▶│   Azure ADX      │
+│ saturnvpnconfig  │     │   Private VPC    │     │   Telemetry DB   │
+└──────────────────┘     └──────────────────┘     └──────────────────┘
+```
+
+### Step 1: Connect to AWS Instance
+
+```bash
+# Ensure VPN is connected first!
+# Then SSH into the EC2 instance
+ssh -i /path/to/your-key.pem ubuntu@<private-ip-address>
+```
+
+### Step 2: Initial VM Setup
 
 SSH into your VM and run the setup script:
 
