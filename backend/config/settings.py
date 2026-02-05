@@ -40,11 +40,19 @@ IS_PRODUCTION = ENVIRONMENT == 'production'
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-insecure')
+_secret_key = os.getenv('DJANGO_SECRET_KEY')
+if IS_PRODUCTION and not _secret_key:
+    raise ValueError("DJANGO_SECRET_KEY environment variable is required in production!")
+SECRET_KEY = _secret_key or 'dev-insecure-key-for-local-development-only'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+if IS_PRODUCTION and DEBUG:
+    raise ValueError("DEBUG must be False in production!")
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h]
+if IS_PRODUCTION and '*' in ALLOWED_HOSTS:
+    raise ValueError("Wildcard '*' in ALLOWED_HOSTS is not permitted in production!")
 
 # Application definition
 
