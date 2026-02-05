@@ -1468,6 +1468,111 @@ a:hover {
 }
 
 /* ============================================================================
+   MODULE RELAY INDICATOR STYLES (Individual battery module relays)
+   Status values: -1=Invalid, 0=OFF (open), 1=ON (closed)
+   ============================================================================ */
+
+.module-relay-group {
+  transition: all 0.3s ease;
+}
+
+.module-relay-body {
+  fill: rgba(15, 23, 42, 0.9);
+  stroke: #4b5563;
+  stroke-width: 1.5;
+  transition: all 0.3s ease;
+}
+
+.module-relay-body.closed {
+  stroke: #22c55e;
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.4));
+}
+
+.module-relay-body.open {
+  stroke: #f59e0b;
+  filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.3));
+}
+
+.module-relay-body.invalid {
+  stroke: #6b7280;
+  filter: none;
+}
+
+.module-relay-terminal {
+  fill: #9ca3af;
+  stroke: #6b7280;
+  stroke-width: 0.5;
+}
+
+.module-relay-arm {
+  stroke: #d1d5db;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transition: all 0.3s ease;
+}
+
+.module-relay-arm.closed {
+  stroke: #22c55e;
+}
+
+.module-relay-arm.open {
+  stroke: #f59e0b;
+}
+
+/* Module Relay LED states */
+.module-relay-led {
+  transition: all 0.3s ease;
+}
+
+/* ON/Closed state - green */
+.module-relay-led.closed {
+  fill: #22c55e;
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.7));
+}
+
+/* OFF/Open state - amber warning */
+.module-relay-led.open {
+  fill: #f59e0b;
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.7));
+  animation: relay-pulse-warning 1.5s ease-in-out infinite;
+}
+
+/* Invalid state - gray (no data) */
+.module-relay-led.invalid {
+  fill: #6b7280;
+  filter: drop-shadow(0 0 2px rgba(107, 114, 128, 0.4));
+}
+
+/* Module relay status text */
+.module-relay-status {
+  font-size: 8px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', monospace;
+  fill: var(--text-secondary);
+}
+
+.module-relay-status.closed {
+  fill: #22c55e;
+}
+
+.module-relay-status.open {
+  fill: #f59e0b;
+}
+
+.module-relay-status.invalid {
+  fill: #6b7280;
+}
+
+/* Status text inside relay LED */
+.module-relay-status-text {
+  font-size: 7px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Monaco', monospace;
+  fill: #1f2937;
+  pointer-events: none;
+}
+
+/* ============================================================================
    BGCS RELAY INDICATOR STYLES (Grid Connection Safety Relay)
    ============================================================================ */
 

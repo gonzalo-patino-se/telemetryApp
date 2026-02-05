@@ -63,20 +63,23 @@ const BATTERY_CONFIGS: TelemetryConfig[] = [
   { id: 'bat1Temp', label: 'Bat 1 Temp', telemetryName: '/BMS/MODULE1/STAT/TEMP', unit: '°C', category: 'battery1', decimals: 1 },
   { id: 'bat1SoC', label: 'Bat 1 SoC', telemetryName: '/BMS/MODULE1/STAT/USER_SOC', unit: '%', category: 'battery1', decimals: 0 },
   { id: 'bat1I', label: 'Bat 1 I', telemetryName: '/BMS/MODULE1/STAT/I', unit: 'A', category: 'battery1', decimals: 2 },
+  { id: 'bat1Relay', label: 'Bat 1 Relay', telemetryName: '/BMS/MODULE1/EVENT/INFO/MAIN_RELAY_STATUS', unit: '', category: 'battery1', decimals: 0 },
   
   // Battery Module 2
   { id: 'bat2V', label: 'Bat 2 V', telemetryName: '/BMS/MODULE2/STAT/V', unit: 'V', category: 'battery2', decimals: 1 },
   { id: 'bat2Temp', label: 'Bat 2 Temp', telemetryName: '/BMS/MODULE2/STAT/TEMP', unit: '°C', category: 'battery2', decimals: 1 },
   { id: 'bat2SoC', label: 'Bat 2 SoC', telemetryName: '/BMS/MODULE2/STAT/USER_SOC', unit: '%', category: 'battery2', decimals: 0 },
   { id: 'bat2I', label: 'Bat 2 I', telemetryName: '/BMS/MODULE2/STAT/I', unit: 'A', category: 'battery2', decimals: 2 },
+  { id: 'bat2Relay', label: 'Bat 2 Relay', telemetryName: '/BMS/MODULE2/EVENT/INFO/MAIN_RELAY_STATUS', unit: '', category: 'battery2', decimals: 0 },
   
   // Battery Module 3
   { id: 'bat3V', label: 'Bat 3 V', telemetryName: '/BMS/MODULE3/STAT/V', unit: 'V', category: 'battery3', decimals: 1 },
   { id: 'bat3Temp', label: 'Bat 3 Temp', telemetryName: '/BMS/MODULE3/STAT/TEMP', unit: '°C', category: 'battery3', decimals: 1 },
   { id: 'bat3SoC', label: 'Bat 3 SoC', telemetryName: '/BMS/MODULE3/STAT/USER_SOC', unit: '%', category: 'battery3', decimals: 0 },
   { id: 'bat3I', label: 'Bat 3 I', telemetryName: '/BMS/MODULE3/STAT/I', unit: 'A', category: 'battery3', decimals: 2 },
+  { id: 'bat3Relay', label: 'Bat 3 Relay', telemetryName: '/BMS/MODULE3/EVENT/INFO/MAIN_RELAY_STATUS', unit: '', category: 'battery3', decimals: 0 },
   
-  // Battery Relay Status (uses Alarms table - handled specially)
+  // Battery Main Relay Error (uses Alarms table - handled specially)
   { id: 'batMainRelay', label: 'Battery Relay', telemetryName: '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR', unit: '', category: 'battery', decimals: 0 },
 ];
 
@@ -152,6 +155,19 @@ function buildBatteryRelayKql(serial: string): string {
     Alarms
     | where comms_serial contains s
     | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
+    | top 1 by localtime desc
+    | project localtime, value
+  `.trim();
+}
+
+// Special query for Battery Module Relay Status (uses Alarms table with value field)
+function buildModuleRelayKql(serial: string, moduleName: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    Alarms
+    | where comms_serial contains s
+    | where name contains '${moduleName}'
     | top 1 by localtime desc
     | project localtime, value
   `.trim();
@@ -763,6 +779,59 @@ const BatteryModule: React.FC<BatteryModuleProps> = ({
 };
 
 // ============================================================================
+// Module Relay SVG Component (relay between battery module and bus bar)
+// ============================================================================
+
+interface ModuleRelayProps {
+  x: number;
+  y: number;
+  moduleNumber: number;  // Used for identification/labeling
+  status: string;        // 'ON', 'OFF', 'Invalid', '--'
+  ledClass: string;      // 'closed', 'open', 'invalid'
+  isClosed: boolean;     // true when relay is closed (ON)
+}
+
+const ModuleRelay: React.FC<ModuleRelayProps> = ({
+  x, y, moduleNumber: _moduleNumber, status: _status, ledClass, isClosed
+}) => {
+  return (
+    <g transform={`translate(${x}, ${y})`} className="module-relay-group">
+      {/* Relay symbol - enlarged for visibility */}
+      <g className="module-relay">
+        {/* Relay housing - larger rectangle */}
+        <rect 
+          x={-16} y={-12} 
+          width={32} height={24} 
+          rx={3} 
+          className={`module-relay-body ${ledClass}`}
+        />
+        
+        {/* Contact terminals - larger */}
+        <circle cx={-8} cy={-5} r={3} className="module-relay-terminal" />
+        <circle cx={-8} cy={5} r={3} className="module-relay-terminal" />
+        
+        {/* Contact arm - vertical when closed, angled when open */}
+        <line 
+          x1={-8} y1={-2} 
+          x2={isClosed ? -8 : -2} 
+          y2={isClosed ? 2 : -4} 
+          className={`module-relay-arm ${isClosed ? 'closed' : 'open'}`}
+          strokeWidth={2}
+        />
+        
+        {/* Status LED - larger */}
+        <circle cx={6} cy={0} r={5} className={`module-relay-led ${ledClass}`} />
+        
+        {/* Status text inside relay box */}
+        <text x={6} y={3} textAnchor="middle" className="module-relay-status-text">
+          {isClosed ? '1' : '0'}
+        </text>
+      </g>
+    </g>
+  );
+};
+
+// ============================================================================
 // Load Component SVG
 // ============================================================================
 
@@ -885,6 +954,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
     const isBgcsRelayQuery = config.id === 'bgcsRelay';
     // Use special query for WiFi Signal (from TelemetryLive table)
     const isWifiQuery = config.id === 'wifiSignal';
+    // Use special query for Module Relays (from Telemetry table with 'value' field)
+    const isModuleRelayQuery = ['bat1Relay', 'bat2Relay', 'bat3Relay'].includes(config.id);
     
     let kql: string;
     if (isBatteryRelayQuery) {
@@ -893,6 +964,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       kql = buildBgcsRelayKql(serial);
     } else if (isWifiQuery) {
       kql = buildWifiSignalKql(serial);
+    } else if (isModuleRelayQuery) {
+      kql = buildModuleRelayKql(serial, config.telemetryName);
     } else {
       kql = buildInstantaneousKql(serial, config.telemetryName);
     }
@@ -909,14 +982,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       
       // Handle value - Alarms table returns 'value', Telemetry returns 'value_double'
       let value: number | null = null;
-      if (isBatteryRelayQuery) {
-        // Battery Relay uses 'value' field from Alarms table
+      if (isBatteryRelayQuery || isModuleRelayQuery) {
+        // Battery Main Relay and Module Relays use 'value' field from Alarms table
         if (row?.value !== undefined && row?.value !== null) {
           const parsed = typeof row.value === 'number' ? row.value : parseFloat(row.value);
           value = isNaN(parsed) ? null : parsed;
         }
       } else {
-        // Normal telemetry (including BGCS relay and WiFi) uses 'value_double' field
+        // All Telemetry queries (BGCS relay, WiFi, etc.) use 'value_double' field
         value = row?.value_double ?? null;
       }
       
@@ -1048,6 +1121,23 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const batteryRelayActive = batteryRelayValue === 1;  // Alarm is active
   const batteryRelayClosed = batteryRelayValue === 0;  // Relay is closed, power can flow
   const batteryRelayLedClass = batteryRelayValue === 1 ? 'active' : batteryRelayValue === 0 ? 'inactive' : 'invalid';
+  
+  // Module Relay status (from Telemetry table: -1=Invalid, 0=OFF/Open, 1=ON/Closed)
+  // These are individual relays for each battery module
+  const getModuleRelayStatus = (value: number | null): { status: string; ledClass: string; isClosed: boolean } => {
+    if (value === null) return { status: '--', ledClass: 'invalid', isClosed: false };
+    if (value === 1) return { status: 'ON', ledClass: 'closed', isClosed: true };
+    if (value === 0) return { status: 'OFF', ledClass: 'open', isClosed: false };
+    return { status: 'Invalid', ledClass: 'invalid', isClosed: false };
+  };
+  
+  const bat1RelayValue = telemetryData.bat1Relay?.value ?? null;
+  const bat2RelayValue = telemetryData.bat2Relay?.value ?? null;
+  const bat3RelayValue = telemetryData.bat3Relay?.value ?? null;
+  
+  const bat1RelayInfo = getModuleRelayStatus(bat1RelayValue);
+  const bat2RelayInfo = getModuleRelayStatus(bat2RelayValue);
+  const bat3RelayInfo = getModuleRelayStatus(bat3RelayValue);
   
   // BGCS Relay status (Grid Connection Safety Relay - prevents backfeed during outages)
   // 1: Open, 2: Closed, 3: Faulted open, 4: Faulted closed, 5: Override open, 6: Override closed, 7: Estop open, 8: Estop closed
@@ -1446,23 +1536,54 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           isCharging={bat3Charging}
         />
         
+        {/* Module Relays - between each battery and the bus bar */}
+        <ModuleRelay
+          x={115}
+          y={380}
+          moduleNumber={1}
+          status={bat1RelayInfo.status}
+          ledClass={bat1RelayInfo.ledClass}
+          isClosed={bat1RelayInfo.isClosed}
+        />
+        <ModuleRelay
+          x={205}
+          y={380}
+          moduleNumber={2}
+          status={bat2RelayInfo.status}
+          ledClass={bat2RelayInfo.ledClass}
+          isClosed={bat2RelayInfo.isClosed}
+        />
+        <ModuleRelay
+          x={295}
+          y={380}
+          moduleNumber={3}
+          status={bat3RelayInfo.status}
+          ledClass={bat3RelayInfo.ledClass}
+          isClosed={bat3RelayInfo.isClosed}
+        />
+        
         {/* Battery to Inverter connection - parallel bus bar */}
         <g className="battery-bus">
           {/* Horizontal bus bar connecting all batteries */}
-          <line x1={115} y1={425} x2={295} y2={425} className="bus-bar" />
+          <line x1={115} y1={355} x2={295} y2={355} className="bus-bar" />
           
-          {/* Vertical connections from each battery to bus */}
-          <line x1={115} y1={425} x2={115} y2={435} className="bus-connector" />
-          <line x1={205} y1={425} x2={205} y2={435} className="bus-connector" />
-          <line x1={295} y1={425} x2={295} y2={435} className="bus-connector" />
+          {/* Vertical connections from bus bar to module relays */}
+          <line x1={115} y1={355} x2={115} y2={368} className="bus-connector" />
+          <line x1={205} y1={355} x2={205} y2={368} className="bus-connector" />
+          <line x1={295} y1={355} x2={295} y2={368} className="bus-connector" />
+          
+          {/* Vertical connections from module relays to battery modules */}
+          <line x1={115} y1={392} x2={115} y2={420} className="bus-connector" />
+          <line x1={205} y1={392} x2={205} y2={420} className="bus-connector" />
+          <line x1={295} y1={392} x2={295} y2={420} className="bus-connector" />
         </g>
         
-        {/* Flow line from battery bus to relay */}
+        {/* Flow line from battery bus to main relay */}
         <HorizontalFlowLine
           startX={205}
-          startY={425}
+          startY={355}
           endX={205}
-          endY={355}
+          endY={340}
           isActive={anyBatteryActive}
           color="#f59e0b"
           flowDirection={anyBatteryCharging ? 'left' : 'right'}
