@@ -295,49 +295,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =============================================================================
 # Logging Configuration
 # =============================================================================
+# settings.py (replace any existing LOGGING with this)
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
+        'simple': {'format': '{levelname} {message}', 'style': '{'},
     },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'maxBytes': 10485760,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'},
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
+    'root': {'handlers': ['console'], 'level': 'INFO'},
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
-        },
-        'telemetryapp': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': False,
-        },
+        'django': {'handlers': ['console'], 'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 'propagate': False},
+        'telemetryapp': {'handlers': ['console'], 'level': 'DEBUG' if DEBUG else 'INFO', 'propagate': False},
     },
 }
+
 
 # Create logs directory if it doesn't exist
 (BASE_DIR / 'logs').mkdir(exist_ok=True)
