@@ -13,7 +13,7 @@ import {
   buildGridVoltageL1Query, buildGridVoltageL2Query, buildGridCurrentL1Query, buildGridCurrentL2Query, buildGridFrequencyTotalQuery,
   buildGridVoltageL1FastQuery, buildGridVoltageL2FastQuery, buildGridCurrentL1FastQuery, buildGridCurrentL2FastQuery, buildGridFrequencyTotalFastQuery,
   // Load queries (normal + fast)
-  buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadVoltageL1FastQuery, buildLoadVoltageL2FastQuery, buildLoadFrequencyTotalFastQuery,buildLoadFrequencyTotalNormalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
+  buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadFrequencyTotalNormalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
   // Battery queries (normal + fast)
   buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
