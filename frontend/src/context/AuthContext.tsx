@@ -10,6 +10,7 @@ import api from '../services/api';
 interface AuthContextType {
     isAuthenticated: boolean;
     user: { username: string; email: string } | null;
+    accessToken: string | null;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     isLoading: boolean;
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+    const [accessToken, setAccessToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Check authentication status on mount (cookies are sent automatically)
@@ -33,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const response = await api.get('/auth/me/');
                 setIsAuthenticated(true);
                 setUser(response.data.user);
+                // If server returns accessToken, set it
+                if (response.data.accessToken) setAccessToken(response.data.accessToken);
             } catch {
                 // Not authenticated or token expired
                 setIsAuthenticated(false);
@@ -49,8 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const response = await api.post('/login/', { username, password });
         // Server sets httpOnly cookies automatically
         // Response contains user info (but NOT tokens - they're in cookies)
-        setIsAuthenticated(true);
-        setUser(response.data.user);
+    setIsAuthenticated(true);
+    setUser(response.data.user);
+    // If server returns accessToken, set it
+    if (response.data.accessToken) setAccessToken(response.data.accessToken);
     }, []);
 
     // Logout function: server clears cookies
@@ -64,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Always clear local state
             setIsAuthenticated(false);
             setUser(null);
+            setAccessToken(null);
         }
     }, []);
 
@@ -83,7 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (error.response?.status === 401 && !isAuthEndpoint) {
                     // Try to refresh the token
                     try {
-                        await api.post('/token/refresh/');
+                        const refreshRes = await api.post('/token/refresh/');
+                        if (refreshRes.data.accessToken) setAccessToken(refreshRes.data.accessToken);
                         // Retry the original request
                         return api.request(error.config);
                     } catch {
@@ -99,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, accessToken, login, logout, isLoading }}>
             {children}
         </AuthContext.Provider>
     );
