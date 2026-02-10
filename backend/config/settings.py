@@ -279,30 +279,7 @@ STATIC_URL = 'static/'
 #STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-#-----------
-# Logging (Docker-safe)
-#----------------
-LOGGING = {
-	"version": 1,
-	"disable_existing_loggers": False,
-	"handlers": {
-		"console": {
-			"class": "logging.StreamHandler",
-		},
-	},
-	"root": {
-	"handlers": ["console"],
-	"level": "INFO",
-	},
-	"loggers": {
-		"django": {
-			"handlers": ["console"],
-			"level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
-			"propagate": "False",
-		},
 
-	},
-}
 # Whitenoise for efficient static file serving
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
