@@ -53,7 +53,8 @@ COPY --from=frontend-builder --chown=appuser:appgroup /app/frontend/dist ./front
 # Create necessary directories
 RUN mkdir -p /app/backend/logs /app/backend/media /app/backend/staticfiles && \
     chown -R appuser:appgroup /app
-
+    
+RUN chmod 777 /app/backend/logs
 # Collect static files
 WORKDIR /app/backend
 RUN python manage.py collectstatic --noinput
