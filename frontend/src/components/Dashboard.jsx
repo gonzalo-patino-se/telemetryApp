@@ -568,11 +568,11 @@ const Dashboard = () => {
                 color="#10b981"
             >
                 <div style={styles.chartsGridPaired}>
-                    {renderWidgetCard("Grid Voltage L1", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
-                    {renderWidgetCard("Grid Voltage L2", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
-                    {renderWidgetCard("Grid Current L1", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
-                    {renderWidgetCard("Grid Current L2", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
-                    {renderWidgetCard("Grid Frequency", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
+                    {renderWidgetCard("Grid Voltage L1 (Inverter's AC PORT)", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
+                    {renderWidgetCard("Grid Voltage L2 (Inverter's AC PORT)", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
+                    {renderWidgetCard("Grid Current L1 (Inverter's AC PORT)", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
+                    {renderWidgetCard("Grid Current L2 (Inverter's AC PORT)", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
+                    {renderWidgetCard("Grid Frequency (Inverter's AC PORT)", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
                 </div>
             </CollapsibleSection>
 
