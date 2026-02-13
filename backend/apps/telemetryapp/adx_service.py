@@ -1,7 +1,8 @@
 import os
+import logging
 from azure.kusto.data import KustoConnectionStringBuilder, KustoClient
 from dotenv import load_dotenv
-import logging
+
 
 # Configure logging - reduce verbosity for production
 logger = logging.getLogger(__name__)
