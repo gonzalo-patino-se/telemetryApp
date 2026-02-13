@@ -568,11 +568,11 @@ const Dashboard = () => {
                 color="#10b981"
             >
                 <div style={styles.chartsGridPaired}>
-                    {renderWidgetCard("Grid Voltage L1 (Inverter's AC PORT)", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
-                    {renderWidgetCard("Grid Voltage L2 (Inverter's AC PORT)", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
-                    {renderWidgetCard("Grid Current L1 (Inverter's AC PORT)", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
-                    {renderWidgetCard("Grid Current L2 (Inverter's AC PORT)", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
-                    {renderWidgetCard("Grid Frequency (Inverter's AC PORT)", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
+                    {renderWidgetCard("GRID Voltage L1 (BGCS or SEM or another)", GridVoltageL1Widget, gridVoltageL1AutoFetch, setGridVoltageL1AutoFetch, gridVoltageL1FetchSignal, setGridVoltageL1FetchSignal)}
+                    {renderWidgetCard("GRID Voltage L2 (BGCS or SEM or another)", GridVoltageL2Widget, gridVoltageL2AutoFetch, setGridVoltageL2AutoFetch, gridVoltageL2FetchSignal, setGridVoltageL2FetchSignal)}
+                    {renderWidgetCard("GRID Current L1 (BGCS or SEM or another)", GridCurrentL1Widget, gridCurrentL1AutoFetch, setGridCurrentL1AutoFetch, gridCurrentL1FetchSignal, setGridCurrentL1FetchSignal)}
+                    {renderWidgetCard("GRID Current L2 (BGCS or SEM or another)", GridCurrentL2Widget, gridCurrentL2AutoFetch, setGridCurrentL2AutoFetch, gridCurrentL2FetchSignal, setGridCurrentL2FetchSignal)}
+                    {renderWidgetCard("GRID Frequency (BGCS or SEM or another)", GridFrequencyTotalWidget, gridFrequencyTotalAutoFetch, setGridFrequencyTotalAutoFetch, gridFrequencyTotalFetchSignal, setGridFrequencyTotalFetchSignal)}
                 </div>
             </CollapsibleSection>
 
@@ -584,11 +584,11 @@ const Dashboard = () => {
                 color="#ec4899"
             >
                 <div style={styles.chartsGridPaired}>
-                    {renderWidgetCard("Load Voltage L1", LoadVoltageL1Widget, loadVoltageL1AutoFetch, setLoadVoltageL1AutoFetch, loadVoltageL1FetchSignal, setLoadVoltageL1FetchSignal)}
-                    {renderWidgetCard("Load Voltage L2", LoadVoltageL2Widget, loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch, loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal)}
-                    {renderWidgetCard("Load Frequency", LoadFrequencyTotalWidget, loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch, loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal)}
-                    {renderWidgetCard("Load Current L1", LoadCurrentL1Widget, loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch, loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal)}
-                    {renderWidgetCard("Load Current L2", LoadCurrentL2Widget, loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch, loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal)}
+                    {renderWidgetCard("Load Voltage L1 (INV ACPORT)", LoadVoltageL1Widget, loadVoltageL1AutoFetch, setLoadVoltageL1AutoFetch, loadVoltageL1FetchSignal, setLoadVoltageL1FetchSignal)}
+                    {renderWidgetCard("Load Voltage L2 (INV ACPORT)", LoadVoltageL2Widget, loadVoltageL2AutoFetch, setLoadVoltageL2AutoFetch, loadVoltageL2FetchSignal, setLoadVoltageL2FetchSignal)}
+                    {renderWidgetCard("Load Frequency (INV ACPORT)", LoadFrequencyTotalWidget, loadFrequencyTotalAutoFetch, setLoadFrequencyTotalAutoFetch, loadFrequencyTotalFetchSignal, setLoadFrequencyTotalFetchSignal)}
+                    {renderWidgetCard("Load Current L1 (INV ACPORT)", LoadCurrentL1Widget, loadCurrentL1AutoFetch, setLoadCurrentL1AutoFetch, loadCurrentL1FetchSignal, setLoadCurrentL1FetchSignal)}
+                    {renderWidgetCard("Load Current L2 (INV ACPORT)", LoadCurrentL2Widget, loadCurrentL2AutoFetch, setLoadCurrentL2AutoFetch, loadCurrentL2FetchSignal, setLoadCurrentL2FetchSignal)}
                 </div>
             </CollapsibleSection>
 
