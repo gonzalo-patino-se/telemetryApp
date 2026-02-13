@@ -11,7 +11,7 @@ export function buildGridVoltageL1Query(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N',
+    telemetryName: '/SYS/MEAS/STAT/GRID/VRMS_L1N', // with respect to a measuring device
   });
 }
 
@@ -24,7 +24,7 @@ export function buildGridVoltageL2Query(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N',
+    telemetryName: '/SYS/MEAS/STAT/GRID/VRMS_L2N', // with respect to a measuring device
   });
 }
 
@@ -37,7 +37,7 @@ export function buildGridCurrentL1Query(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/IRMS_L1',
+    telemetryName: '/SYS/MEAS/STAT/GRID/IRMS_L1', // with respect to a measuring device
   });
 }
 
@@ -50,7 +50,7 @@ export function buildGridCurrentL2Query(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/IRMS_L2',
+    telemetryName: '/SYS/MEAS/STAT/GRID/IRMS_L2', // with respect to a measuring device
   });
 }
 
@@ -63,7 +63,7 @@ export function buildGridFrequencyTotalQuery(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
+    telemetryName: '/SYS/MEAS/STAT/GRID/FREQ_TOTAL', // with respect to a measuring device
   });
 }
 // src/utils/kqlBuilders.ts
@@ -294,7 +294,7 @@ export function buildGridPowerQuery(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/GRID/P',
+    telemetryName: '/INV/ACPORT/STAT/GRID/P', //fixme: not reliable
   });
 }
 
@@ -310,7 +310,7 @@ export function buildLoadPowerQuery(
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/LOAD/P',
+    telemetryName: '/INV/ACPORT/STAT/LOAD/P', //this is not load but ACPORT 
   });
 }
 
@@ -469,7 +469,7 @@ export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endD
 }
 
 // ============================================================================
-// Fast Telemetry Widgets (Load Measurements)
+// Fast Telemetry Widgets (Load Measurements- ACTUALLYACPORT MEasurements not load)
 // Uses sourcedatastreamingfornam table with fast-telemetry msgType
 // ============================================================================
 
@@ -517,7 +517,7 @@ export function buildLoadVoltageL1FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N',
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N', //this is ACPORT voltage, not the load
   });
 }
 
@@ -529,7 +529,7 @@ export function buildLoadVoltageL2FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N',
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N', //this is ACPORT voltage, not the load
   });
 }
 
@@ -541,7 +541,7 @@ export function buildLoadFrequencyTotalFastQuery(serial: string, startDate: Date
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
+    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
   });
 }
 
@@ -553,7 +553,7 @@ export function buildLoadCurrentL1Query(serial: string, startDate: Date, endDate
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L1',
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N',
   });
 }
 
@@ -565,7 +565,7 @@ export function buildLoadCurrentL2Query(serial: string, startDate: Date, endDate
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/LOAD/IRMS_L2',
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L2N',
   });
 }
 
@@ -582,7 +582,7 @@ export function buildLoadVoltageL1NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L1N',
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N', // from inverter's AC PORT
   });
 }
 
@@ -594,7 +594,7 @@ export function buildLoadVoltageL2NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/VRMS_L2N',
+    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N', // from inverter's AC PORT
   });
 }
 
@@ -606,7 +606,7 @@ export function buildLoadFrequencyTotalNormalQuery(serial: string, startDate: Da
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
+    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
   });
 }
 
@@ -618,7 +618,7 @@ export function buildLoadCurrentL1NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1',
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L1N',
   });
 }
 
@@ -630,7 +630,7 @@ export function buildLoadCurrentL2NormalQuery(serial: string, startDate: Date, e
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2',
+    telemetryName: '/INV/ACPORT/STAT/IRMS_L2N',
   });
 }
 
@@ -647,7 +647,7 @@ export function buildGridVoltageL1FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/VRMS_L1N',
+    telemetryName: '/SYS/MEAS/STAT/GRID/VRMS_L1', //with respect to a measuring device
   });
 }
 
@@ -659,7 +659,7 @@ export function buildGridVoltageL2FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/VRMS_L2N',
+    telemetryName: '/SYS/MEAS/STAT/GRID/VRMS_L2', //with respect to a measuring device
   });
 }
 
@@ -671,7 +671,7 @@ export function buildGridCurrentL1FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L1',
+    telemetryName: '/SYS/MEAS/STAT/GRID/IRMS_L1', //with respect to a measuring device
   });
 }
 
@@ -683,7 +683,7 @@ export function buildGridCurrentL2FastQuery(serial: string, startDate: Date, end
     serial,
     startDate,
     endDate,
-    telemetryName: '/SYS/MEAS/STAT/LOAD/IRMS_L2',
+    telemetryName: '/SYS/MEAS/STAT/GRID/IRMS_L2', //with respect to a measuring device
   });
 }
 
@@ -695,7 +695,7 @@ export function buildGridFrequencyTotalFastQuery(serial: string, startDate: Date
     serial,
     startDate,
     endDate,
-    telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL',
+    telemetryName: '/SYS/MEAS/STAT/GRID/FREQ_TOTAL', //with respect to a measuring device
   });
 }
 
