@@ -96,8 +96,8 @@ function buildTelemetryKql(serial: string, telemetryName: string): string {
   return `
     let s = '${s}';
     Telemetry
-    | where comms_serial contains s
-    | where name contains '${telemetryName}'
+    | where comms_serial has s
+    | where name has '${telemetryName}'
     | top 1 by localtime desc
     | project localtime, value_double
   `.trim();
