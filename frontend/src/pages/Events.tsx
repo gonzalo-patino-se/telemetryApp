@@ -68,9 +68,9 @@ function lastHours(h: number): { start: Date; end: Date } {
 }
 
 // Maximum events to fetch and display
-const MAX_EVENTS_FETCH = 500;  // Limit fetched from API
-const MAX_EVENTS_DISPLAY = 200; // Limit displayed in table when expanded
-const DEFAULT_EVENTS_DISPLAY = 50; // Default display when collapsed
+const MAX_EVENTS_FETCH = 20000;  // Limit fetched from API
+const MAX_EVENTS_DISPLAY = 500; // Limit displayed in table when expanded (not collapsed)
+const DEFAULT_EVENTS_DISPLAY = 20000; // Default display when collapsed
 
 // Build KQL query for fetching events
 function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {
@@ -85,6 +85,7 @@ function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MA
     Alarms
     | where comms_serial contains s
     | where localtime between (start .. finish)
+    | where value == 1
     | sort by localtime desc
     | project localtime, name, value
     | take ${limit}
@@ -92,7 +93,7 @@ function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MA
 }
 
 // Build KQL query for aggregation (event frequency)
-function buildAggregationKql(serial: string, from: Date, to: Date): string {
+function buildAggregationKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
@@ -104,9 +105,10 @@ function buildAggregationKql(serial: string, from: Date, to: Date): string {
     Alarms
     | where comms_serial contains s
     | where localtime between (start .. finish)
+    | where value == 1
     | summarize count() by name
     | order by count_ desc
-    | take 20
+    | take ${limit}
   `.trim();
 }
 
