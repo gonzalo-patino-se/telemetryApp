@@ -69,8 +69,8 @@ function lastHours(h: number): { start: Date; end: Date } {
 
 // Maximum events to fetch and display
 const MAX_EVENTS_FETCH = 20000;  // Limit fetched from API
-const MAX_EVENTS_DISPLAY = 500; // Limit displayed in table when expanded (not collapsed)
-const DEFAULT_EVENTS_DISPLAY = 20000; // Default display when collapsed
+const MAX_EVENTS_DISPLAY = 20000; // Limit displayed in table when expanded (not collapsed)
+const DEFAULT_EVENTS_DISPLAY = 500; // Default display when collapsed
 
 // Build KQL query for fetching events
 function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {

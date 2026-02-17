@@ -357,8 +357,9 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       const connectionStatus = getWifiQuality(wifiDbm);
       
       // Use raw KQL timestamp without browser conversion
-      const dataTimestamp = latestLocaltime || 'N/A';
-      
+      const dataTimestamp = latestLocaltime
+      ? new Date(latestLocaltime).toLocaleString('en-US', { timeZone: 'America/New_York' })
+      : 'N/A';
       drawDataTable('System Status', [
         { label: 'WiFi Signal', value: wifiSignal?.value ?? null, unit: wifiSignal?.unit || 'dBm' },
         { label: 'Inverter Mode', value: invMode?.value ?? null, unit: '' },
