@@ -107,6 +107,7 @@ function buildAggregationKql(serial: string, from: Date, to: Date, limit: number
     | where localtime between (start .. finish)
     | where value == 1
     | summarize count() by name
+    | where count_ > 4
     | order by count_ desc
     | take ${limit}
   `.trim();
@@ -689,7 +690,7 @@ export default function Events() {
             <ChartErrorBoundary>
             <div style={styles.chartContainer}>
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={paretoData.slice(0, 10)} layout="vertical" margin={{ top: 20, right: 40, bottom: 20, left: 220 }}>
+                <BarChart data={paretoData.slice(0, 20)} layout="vertical" margin={{ top: 20, right: 40, bottom: 20, left: 220 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={colors.borderSubtle} horizontal={false} />
                   <XAxis type="number" tick={{ fill: colors.textTertiary, fontSize: 12 }} />
                   <YAxis 
@@ -700,7 +701,7 @@ export default function Events() {
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="count" fill={colors.accentPrimary} radius={[0, 4, 4, 0]}>
-                    {paretoData.slice(0, 10).map((_, index) => (
+                    {paretoData.slice(0, 20).map((_, index) => (
                       <Cell key={`cell-${index}`} fill={PARETO_COLORS[index % PARETO_COLORS.length]} />
                     ))}
                   </Bar>
