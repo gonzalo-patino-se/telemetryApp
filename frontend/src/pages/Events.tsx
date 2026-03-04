@@ -73,10 +73,13 @@ const MAX_EVENTS_DISPLAY = 20000; // Limit displayed in table when expanded (not
 const DEFAULT_EVENTS_DISPLAY = 500; // Default display when collapsed
 
 // Build KQL query for fetching events
-function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {
+function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH, outputFilter: 'all' | '1' | '0' = '1'): string {
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
+  
+  // Build output filter clause
+  const outputClause = outputFilter === 'all' ? '' : `| where value == ${outputFilter}`;
   
   return `
     let s = '${s}';
@@ -85,7 +88,7 @@ function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MA
     Alarms
     | where comms_serial contains s
     | where localtime between (start .. finish)
-    | where value == 1
+    ${outputClause}
     | sort by localtime desc
     | project localtime, name, value
     | take ${limit}
@@ -93,10 +96,13 @@ function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MA
 }
 
 // Build KQL query for aggregation (event frequency)
-function buildAggregationKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH): string {
+function buildAggregationKql(serial: string, from: Date, to: Date, limit: number = MAX_EVENTS_FETCH, outputFilter: 'all' | '1' | '0' = '1'): string {
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
+  
+  // Build output filter clause
+  const outputClause = outputFilter === 'all' ? '' : `| where value == ${outputFilter}`;
   
   return `
     let s = '${s}';
@@ -105,7 +111,7 @@ function buildAggregationKql(serial: string, from: Date, to: Date, limit: number
     Alarms
     | where comms_serial contains s
     | where localtime between (start .. finish)
-    | where value == 1
+    ${outputClause}
     | summarize count() by name
     | where count_ > 4
     | order by count_ desc
@@ -258,6 +264,7 @@ export default function Events() {
   
   // Filter state
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
+  const [outputFilter, setOutputFilter] = useState<'all' | '1' | '0'>('1');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Fetch events
@@ -269,13 +276,13 @@ export default function Events() {
     
     try {
       // Fetch events (cookies sent automatically with withCredentials: true)
-      const eventsKql = buildEventsKql(serial, fromDT, toDT);
+      const eventsKql = buildEventsKql(serial, fromDT, toDT, MAX_EVENTS_FETCH, outputFilter);
       const eventsRes = await api.post('/query_adx/', { kql: eventsKql });
       const eventsData = Array.isArray(eventsRes.data?.data) ? eventsRes.data.data : [];
       setEvents(eventsData);
       
       // Fetch aggregation
-      const aggKql = buildAggregationKql(serial, fromDT, toDT);
+      const aggKql = buildAggregationKql(serial, fromDT, toDT, MAX_EVENTS_FETCH, outputFilter);
       const aggRes = await api.post('/query_adx/', { kql: aggKql });
       const aggData = Array.isArray(aggRes.data?.data) ? aggRes.data.data : [];
       setAggregation(aggData);
@@ -288,7 +295,7 @@ export default function Events() {
     } finally {
       setLoading(false);
     }
-  }, [hasSerial, serial, fromDT, toDT, logout]);
+  }, [hasSerial, serial, fromDT, toDT, outputFilter, logout]);
   
   // Auto-fetch on mount and when params change
   useEffect(() => {
@@ -568,6 +575,20 @@ export default function Events() {
             <option value="critical">Critical</option>
             <option value="warning">Warning</option>
             <option value="info">Info</option>
+          </select>
+        </div>
+        
+        {/* Output filter */}
+        <div style={styles.controlGroup}>
+          <span style={styles.label}>Output</span>
+          <select
+            style={styles.select}
+            value={outputFilter}
+            onChange={(e) => setOutputFilter(e.target.value as any)}
+          >
+            <option value="1">Active (1)</option>
+            <option value="0">Inactive (0)</option>
+            <option value="all">All</option>
           </select>
         </div>
         
