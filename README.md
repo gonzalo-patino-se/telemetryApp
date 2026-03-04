@@ -2,6 +2,30 @@
 
 A full-stack web application for telemetry data visualization with Azure Data Explorer integration.
 
+## 🎯 Key Features
+
+### Dashboard
+- **Real-time Telemetry** - Live monitoring of solar, grid, battery, and load metrics
+- **Instantaneous Gauges** - Animated analog and digital gauges with auto-refresh (5-minute intervals)
+- **Time-Series Charts** - Historical data visualization with customizable date ranges
+- **Print-Optimized Views** - Professional PDF export with optimized styling
+
+### Events & Analytics
+- **Event Logs** - Comprehensive alarm/event tracking from Azure Data Explorer
+- **Pareto Charts** - Event frequency analysis with cumulative percentage visualization
+- **Top Events** - Bar chart showing most frequent events
+- **Smart Filtering**:
+  - **Severity Filter** - Filter by Critical, Warning, or Info levels
+  - **Output Filter** - Filter by event state (Active=1, Inactive=0, or All)
+  - **Search** - Full-text search across event names
+  - **Time Range** - Global or local date range selection
+
+### Device Monitoring
+- **WiFi Signal Strength** - Real-time signal monitoring
+- **Inverter Mode Display** - Operating state visualization
+- **Battery Module Status** - SoC, voltage, temperature, and current for 3 modules
+- **PV Channel Monitoring** - 4-channel solar input tracking
+
 ## ⚠️ Important: VPN Requirement
 
 **All users must be connected to the `saturnvpnconfig` VPN to access this application.**
@@ -179,7 +203,9 @@ ADX_TENANT_ID=your-tenant-id
 - **TypeScript** - Type safety
 - **Vite** - Build tool
 - **TailwindCSS** - Styling
-- **Recharts** - Data visualization
+- **Recharts** - Bar charts, Pareto charts, composed charts
+- **Chart.js** - Time-series line charts with annotations
+- **react-datepicker** - Date/time range selection
 
 ### Infrastructure
 - **Docker** - Containerization
