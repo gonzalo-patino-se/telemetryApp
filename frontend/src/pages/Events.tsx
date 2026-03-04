@@ -305,14 +305,24 @@ export default function Events() {
     });
   }, [events, severityFilter, searchTerm]);
   
-  // Pareto data
+  // Pareto data - filtered by severity and search term
   const paretoData = useMemo((): AggregatedEvent[] => {
     if (!aggregation.length) return [];
     
-    const total = aggregation.reduce((sum, item) => sum + (item.count_ || 0), 0);
+    // Filter aggregation by severity and search term
+    const filteredAggregation = aggregation.filter(item => {
+      const severity = getSeverityFromName(item.name);
+      if (severityFilter !== 'all' && severity !== severityFilter) return false;
+      if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    });
+    
+    if (!filteredAggregation.length) return [];
+    
+    const total = filteredAggregation.reduce((sum, item) => sum + (item.count_ || 0), 0);
     let cumulative = 0;
     
-    return aggregation.map(item => {
+    return filteredAggregation.map(item => {
       const count = item.count_ || 0;
       const percentage = (count / total) * 100;
       cumulative += percentage;
@@ -324,7 +334,7 @@ export default function Events() {
         cumulativePercentage: cumulative,
       };
     });
-  }, [aggregation]);
+  }, [aggregation, severityFilter, searchTerm]);
   
   // Styles
   const styles = {
