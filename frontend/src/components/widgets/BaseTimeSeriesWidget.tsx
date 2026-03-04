@@ -53,6 +53,12 @@ ChartJS.register(
 ChartJS.defaults.color = '#94a3b8'; // Light gray text for all labels (slate-400)
 ChartJS.defaults.borderColor = 'rgba(148, 163, 184, 0.15)'; // Subtle borders
 
+// Chart colors - using light gray that works on dark backgrounds
+const CHART_COLORS = {
+  tickColor: '#94a3b8',
+  gridColor: 'rgba(148, 163, 184, 0.15)',
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -394,7 +400,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         ticks: { 
           maxRotation: 0, 
           autoSkip: true,
-          color: '#94a3b8', // Light gray for dark theme (slate-400)
+          color: CHART_COLORS.tickColor,
           font: { size: 10 }
         },
         grid: { display: false },
@@ -403,10 +409,10 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       },
       y: {
         beginAtZero: false,
-        grid: { color: 'rgba(148, 163, 184, 0.15)' }, // Subtle grid lines
+        grid: { color: CHART_COLORS.gridColor },
         title: { display: false },
         ticks: { 
-          color: '#94a3b8', // Light gray for dark theme (slate-400)
+          color: CHART_COLORS.tickColor,
           font: { size: 10 },
           // For discrete state values, only show integers on Y-axis
           ...(integerYAxis && {
