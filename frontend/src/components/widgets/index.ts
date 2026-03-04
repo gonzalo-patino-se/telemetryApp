@@ -52,3 +52,6 @@ export { default as BatteryMainRelayWidget } from './BatteryMainRelayWidget';
 export { LoadVoltageL1Widget } from './LoadVoltageL1Widget';
 export { LoadVoltageL2Widget } from './LoadVoltageL2Widget';
 export { LoadFrequencyTotalWidget } from './LoadFrequencyTotalWidget';
+
+// Inverter
+export { InverterOperatingStateWidget } from './InverterOperatingStateWidget';

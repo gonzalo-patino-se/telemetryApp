@@ -25,6 +25,8 @@ import {
   buildBattery1SoCFastQuery, buildBattery2SoCFastQuery, buildBattery3SoCFastQuery,
   buildBattery1CurrentFastQuery, buildBattery2CurrentFastQuery, buildBattery3CurrentFastQuery,
   buildBatteryMainRelayQuery,
+  // Inverter Operating State queries
+  buildInverterOperatingStateQuery, buildInverterOperatingStateFastQuery,
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -99,6 +101,35 @@ export const wifiSignalConfig: WidgetConfig = {
   offlineLabel: 'Device Offline',
   csvPrefix: 'wifi_signal',
   buildQuery: buildWifiSignalQuery,
+};
+
+// ============================================================================
+// Inverter Operating State Widget
+// ============================================================================
+
+// Inverter mode value mapping (matches InverterModeDisplay.tsx)
+const INVERTER_MODE_MAPPING: Record<number, { label: string; color: string }> = {
+  [-1]: { label: 'INVALID', color: '#ef4444' },
+  0: { label: 'UNDEFINED', color: '#6b7280' },
+  1: { label: 'OFFLINE', color: '#6b7280' },
+  2: { label: 'DISABLED', color: '#f59e0b' },
+  3: { label: 'STANDBY', color: '#3b82f6' },
+  4: { label: 'NORMAL', color: '#22c55e' },
+  5: { label: 'LIMP MODE', color: '#f97316' },
+  6: { label: 'FAULT (AUTO)', color: '#ef4444' },
+  7: { label: 'FAULT (MANUAL)', color: '#dc2626' },
+  8: { label: 'FW UPDATE', color: '#8b5cf6' },
+  9: { label: 'SELF TEST', color: '#06b6d4' },
+};
+
+export const inverterOperatingStateConfig: WidgetConfig = {
+  label: 'Inverter Operating State',
+  unit: 'State',
+  colorScheme: 'purple',
+  csvPrefix: 'inverter_operating_state',
+  buildQuery: buildInverterOperatingStateQuery,
+  buildFastQuery: buildInverterOperatingStateFastQuery,
+  valueMapping: INVERTER_MODE_MAPPING,
 };
 
 // ============================================================================
@@ -432,6 +463,9 @@ export const loadFrequencyTotalConfig: WidgetConfig = {
 
 export const allWidgetConfigs = {
   wifiSignal: wifiSignalConfig,
+  // Inverter
+  inverterOperatingState: inverterOperatingStateConfig,
+  // PV Voltage
   pv1Voltage: pv1VoltageConfig,
   pv2Voltage: pv2VoltageConfig,
   pv3Voltage: pv3VoltageConfig,

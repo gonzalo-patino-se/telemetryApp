@@ -881,3 +881,40 @@ export function buildBattery3SoCFastQuery(serial: string, startDate: Date, endDa
 export function buildBattery3CurrentFastQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildFastTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/I' });
 }
+
+// ============================================================================
+// Inverter Operating State Query Builders
+// ============================================================================
+
+/**
+ * Build query for Inverter Operating State history
+ * Returns numeric state values (0-9) representing different inverter modes
+ */
+export function buildInverterOperatingStateQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: 'INV/DEV/STAT/OPERATING_STATE',
+  });
+}
+
+/**
+ * Build fast telemetry query for Inverter Operating State history
+ */
+export function buildInverterOperatingStateFastQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: 'INV/DEV/STAT/OPERATING_STATE',
+  });
+}

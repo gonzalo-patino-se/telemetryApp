@@ -8,7 +8,7 @@ import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import CollapsibleSection from './common/CollapsibleSection';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
-import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget } from './widgets';
+import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget, InverterOperatingStateWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
@@ -53,6 +53,10 @@ const Dashboard = () => {
     // Widget refresh controls
     const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
+
+    // Inverter Operating State
+    const [inverterOperatingStateAutoFetch, setInverterOperatingStateAutoFetch] = useState(true);
+    const [inverterOperatingStateFetchSignal, setInverterOperatingStateFetchSignal] = useState(0);
 
     // PV Voltages
     const [pv1AutoFetch, setPv1AutoFetch] = useState(true);
@@ -533,11 +537,12 @@ const Dashboard = () => {
             <CollapsibleSection
                 title="System Status"
                 icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>}
-                badge="1 widget"
+                badge="2 widgets"
                 color="#3b82f6"
             >
                 <div style={styles.chartsGrid}>
                     {renderWidgetCard("Wi-Fi Signal Strength", AdxSearchWifiSignalWidget, wifiAutoFetch, setWifiAutoFetch, wifiFetchSignal, setWifiFetchSignal)}
+                    {renderWidgetCard("Inverter Operating State", InverterOperatingStateWidget, inverterOperatingStateAutoFetch, setInverterOperatingStateAutoFetch, inverterOperatingStateFetchSignal, setInverterOperatingStateFetchSignal)}
                 </div>
             </CollapsibleSection>
 
