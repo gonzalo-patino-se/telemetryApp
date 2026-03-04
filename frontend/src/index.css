@@ -1797,11 +1797,30 @@ a:hover {
     margin: 0.5cm;
   }
   
-  /* Force light background for printing */
+  /* Force light background and print colors - UNIVERSAL RESET */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
+    /* Disable all blur/filter effects that cause gray backgrounds */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* CRITICAL: Override all dark theme colors for print */
+  :root,
+  [data-theme='dark'],
+  [data-theme='light'] {
+    --bg-primary: #ffffff !important;
+    --bg-surface: #ffffff !important;
+    --bg-surface-hover: #f9fafb !important;
+    --bg-input: #ffffff !important;
+    --bg-elevated: #ffffff !important;
+    --text-primary: #1f2937 !important;
+    --text-secondary: #4b5563 !important;
+    --text-tertiary: #6b7280 !important;
+    --border-subtle: #e5e7eb !important;
+    --border-medium: #d1d5db !important;
   }
   
   /* Hide non-essential UI elements */
@@ -1840,6 +1859,29 @@ a:hover {
     line-height: 1.4 !important;
   }
   
+  /* Force all text to be dark for print readability */
+  h1, h2, h3, h4, h5, h6,
+  p, span, div, label, 
+  td, th, li, dt, dd,
+  .text-primary,
+  .text-secondary,
+  .text-tertiary,
+  .value-text,
+  .label-text,
+  [class*="text-"] {
+    color: #1f2937 !important;
+  }
+  
+  /* Secondary/muted text slightly lighter for hierarchy */
+  .text-secondary,
+  .text-muted,
+  .text-tertiary,
+  small,
+  .timestamp,
+  .description {
+    color: #4b5563 !important;
+  }
+
   /* Dashboard container */
   .dashboard-container,
   .dashboard-content,
@@ -1851,19 +1893,38 @@ a:hover {
     max-width: 100% !important;
   }
   
-  /* Cards and panels */
+  /* Cards and panels - override inline styles with attribute selectors */
   .card,
   .panel,
   .widget,
   .dashboard-card,
-  .collapsible-section {
+  .collapsible-section,
+  section,
+  [style*="background: var(--bg"],
+  [style*="background:var(--bg"],
+  [style*="background-color: var(--bg"],
+  [style*="background-color:var(--bg"],
+  [style*="background: rgba"],
+  [style*="background:rgba"] {
     background: white !important;
+    background-color: white !important;
     border: 1px solid #d1d5db !important;
     box-shadow: none !important;
     break-inside: avoid;
     page-break-inside: avoid;
     margin-bottom: 8px !important;
-    padding: 8px !important;
+  }
+  
+  /* Force all divs and sections with inline style backgrounds to be white */
+  div[style*="background"],
+  section[style*="background"] {
+    background: white !important;
+    background-color: white !important;
+  }
+  
+  /* Exclude colored status indicators from background override */
+  div[style*="linear-gradient"] {
+    print-color-adjust: exact !important;
   }
   
   /* Section headers */
@@ -1878,18 +1939,35 @@ a:hover {
     margin-bottom: 8px !important;
   }
   
-  /* Text colors for print */
-  .text-primary,
-  .value-text,
-  .label-text {
+  /* Chart canvas - ensure visible on white background */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    background: white !important;
+  }
+  
+  /* Force inline styles to use dark text */
+  [style*="color: var(--text"],
+  [style*="color:var(--text"] {
     color: #1f2937 !important;
   }
   
-  .text-secondary,
-  .text-muted {
-    color: #6b7280 !important;
+  /* Gauge labels and values */
+  .gauge-value,
+  .gauge-label,
+  .gauge-unit,
+  .digital-value,
+  .analog-value {
+    color: #1f2937 !important;
+    fill: #1f2937 !important;
   }
   
+  /* Category headers */
+  .category-header,
+  .category-label {
+    color: #1f2937 !important;
+  }
+
   /* Energy Flow Diagram */
   .energy-flow-diagram-container {
     background: white !important;
@@ -1902,7 +1980,11 @@ a:hover {
     height: auto !important;
   }
   
-  /* SVG elements for print */
+  /* SVG elements for print - ALL SVG text should be dark */
+  svg text {
+    fill: #1f2937 !important;
+  }
+  
   .energy-flow-svg text {
     fill: #1f2937 !important;
   }
@@ -1913,11 +1995,26 @@ a:hover {
     fill: #1f2937 !important;
   }
   
+  /* Gauge SVG text - ensure readability */
+  svg text[fill],
+  svg text[style*="fill"] {
+    fill: #1f2937 !important;
+  }
+  
+  /* Exception: Keep colored text for status values (green/red/yellow) */
+  svg text[fill="#22c55e"],
+  svg text[fill="#ef4444"],
+  svg text[fill="#f59e0b"],
+  svg text[fill="#3b82f6"] {
+    print-color-adjust: exact !important;
+  }
+  
   /* Gauges and charts */
   .gauge-container,
   .chart-container {
     break-inside: avoid;
     page-break-inside: avoid;
+    background: white !important;
   }
   
   /* Grid layout adjustments for print */

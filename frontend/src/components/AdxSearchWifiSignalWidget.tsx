@@ -36,6 +36,13 @@
     CategoryScale
     );
 
+    // Chart colors - using light gray that works on dark backgrounds
+    // For printing, the browser will use high-contrast rendering automatically
+    const CHART_COLORS = {
+      tickColor: '#94a3b8',
+      gridColor: 'rgba(148, 163, 184, 0.15)',
+    };
+
     // ---------------------------- Types & Helpers
     interface AdxSearchWifiSignalWidgetProps {
     /** Device serial provided by the Dashboard/Search */
@@ -429,7 +436,7 @@
             ticks: { 
                 maxRotation: 0, 
                 autoSkip: true,
-                color: '#94a3b8', // Light gray for dark theme (slate-400)
+                color: CHART_COLORS.tickColor,
                 font: { size: 10 }
             },
             grid: { display: false },
@@ -438,10 +445,10 @@
         },
         y: {
             beginAtZero: false,
-            grid: { color: 'rgba(148, 163, 184, 0.15)' }, // Subtle grid lines
+            grid: { color: CHART_COLORS.gridColor },
             title: { display: false },
             ticks: { 
-                color: '#94a3b8', // Light gray for dark theme (slate-400)
+                color: CHART_COLORS.tickColor,
                 font: { size: 10 }
             },
             border: { display: false }
