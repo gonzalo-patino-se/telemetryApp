@@ -247,14 +247,14 @@ export default function Events() {
       return timeRangeContext.globalTimeRange.startDate;
     }
     return localRange.fromDT;
-  }, [isLinkedToGlobal, timeRangeContext, localRange.fromDT]);
+  }, [isLinkedToGlobal, timeRangeContext?.globalTimeRange.startDate, timeRangeContext?.globalRangeSignal, localRange.fromDT]);
   
   const toDT = useMemo(() => {
     if (isLinkedToGlobal && timeRangeContext) {
       return timeRangeContext.globalTimeRange.endDate;
     }
     return localRange.toDT;
-  }, [isLinkedToGlobal, timeRangeContext, localRange.toDT]);
+  }, [isLinkedToGlobal, timeRangeContext?.globalTimeRange.endDate, timeRangeContext?.globalRangeSignal, localRange.toDT]);
   
   // Filter state
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
