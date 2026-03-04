@@ -27,6 +27,8 @@ import {
   buildBatteryMainRelayQuery,
   // Inverter Operating State queries
   buildInverterOperatingStateQuery, buildInverterOperatingStateFastQuery,
+  // ETP Connection Status queries
+  buildEtpConnectionStatusQuery, buildEtpConnectionStatusFastQuery,
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -130,6 +132,34 @@ export const inverterOperatingStateConfig: WidgetConfig = {
   buildQuery: buildInverterOperatingStateQuery,
   buildFastQuery: buildInverterOperatingStateFastQuery,
   valueMapping: INVERTER_MODE_MAPPING,
+  integerYAxis: true,
+};
+
+// ============================================================================
+// ETP Connection Status Widget
+// ============================================================================
+
+// ETP Connection Status value mapping
+const ETP_CONNECTION_STATUS_MAPPING: Record<number, { label: string; color: string }> = {
+  0: { label: 'CONNECTION_OK', color: '#22c55e' },
+  1: { label: 'EXPIRED_SAS_TOKEN', color: '#f59e0b' },
+  2: { label: 'DEVICE_DISABLED', color: '#6b7280' },
+  3: { label: 'BAD_CREDENTIALS', color: '#ef4444' },
+  4: { label: 'RETRY_EXPIRED', color: '#f97316' },
+  5: { label: 'NO_NETWORK', color: '#dc2626' },
+  6: { label: 'COMMUNICATION_ERROR', color: '#ef4444' },
+  7: { label: 'UNKNOWN', color: '#6b7280' },
+};
+
+export const etpConnectionStatusConfig: WidgetConfig = {
+  label: 'ETP Connection Status',
+  unit: 'Status',
+  colorScheme: 'blue',
+  csvPrefix: 'etp_connection_status',
+  buildQuery: buildEtpConnectionStatusQuery,
+  buildFastQuery: buildEtpConnectionStatusFastQuery,
+  valueMapping: ETP_CONNECTION_STATUS_MAPPING,
+  integerYAxis: true,
 };
 
 // ============================================================================
@@ -465,6 +495,8 @@ export const allWidgetConfigs = {
   wifiSignal: wifiSignalConfig,
   // Inverter
   inverterOperatingState: inverterOperatingStateConfig,
+  // ETP Connection Status
+  etpConnectionStatus: etpConnectionStatusConfig,
   // PV Voltage
   pv1Voltage: pv1VoltageConfig,
   pv2Voltage: pv2VoltageConfig,
