@@ -918,3 +918,40 @@ export function buildInverterOperatingStateFastQuery(
     telemetryName: 'INV/DEV/STAT/OPERATING_STATE',
   });
 }
+
+// ============================================================================
+// ETP Connection Status Queries
+// ============================================================================
+
+/**
+ * Build query for ETP Connection Status history
+ * Returns numeric state values (0-7) representing different connection states
+ */
+export function buildEtpConnectionStatusQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: 'SCC/CLOUD/STAT/ETP/CONN_STATUS',
+  });
+}
+
+/**
+ * Build fast telemetry query for ETP Connection Status history
+ */
+export function buildEtpConnectionStatusFastQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: 'SCC/CLOUD/STAT/ETP/CONN_STATUS',
+  });
+}

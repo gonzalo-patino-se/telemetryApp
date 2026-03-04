@@ -55,3 +55,6 @@ export { LoadFrequencyTotalWidget } from './LoadFrequencyTotalWidget';
 
 // Inverter
 export { InverterOperatingStateWidget } from './InverterOperatingStateWidget';
+
+// ETP Connection Status
+export { EtpConnectionStatusWidget } from './EtpConnectionStatusWidget';

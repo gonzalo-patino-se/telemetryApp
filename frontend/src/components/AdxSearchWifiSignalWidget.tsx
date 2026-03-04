@@ -429,7 +429,7 @@
             ticks: { 
                 maxRotation: 0, 
                 autoSkip: true,
-                color: 'var(--text-tertiary)',
+                color: '#94a3b8', // Light gray for dark theme (slate-400)
                 font: { size: 10 }
             },
             grid: { display: false },
@@ -438,10 +438,10 @@
         },
         y: {
             beginAtZero: false,
-            grid: { color: 'var(--border-subtle)' },
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }, // Subtle grid lines
             title: { display: false },
             ticks: { 
-                color: 'var(--text-tertiary)',
+                color: '#94a3b8', // Light gray for dark theme (slate-400)
                 font: { size: 10 }
             },
             border: { display: false }

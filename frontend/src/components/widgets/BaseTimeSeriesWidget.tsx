@@ -49,6 +49,10 @@ ChartJS.register(
   CategoryScale
 );
 
+// Set global Chart.js defaults for dark theme
+ChartJS.defaults.color = '#94a3b8'; // Light gray text for all labels (slate-400)
+ChartJS.defaults.borderColor = 'rgba(148, 163, 184, 0.15)'; // Subtle borders
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -79,6 +83,8 @@ export interface WidgetConfig {
   defaultMode?: TelemetryMode;
   /** Optional mapping of numeric values to labels/colors for discrete state widgets */
   valueMapping?: Record<number, { label: string; color: string }>;
+  /** Force Y-axis to show only integers (useful for discrete state values) */
+  integerYAxis?: boolean;
 }
 
 export interface BaseTimeSeriesWidgetProps {
@@ -161,7 +167,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 }) => {
   const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
-  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode, valueMapping } = config;
+  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode, valueMapping, integerYAxis } = config;
   const colors = chartColorSchemes[colorScheme];
   
   // Determine if fast telemetry is supported
@@ -388,7 +394,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         ticks: { 
           maxRotation: 0, 
           autoSkip: true,
-          color: 'var(--text-tertiary)',
+          color: '#94a3b8', // Light gray for dark theme (slate-400)
           font: { size: 10 }
         },
         grid: { display: false },
@@ -397,11 +403,21 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       },
       y: {
         beginAtZero: false,
-        grid: { color: 'var(--border-subtle)' },
+        grid: { color: 'rgba(148, 163, 184, 0.15)' }, // Subtle grid lines
         title: { display: false },
         ticks: { 
-          color: 'var(--text-tertiary)',
-          font: { size: 10 }
+          color: '#94a3b8', // Light gray for dark theme (slate-400)
+          font: { size: 10 },
+          // For discrete state values, only show integers on Y-axis
+          ...(integerYAxis && {
+            stepSize: 1,
+            callback: function(value: number | string) {
+              if (typeof value === 'number' && Number.isInteger(value)) {
+                return value;
+              }
+              return null;
+            }
+          })
         },
         border: { display: false }
       },
@@ -444,7 +460,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         }
       },
     },
-  }), [label, unit, offlineValue, offlineLabel, valueMapping]);
+  }), [label, unit, offlineValue, offlineLabel, valueMapping, integerYAxis]);
 
   const toLocalLabel = (d?: Date | string) => {
     try {
@@ -869,7 +885,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           {/* Value Mapping Legend (for discrete state widgets like Inverter Mode) */}
           {valueMapping && (
             <details className="mb-3">
-              <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-secondary flex items-center gap-1">
+              <summary className="cursor-pointer text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary, #94a3b8)' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <path d="M3 9h18"/>
@@ -877,7 +893,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                 </svg>
                 State Legend
               </summary>
-              <div className="mt-2 p-3 bg-bg-primary border border-border-subtle rounded-lg">
+              <div className="mt-2 p-3 rounded-lg" style={{ background: 'var(--bg-primary, #0f172a)', border: '1px solid var(--border-subtle, rgba(148, 163, 184, 0.1))' }}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {Object.entries(valueMapping).map(([value, info]) => (
                     <div 
@@ -888,8 +904,8 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                         className="w-3 h-3 rounded-sm flex-shrink-0"
                         style={{ backgroundColor: info.color }}
                       />
-                      <span className="text-text-secondary">
-                        <span className="font-mono text-text-tertiary">{value}:</span>{' '}
+                      <span style={{ color: 'var(--text-secondary, #e2e8f0)' }}>
+                        <span className="font-mono" style={{ color: 'var(--text-tertiary, #94a3b8)' }}>{value}:</span>{' '}
                         {info.label}
                       </span>
                     </div>
