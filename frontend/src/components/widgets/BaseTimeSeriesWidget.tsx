@@ -77,6 +77,8 @@ export interface WidgetConfig {
   supportsFastTelemetry?: boolean;
   /** Default telemetry mode (defaults to 'normal') */
   defaultMode?: TelemetryMode;
+  /** Optional mapping of numeric values to labels/colors for discrete state widgets */
+  valueMapping?: Record<number, { label: string; color: string }>;
 }
 
 export interface BaseTimeSeriesWidgetProps {
@@ -159,7 +161,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 }) => {
   const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
-  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode } = config;
+  const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode, valueMapping } = config;
   const colors = chartColorSchemes[colorScheme];
   
   // Determine if fast telemetry is supported
@@ -425,6 +427,12 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           },
           label: (context) => {
             const value = context.parsed.y;
+            if (value === null || value === undefined) return '';
+            // Check for value mapping (discrete states like inverter modes)
+            if (valueMapping && valueMapping[value] !== undefined) {
+              const mapped = valueMapping[value];
+              return [`${mapped.label}`, `${label}: ${value}`];
+            }
             if (offlineValue !== undefined && value === offlineValue) {
               return [`⛔ ${offlineLabel ?? 'Device Offline'}`, `${label}: ${value} ${unit}`];
             }
@@ -436,7 +444,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         }
       },
     },
-  }), [label, unit, offlineValue, offlineLabel]);
+  }), [label, unit, offlineValue, offlineLabel, valueMapping]);
 
   const toLocalLabel = (d?: Date | string) => {
     try {
@@ -857,6 +865,39 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           <div className="h-[180px] sm:h-[220px] mb-3">
             <Line data={chartData} options={chartOptions} />
           </div>
+
+          {/* Value Mapping Legend (for discrete state widgets like Inverter Mode) */}
+          {valueMapping && (
+            <details className="mb-3">
+              <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-secondary flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18"/>
+                  <path d="M9 21V9"/>
+                </svg>
+                State Legend
+              </summary>
+              <div className="mt-2 p-3 bg-bg-primary border border-border-subtle rounded-lg">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {Object.entries(valueMapping).map(([value, info]) => (
+                    <div 
+                      key={value}
+                      className="flex items-center gap-2 text-xs"
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-sm flex-shrink-0"
+                        style={{ backgroundColor: info.color }}
+                      />
+                      <span className="text-text-secondary">
+                        <span className="font-mono text-text-tertiary">{value}:</span>{' '}
+                        {info.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </details>
+          )}
 
           {/* Debug preview */}
           <details>
