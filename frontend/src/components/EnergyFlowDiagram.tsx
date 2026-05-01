@@ -309,16 +309,11 @@ const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoa
   const wifiStatus = getWifiStatusText(wifiSignal);
 
   // Cellular: value=1 means LOW SIGNAL alarm active (BAD), 0 means OK.
-  // null = no data yet.
-  const cellularState: 'ok' | 'low' | 'unknown' =
-    cellularSignal === null ? 'unknown' :
-    cellularSignal >= 1 ? 'low' : 'ok';
-  const cellularColor = cellularState === 'low' ? '#ef4444' :
-                        cellularState === 'ok' ? '#22c55e' : '#64748b';
-  const cellularLabel = cellularLoading ? '...' :
-                        cellularState === 'low' ? 'LOW' :
-                        cellularState === 'ok' ? 'OK' : '--';
-  const cellularBars = cellularState === 'ok' ? 4 : cellularState === 'low' ? 1 : 0;
+  // null/missing = no record in Alarms table = alarm never fired = OK.
+  const cellularState: 'ok' | 'low' = (cellularSignal !== null && cellularSignal >= 1) ? 'low' : 'ok';
+  const cellularColor = cellularState === 'low' ? '#ef4444' : '#22c55e';
+  const cellularLabel = cellularLoading ? '...' : cellularState === 'low' ? 'LOW' : 'OK';
+  const cellularBars = cellularState === 'low' ? 1 : 4;
   
   return (
     <g transform={`translate(${x}, ${y})`} className="inverter-group">

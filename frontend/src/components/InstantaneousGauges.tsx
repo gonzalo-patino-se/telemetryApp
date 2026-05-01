@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { AnalogNeedleGauge, InverterModeDisplay, BgcsRelayStatusDisplay, DigitalValueDisplay, BatterySoCGauge } from './gauges';
+import { AnalogNeedleGauge, InverterModeDisplay, BgcsRelayStatusDisplay, DigitalValueDisplay, BatterySoCGauge, CellularSignalDisplay } from './gauges';
 import { formatTimestamp } from './gauges/utils';
 
 // ============================================================================
@@ -44,6 +44,8 @@ interface InstantaneousGaugesProps {
 const GAUGE_CONFIGS: GaugeConfig[] = [
   // WiFi
   { id: 'wifi', label: 'WiFi Signal', telemetryName: '/SCC/WIFI/STAT/SIGNAL_STRENGTH', unit: 'dBm', min: -100, max: 0, category: 'wifi', colorStart: '#3b82f6', colorEnd: '#06b6d4' },
+  // Cellular Low-Signal-Strength alarm (Alarms table). value=1 -> LOW (BAD), value=0 -> OK.
+  { id: 'cellular', label: 'Cellular Signal', telemetryName: '/CCM/DEV/EVENT/WARNING/LOW_SIGNAL_STRENGTH', unit: '', min: 0, max: 1, category: 'wifi', colorStart: '#f97316', colorEnd: '#fb923c', decimals: 0 },
   { id: 'inv_mode', label: 'Inverter Mode', telemetryName: 'INV/DEV/STAT/OPERATING_STATE', unit: '', min:-1, max:9, category: 'inverter', colorStart: '#6366f1', colorEnd: '#818cf8', decimals: 0,},
   
   // Solar PV
@@ -197,8 +199,8 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
     const alarmNames: string[] = [];
     
     GAUGE_CONFIGS.forEach(config => {
-      if (config.id === 'bat_main_relay') {
-        // Battery relay uses Alarms table
+      if (config.id === 'bat_main_relay' || config.id === 'cellular') {
+        // Battery relay and cellular low-signal alarm both live in the Alarms table
         alarmNames.push(config.telemetryName);
       } else {
         telemetryNames.push(config.telemetryName);
@@ -219,7 +221,7 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
       const newData: Record<string, GaugeData> = {};
       
       GAUGE_CONFIGS.forEach(config => {
-        const isAlarm = config.id === 'bat_main_relay';
+        const isAlarm = config.id === 'bat_main_relay' || config.id === 'cellular';
         const dataSource = isAlarm ? alarms : telemetry;
         const result = dataSource[config.telemetryName];
         
@@ -585,6 +587,18 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
                       max={config.max}
                       unit={config.unit}
                       label={config.label}
+                      loading={data.loading}
+                      error={data.error}
+                      timestamp={data.localtime}
+                    />
+                  );
+                }
+
+                // Cellular Signal - Use specialized binary alarm display
+                if (config.id === 'cellular') {
+                  return wrapWithBadge(
+                    <CellularSignalDisplay
+                      value={data.value}
                       loading={data.loading}
                       error={data.error}
                       timestamp={data.localtime}
