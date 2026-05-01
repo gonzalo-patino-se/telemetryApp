@@ -115,12 +115,22 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
     setError(null);
     setPartial(false);
 
+    // Collected errors from per-series / per-event promises (first one wins).
+    const errorBag: string[] = [];
+    const captureError = (label: string, e: unknown) => {
+      const msg =
+        (typeof e === 'object' && e && 'message' in e && typeof (e as { message: unknown }).message === 'string'
+          ? (e as { message: string }).message
+          : null) ?? 'request failed';
+      errorBag.push(`${label}: ${msg}`);
+    };
+
     const signalPromises = selectedSignalIds.map(async (id): Promise<SignalSeries | null> => {
       const def = SIGNAL_BY_ID[id];
       if (!def) return null;
       try {
         const kql = def.buildQuery(serial, start, end);
-        const res = await api.post(QUERY_PATH, { query: kql });
+        const res = await api.post(QUERY_PATH, { kql });
         const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
         const points = downsamplePoints(rowsToPoints(rows), MAX_POINTS_PER_SERIES);
         const { vMin, vMax } = summarizeRange(points);
@@ -129,16 +139,19 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
           label: def.label,
           unit: def.unit,
           color: def.color,
+          dash: def.dash,
           points,
           vMin,
           vMax,
         };
-      } catch {
+      } catch (e) {
+        captureError(def.label, e);
         return {
           id: def.id,
           label: def.label,
           unit: def.unit,
           color: def.color,
+          dash: def.dash,
           points: [],
         };
       }
@@ -149,7 +162,7 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
       if (!def) return [];
       try {
         const kql = buildEventQuery(serial, start, end, def.outputFilter);
-        const res = await api.post(QUERY_PATH, { query: kql });
+        const res = await api.post(QUERY_PATH, { kql });
         const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
         const out: EventInstance[] = [];
         for (const r of rows) {
@@ -171,7 +184,8 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
           });
         }
         return out;
-      } catch {
+      } catch (e) {
+        captureError(def.label, e);
         return [];
       }
     });
@@ -187,6 +201,12 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
         setSeries(cleanSeries);
         setEvents(flatEvents);
         setPartial(anyEmpty);
+        if (errorBag.length > 0) {
+          // Surface the first error; full list logged for debugging.
+          // eslint-disable-next-line no-console
+          console.warn('[CorrelationOverTime] errors:', errorBag);
+          setError(errorBag[0]);
+        }
       })
       .catch((e: unknown) => {
         if (myReqId !== reqIdRef.current) return;

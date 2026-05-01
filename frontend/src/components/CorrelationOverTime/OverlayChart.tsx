@@ -163,6 +163,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                 stroke={s.color}
                 strokeWidth={1.5}
                 strokeOpacity={0.85}
+                strokeDasharray={s.dash}
                 dot={false}
                 activeDot={{ r: 3, fill: s.color, strokeWidth: 0 }}
                 isAnimationActive={false}

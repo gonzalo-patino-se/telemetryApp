@@ -14,6 +14,7 @@ import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
 import MasterTimeRangeWidget from './MasterTimeRangeWidget';
 import DashboardPDFExport from './DashboardPDFExport';
+import { CorrelationOverTimeCard } from './CorrelationOverTime';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -539,6 +540,13 @@ const Dashboard = () => {
             {/* ==================== MASTER TIME RANGE CONTROL ==================== */}
             {hasActiveSerial && (
                 <MasterTimeRangeWidget />
+            )}
+
+            {/* ==================== CORRELATION OVER TIME ==================== */}
+            {hasActiveSerial && (
+                <div style={{ marginTop: 16 }}>
+                    <CorrelationOverTimeCard serial={activeSerial} />
+                </div>
             )}
 
             {/* ==================== SYSTEM STATUS ==================== */}

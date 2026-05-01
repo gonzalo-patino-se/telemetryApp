@@ -61,16 +61,25 @@ export const Legend: React.FC<LegendProps> = ({ series, events }) => {
             }}
             title={`${s.label} (${s.unit})`}
           >
-            <span
+            {/* SVG swatch — same color + dash as the line on the chart. */}
+            <svg
               aria-hidden
-              style={{
-                width: 10,
-                height: 2,
-                background: s.color,
-                borderRadius: 1,
-                display: 'inline-block',
-              }}
-            />
+              width={18}
+              height={6}
+              viewBox="0 0 18 6"
+              style={{ display: 'inline-block', flex: '0 0 auto' }}
+            >
+              <line
+                x1={0}
+                y1={3}
+                x2={18}
+                y2={3}
+                stroke={s.color}
+                strokeWidth={1.5}
+                strokeDasharray={s.dash}
+                strokeLinecap="round"
+              />
+            </svg>
             <span style={{ color: 'var(--text-primary)' }}>{s.label}</span>
             <span
               style={{

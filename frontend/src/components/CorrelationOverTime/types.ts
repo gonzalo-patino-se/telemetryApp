@@ -20,6 +20,12 @@ export interface SignalDef {
   unit: string;
   /** Hex color for line stroke (drawn from chartColorSchemes for visual continuity). */
   color: string;
+  /**
+   * Optional SVG `stroke-dasharray` (e.g. "6 3", "2 3"). Combined with `color`
+   * this guarantees every signal in the same family stays visually distinct.
+   * Undefined = solid line.
+   */
+  dash?: string;
   /** Optional grouping shown in the selector, e.g. "PV", "Grid", "Battery". */
   group?: string;
   /**
@@ -35,6 +41,8 @@ export interface SignalSeries {
   label: string;
   unit: string;
   color: string;
+  /** Mirrors `SignalDef.dash`. Undefined = solid. */
+  dash?: string;
   /** Sorted ascending by t. May be empty (will render as "no data" in legend). */
   points: TimePoint[];
   /** Convenience min/max of v for the independent y-axis (undefined when empty). */

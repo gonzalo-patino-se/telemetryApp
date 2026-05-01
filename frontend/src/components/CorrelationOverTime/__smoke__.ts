@@ -41,6 +41,10 @@ assert(
   'every signal has a hex color',
 );
 assert(
+  new Set(SIGNAL_CATALOG.map(s => `${s.color}|${s.dash ?? ''}`)).size === SIGNAL_CATALOG.length,
+  'every signal has a unique (color, dash) signature',
+);
+assert(
   DEFAULT_SIGNAL_IDS.every(id => SIGNAL_BY_ID[id]),
   'default signal ids all resolve in SIGNAL_BY_ID',
 );
@@ -179,6 +183,43 @@ console.log('\n[interactionUtils.readoutAt + toleranceFromSpan]');
   assert(r.length === 2, 'one readout per series');
   assert(r[0].value === 10, 'series A reads nearest sample');
   assert(r[1].value === undefined, 'empty series returns undefined value');
+}
+
+console.log('\n[Phase 4 integration: pin lifecycle on range change]');
+{
+  // Simulate: user pins 3 timestamps, then narrows the time range so 2 fall outside.
+  const pinsBefore = [
+    new Date('2026-01-01T00:30:00').getTime(),
+    new Date('2026-01-01T01:30:00').getTime(),
+    new Date('2026-01-01T05:00:00').getTime(),
+  ];
+  // New domain: 01:00 -> 02:00
+  const newDomain: [number, number] = [
+    new Date('2026-01-01T01:00:00').getTime(),
+    new Date('2026-01-01T02:00:00').getTime(),
+  ];
+  const after = clearOutOfRangePins(pinsBefore, newDomain);
+  assert(after.length === 1, 'only the 01:30 pin survives the range narrowing');
+  assert(after[0] === pinsBefore[1], 'surviving pin identity preserved');
+}
+
+console.log('\n[Phase 4 integration: tolerance scales with span]');
+{
+  const shortSpanTol = toleranceFromSpan(60_000); // 1 min
+  const longSpanTol = toleranceFromSpan(7 * 24 * 3600_000); // 7 days
+  assert(longSpanTol > shortSpanTol * 100, 'tolerance grows with span (looser hover at 7d than 1m)');
+  assert(toleranceFromSpan(0) >= 1, 'zero/invalid span yields safe minimum tolerance');
+}
+
+console.log('\n[Phase 4 integration: selector default contract]');
+{
+  // The card mounts with these defaults; they must all resolve in their catalogs.
+  for (const id of DEFAULT_SIGNAL_IDS) {
+    assert(SIGNAL_BY_ID[id] !== undefined, `default signal "${id}" exists in catalog`);
+  }
+  for (const id of DEFAULT_EVENT_IDS) {
+    assert(EVENT_BY_ID[id] !== undefined, `default event "${id}" exists in catalog`);
+  }
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} (${failures} failure${failures === 1 ? '' : 's'})`);
