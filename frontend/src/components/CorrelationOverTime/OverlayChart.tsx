@@ -16,6 +16,7 @@ import {
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -26,6 +27,8 @@ import {
   formatXTick,
   paddedYDomain,
 } from './chartUtils';
+import { CorrelationTooltip } from './CorrelationTooltip';
+import { readoutAt, toleranceFromSpan } from './interactionUtils';
 
 interface OverlayChartProps {
   series: SignalSeries[];
@@ -34,6 +37,10 @@ interface OverlayChartProps {
   start: Date | null;
   end: Date | null;
   height?: number;
+  /** Pinned timestamps (epoch ms). Up to 3, managed by the parent. */
+  pins?: number[];
+  /** Fired when the user clicks the chart at a given timestamp. */
+  onPinToggle?: (t: number) => void;
 }
 
 /** Reserved synthetic y-axis used solely to position overlap markers. */
@@ -46,17 +53,39 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   start,
   end,
   height = 240,
+  pins = [],
+  onPinToggle,
 }) => {
   const xDomain = React.useMemo(
     () => computeXDomain(start, end, series, events),
     [start, end, series, events],
   );
   const span = xDomain[1] - xDomain[0];
+  const tol = React.useMemo(() => toleranceFromSpan(span), [span]);
 
   const overlaps = React.useMemo(
     () => buildOverlapMarkers(series, events, xDomain),
     [series, events, xDomain],
   );
+
+  // Track the most recent hover x so we can convert a click into a pin toggle.
+  const hoverXRef = React.useRef<number | null>(null);
+
+  const handleMouseMove = React.useCallback((state: { activeLabel?: number | string }) => {
+    const al = state?.activeLabel;
+    if (al == null) {
+      hoverXRef.current = null;
+      return;
+    }
+    const t = typeof al === 'number' ? al : Number(al);
+    hoverXRef.current = Number.isFinite(t) ? t : null;
+  }, []);
+
+  const handleClick = React.useCallback(() => {
+    if (!onPinToggle) return;
+    const t = hoverXRef.current;
+    if (t != null) onPinToggle(t);
+  }, [onPinToggle]);
 
   // Recharts needs a `data` array per Line; we draw one Line per series and
   // pass its `points` directly via the `data` prop (rather than a single
@@ -64,7 +93,14 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart margin={{ top: 18, right: 16, bottom: 8, left: 8 }}>
+        <LineChart
+          margin={{ top: 18, right: 16, bottom: 8, left: 8 }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => {
+            hoverXRef.current = null;
+          }}
+          onClick={handleClick}
+        >
           {/* Horizontal-only, very low contrast grid. */}
           <CartesianGrid
             stroke="var(--chart-grid)"
@@ -87,10 +123,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             allowDuplicatedCategory={false}
           />
 
-          {/* Independent, hidden Y-axis per series.
-              Keeps each series in its own [min,max] band without wasting
-              card width on numeric gutters. Magnitudes live in the legend
-              and tooltip — they're not comparable by height by design. */}
+          {/* Independent, hidden Y-axis per series. */}
           {series.map(s => (
             <YAxis
               key={`y-${s.id}`}
@@ -102,6 +135,21 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
 
           {/* Hidden axis dedicated to overlap markers, fixed [0,1] domain. */}
           <YAxis yAxisId={OVERLAP_AXIS_ID} domain={[0, 1]} hide />
+
+          {/* Tooltip — single instance, custom body. */}
+          <Tooltip
+            cursor={{ stroke: 'var(--accent-primary)', strokeOpacity: 0.5, strokeDasharray: '3 3' }}
+            wrapperStyle={{ outline: 'none' }}
+            content={(props) => (
+              <CorrelationTooltip
+                active={props.active}
+                label={props.label as number | string | undefined}
+                series={series}
+                events={events}
+                xDomain={xDomain}
+              />
+            )}
+          />
 
           {/* Series lines. Thin, slightly transparent. */}
           {series.map(s =>
@@ -124,9 +172,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             ),
           )}
 
-          {/* Event markers — vertical reference lines + a small glyph at top.
-              We piggy-back the glyph on the line label so it renders without
-              a separate <text> child and stays inside the plot area. */}
+          {/* Event markers — vertical reference lines + a small glyph at top. */}
           {events.map(e => (
             <ReferenceLine
               key={`evt-${e.id}`}
@@ -145,6 +191,54 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
               }}
             />
           ))}
+
+          {/* Pinned timestamps — solid thin reference lines + per-series chips. */}
+          {pins.map((pt, idx) => {
+            const readouts = readoutAt(series, pt, tol);
+            return (
+              <React.Fragment key={`pin-${idx}-${pt}`}>
+                <ReferenceLine
+                  x={pt}
+                  xAxisId={0}
+                  stroke="var(--accent-primary)"
+                  strokeOpacity={0.85}
+                  strokeWidth={1}
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: `📌 ${idx + 1}`,
+                    position: 'top',
+                    fill: 'var(--accent-primary)',
+                    fontSize: 10,
+                  }}
+                />
+                {readouts.map((r, ri) =>
+                  r.value == null ? null : (
+                    <ReferenceDot
+                      key={`pin-${idx}-${r.id}`}
+                      x={pt}
+                      y={r.value}
+                      yAxisId={r.id}
+                      r={3}
+                      fill={r.color}
+                      stroke="var(--bg-elevated)"
+                      strokeWidth={1}
+                      ifOverflow="extendDomain"
+                      label={{
+                        value: `${r.label}: ${
+                          Math.abs(r.value) >= 1000
+                            ? r.value.toFixed(0)
+                            : r.value.toFixed(2)
+                        }${r.unit ? ' ' + r.unit : ''}`,
+                        position: ri % 2 === 0 ? 'right' : 'left',
+                        fill: r.color,
+                        fontSize: 10,
+                      }}
+                    />
+                  ),
+                )}
+              </React.Fragment>
+            );
+          })}
 
           {/* Blue ✕ overlap markers, one per cluster bucket. */}
           {overlaps.map((o, i) => (

@@ -10,6 +10,14 @@ import {
   formatXTick,
   paddedYDomain,
 } from './chartUtils';
+import {
+  clearOutOfRangePins,
+  nearestEventsAt,
+  nearestPointAt,
+  readoutAt,
+  togglePin,
+  toleranceFromSpan,
+} from './interactionUtils';
 import type { EventInstance, SignalSeries } from './types';
 
 let failures = 0;
@@ -113,6 +121,64 @@ console.log('\n[chartUtils.buildOverlapMarkers]');
   ];
   const markers3 = buildOverlapMarkers(sameId, [], [0, 10000], 50);
   assert(markers3.length === 0, 'same-series points do not count as overlap');
+}
+
+console.log('\n[interactionUtils.nearestPointAt]');
+{
+  const pts = [
+    { t: 100, v: 1 },
+    { t: 200, v: 2 },
+    { t: 300, v: 3 },
+    { t: 400, v: 4 },
+  ];
+  assert(nearestPointAt(pts, 205, 50)?.t === 200, 'finds nearest within tolerance');
+  assert(nearestPointAt(pts, 250, 50)?.t === 200 || nearestPointAt(pts, 250, 50)?.t === 300, 'midpoint resolves to one neighbor');
+  assert(nearestPointAt(pts, 1000, 50) === undefined, 'returns undefined when too far');
+  assert(nearestPointAt([], 100, 50) === undefined, 'empty input -> undefined');
+}
+
+console.log('\n[interactionUtils.nearestEventsAt]');
+{
+  const ev: EventInstance[] = [
+    { id: 'a', categoryId: 'c', categoryLabel: 'C', color: '#000', t: 100, title: 'a' },
+    { id: 'b', categoryId: 'c', categoryLabel: 'C', color: '#000', t: 110, title: 'b' },
+    { id: 'c', categoryId: 'c', categoryLabel: 'C', color: '#000', t: 500, title: 'c' },
+  ];
+  assert(nearestEventsAt(ev, 105, 10).length === 2, 'returns events within ±tolerance');
+  assert(nearestEventsAt(ev, 105, 1).length === 0, 'tight tolerance excludes all');
+}
+
+console.log('\n[interactionUtils.togglePin]');
+{
+  let pins: number[] = [];
+  pins = togglePin(pins, 100, 5, 3);
+  assert(pins.length === 1 && pins[0] === 100, 'add first pin');
+  pins = togglePin(pins, 200, 5, 3);
+  pins = togglePin(pins, 300, 5, 3);
+  assert(pins.length === 3, 'three pins held');
+  pins = togglePin(pins, 400, 5, 3);
+  assert(pins.length === 3 && pins[0] === 200, 'fourth pin drops oldest (FIFO)');
+  pins = togglePin(pins, 202, 5, 3);
+  assert(pins.length === 2 && !pins.some(p => Math.abs(p - 200) <= 5), 'click within tolerance of an existing pin removes it');
+}
+
+console.log('\n[interactionUtils.clearOutOfRangePins]');
+{
+  const kept = clearOutOfRangePins([50, 150, 250, 999], [100, 300]);
+  assert(kept.length === 2 && kept[0] === 150 && kept[1] === 250, 'pins outside [lo,hi] are dropped');
+}
+
+console.log('\n[interactionUtils.readoutAt + toleranceFromSpan]');
+{
+  const series: SignalSeries[] = [
+    { id: 'a', label: 'A', unit: 'V', color: '#000', points: [{ t: 100, v: 10 }, { t: 200, v: 20 }] },
+    { id: 'b', label: 'B', unit: 'A', color: '#111', points: [] },
+  ];
+  const tol = toleranceFromSpan(1000, 200); // 5 units
+  const r = readoutAt(series, 102, tol);
+  assert(r.length === 2, 'one readout per series');
+  assert(r[0].value === 10, 'series A reads nearest sample');
+  assert(r[1].value === undefined, 'empty series returns undefined value');
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} (${failures} failure${failures === 1 ? '' : 's'})`);
