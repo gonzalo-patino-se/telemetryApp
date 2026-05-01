@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { AnalogNeedleGauge, InverterModeDisplay, DigitalValueDisplay, BatterySoCGauge } from './gauges';
+import { AnalogNeedleGauge, InverterModeDisplay, BgcsRelayStatusDisplay, DigitalValueDisplay, BatterySoCGauge } from './gauges';
 import { formatTimestamp } from './gauges/utils';
 
 // ============================================================================
@@ -62,6 +62,7 @@ const GAUGE_CONFIGS: GaugeConfig[] = [
   { id: 'grid_i_l1', label: 'Grid I L1', telemetryName: '/INV/ACPORT/STAT/IRMS_L1', unit: 'A', min: 0, max: 100, category: 'grid', colorStart: '#8b5cf6', colorEnd: '#a78bfa', decimals: 2 },
   { id: 'grid_i_l2', label: 'Grid I L2', telemetryName: '/INV/ACPORT/STAT/IRMS_L2', unit: 'A', min: 0, max: 100, category: 'grid', colorStart: '#8b5cf6', colorEnd: '#a78bfa', decimals: 2 },
   { id: 'grid_freq', label: 'Grid Freq', telemetryName: '/INV/ACPORT/STAT/FREQ_TOTAL', unit: 'Hz', min: 55, max: 65, category: 'grid', colorStart: '#06b6d4', colorEnd: '#22d3ee', decimals: 2 },
+  { id: 'bgcs_relay', label: 'BGCS Relay', telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS', unit: '', min: -1, max: 8, category: 'grid', colorStart: '#10b981', colorEnd: '#34d399', decimals: 0 },
   
   // Battery Module 1
   { id: 'bat1_v', label: 'Bat 1 Voltage', telemetryName: '/BMS/MODULE1/STAT/V', unit: 'V', min: 40, max: 60, category: 'battery', colorStart: '#ef4444', colorEnd: '#f87171', decimals: 1 },
@@ -595,6 +596,18 @@ const InstantaneousGauges: React.FC<InstantaneousGaugesProps> = ({ serial }) => 
                 if (config.id === 'inv_mode') {
                   return wrapWithBadge(
                     <InverterModeDisplay
+                      value={data.value}
+                      loading={data.loading}
+                      error={data.error}
+                      timestamp={data.localtime}
+                    />
+                  );
+                }
+                
+                // BGCS Grid Relay Status - Use specialized display
+                if (config.id === 'bgcs_relay') {
+                  return wrapWithBadge(
+                    <BgcsRelayStatusDisplay
                       value={data.value}
                       loading={data.loading}
                       error={data.error}

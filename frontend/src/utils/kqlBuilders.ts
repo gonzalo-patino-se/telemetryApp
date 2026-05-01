@@ -955,3 +955,42 @@ export function buildEtpConnectionStatusFastQuery(
     telemetryName: 'SCC/CLOUD/STAT/ETP/CONN_STATUS',
   });
 }
+
+// ============================================================================
+// BGCS Grid Relay Status Queries
+// ============================================================================
+
+/**
+ * Build query for BGCS Grid Relay Status history
+ * Returns numeric state values (-1 to 8) representing different relay states:
+ * -1: INVALID, 0: UNDEFINED, 1: OPEN, 2: CLOSED, 3: FAULTED_OPEN, 
+ * 4: FAULTED_CLOSED, 5: OVERRIDE_OPEN, 6: OVERRIDE_CLOSED, 7: ESTOP_OPEN, 8: ESTOP_CLOSED
+ */
+export function buildBgcsRelayStatusQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS',
+  });
+}
+
+/**
+ * Build fast telemetry query for BGCS Grid Relay Status history
+ */
+export function buildBgcsRelayStatusFastQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  return buildFastTelemetryQuery({
+    serial,
+    startDate,
+    endDate,
+    telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS',
+  });
+}
