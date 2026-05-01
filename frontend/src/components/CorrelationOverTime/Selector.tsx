@@ -20,6 +20,8 @@ interface Item {
   label: string;
   group?: string;
   color: string;
+  /** Signal-only: SVG dasharray, undefined = solid. */
+  dash?: string;
   glyph?: string;
 }
 
@@ -30,6 +32,7 @@ function getItems(kind: Kind): Item[] {
       label: s.label,
       group: s.group,
       color: s.color,
+      dash: s.dash,
     }));
   }
   return EVENT_CATALOG.map(e => ({
