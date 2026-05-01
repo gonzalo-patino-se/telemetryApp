@@ -29,6 +29,8 @@ import {
   buildInverterOperatingStateQuery, buildInverterOperatingStateFastQuery,
   // ETP Connection Status queries
   buildEtpConnectionStatusQuery, buildEtpConnectionStatusFastQuery,
+  // BGCS Grid Relay Status queries
+  buildBgcsRelayStatusQuery, buildBgcsRelayStatusFastQuery,
 } from '../../utils/kqlBuilders';
 // ============================================================================
 // Grid Voltage RMS L1 Widget
@@ -159,6 +161,35 @@ export const etpConnectionStatusConfig: WidgetConfig = {
   buildQuery: buildEtpConnectionStatusQuery,
   buildFastQuery: buildEtpConnectionStatusFastQuery,
   valueMapping: ETP_CONNECTION_STATUS_MAPPING,
+  integerYAxis: true,
+};
+
+// ============================================================================
+// BGCS Grid Relay Status Widget
+// ============================================================================
+
+// BGCS Grid Relay Status value mapping
+const BGCS_RELAY_STATUS_MAPPING: Record<number, { label: string; color: string }> = {
+  [-1]: { label: 'INVALID', color: '#ef4444' },
+  0: { label: 'UNDEFINED', color: '#6b7280' },
+  1: { label: 'OPEN', color: '#f59e0b' },
+  2: { label: 'CLOSED', color: '#22c55e' },
+  3: { label: 'FAULTED_OPEN', color: '#dc2626' },
+  4: { label: 'FAULTED_CLOSED', color: '#dc2626' },
+  5: { label: 'OVERRIDE_OPEN', color: '#8b5cf6' },
+  6: { label: 'OVERRIDE_CLOSED', color: '#8b5cf6' },
+  7: { label: 'ESTOP_OPEN', color: '#ef4444' },
+  8: { label: 'ESTOP_CLOSED', color: '#ef4444' },
+};
+
+export const bgcsRelayStatusConfig: WidgetConfig = {
+  label: 'BGCS Grid Relay Status',
+  unit: 'Status',
+  colorScheme: 'green',
+  csvPrefix: 'bgcs_relay_status',
+  buildQuery: buildBgcsRelayStatusQuery,
+  buildFastQuery: buildBgcsRelayStatusFastQuery,
+  valueMapping: BGCS_RELAY_STATUS_MAPPING,
   integerYAxis: true,
 };
 
@@ -497,6 +528,8 @@ export const allWidgetConfigs = {
   inverterOperatingState: inverterOperatingStateConfig,
   // ETP Connection Status
   etpConnectionStatus: etpConnectionStatusConfig,
+  // BGCS Grid Relay Status
+  bgcsRelayStatus: bgcsRelayStatusConfig,
   // PV Voltage
   pv1Voltage: pv1VoltageConfig,
   pv2Voltage: pv2VoltageConfig,

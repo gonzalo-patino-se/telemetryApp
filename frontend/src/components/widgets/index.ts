@@ -58,3 +58,6 @@ export { InverterOperatingStateWidget } from './InverterOperatingStateWidget';
 
 // ETP Connection Status
 export { EtpConnectionStatusWidget } from './EtpConnectionStatusWidget';
+
+// BGCS Grid Relay Status
+export { BgcsRelayStatusWidget } from './BgcsRelayStatusWidget';

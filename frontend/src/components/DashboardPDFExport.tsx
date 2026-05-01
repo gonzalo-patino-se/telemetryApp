@@ -32,6 +32,7 @@ const TELEMETRY_NAMES = [
   // WiFi & Inverter
   { name: '/SCC/WIFI/STAT/SIGNAL_STRENGTH', label: 'WiFi Signal', unit: 'dBm' },
   { name: 'INV/DEV/STAT/OPERATING_STATE', label: 'Inverter Mode', unit: '' },
+  { name: '/BGCS/GRID/STAT/RELAY_STATUS', label: 'BGCS Relay Status', unit: '' },
   // Solar PV
   { name: '/INV/DCPORT/STAT/PV1/V', label: 'PV1 Voltage', unit: 'V' },
   { name: '/INV/DCPORT/STAT/PV2/V', label: 'PV2 Voltage', unit: 'V' },
@@ -83,6 +84,20 @@ const INVERTER_MODES: Record<number, string> = {
   7: 'FAULT (MANUAL)',
   8: 'FW UPDATE',
   9: 'SELF TEST',
+};
+
+// BGCS Relay status mapping (must match BgcsRelayStatusDisplay.tsx)
+const BGCS_RELAY_STATES: Record<number, string> = {
+  [-1]: 'INVALID',
+  0: 'UNDEFINED',
+  1: 'OPEN',
+  2: 'CLOSED',
+  3: 'FAULTED_OPEN',
+  4: 'FAULTED_CLOSED',
+  5: 'OVERRIDE_OPEN',
+  6: 'OVERRIDE_CLOSED',
+  7: 'ESTOP_OPEN',
+  8: 'ESTOP_CLOSED',
 };
 
 // Helper to escape KQL strings
@@ -143,6 +158,10 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
             // Special handling for inverter mode
             if (config.name.includes('OPERATING_STATE')) {
               displayValue = INVERTER_MODES[numValue] || `Mode ${numValue}`;
+            } 
+            // Special handling for BGCS relay status
+            else if (config.name.includes('RELAY_STATUS')) {
+              displayValue = BGCS_RELAY_STATES[numValue] || `State ${numValue}`;
             } else {
               // Round to appropriate decimals
               displayValue = config.unit === 'A' || config.unit === 'Hz' 
@@ -331,6 +350,7 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // ============================================
       const wifiSignal = telemetryData.get('/SCC/WIFI/STAT/SIGNAL_STRENGTH');
       const invMode = telemetryData.get('INV/DEV/STAT/OPERATING_STATE');
+      const bgcsRelay = telemetryData.get('/BGCS/GRID/STAT/RELAY_STATUS');
       
       // Get the most recent localtime from any telemetry value
       let latestLocaltime: string | null = null;
@@ -363,6 +383,7 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       drawDataTable('System Status', [
         { label: 'WiFi Signal', value: wifiSignal?.value ?? null, unit: wifiSignal?.unit || 'dBm' },
         { label: 'Inverter Mode', value: invMode?.value ?? null, unit: '' },
+        { label: 'BGCS Relay', value: bgcsRelay?.value ?? null, unit: '' },
         { label: 'Connection', value: connectionStatus, unit: '' },
         { label: 'Data Timestamp', value: dataTimestamp, unit: '' },
       ], '#3b82f6');
