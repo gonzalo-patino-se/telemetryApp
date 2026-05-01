@@ -1,18 +1,18 @@
 // src/components/CorrelationOverTime/OverlayChart.tsx
-// Phase 2: pure presentational overlay chart.
+// Pure presentational overlay chart.
 //   - Single shared X-axis (time)
 //   - One independent, HIDDEN Y-axis per series  -> "overlay with independent y"
-//   - Thin strokes, low-opacity gridlines, theme via CSS variables
-//   - Vertical event markers (ReferenceLine + glyph) + blue ✕ overlap dots
-//
-// Interactions (tooltip, pins, selector) are added in Phase 3 — this file
-// keeps the chart deliberately stateless / declarative.
+//   - Events rendered as a real <Scatter> series so they:
+//       * align to time precisely (share the same time XAxis as the lines)
+//       * are individually clickable (click pins that exact event timestamp)
+//       * participate in Recharts hover/tooltip detection
+//   - Blue ✕ overlap dots (decorative)
 
 import React from 'react';
 import {
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
@@ -47,6 +47,10 @@ interface OverlayChartProps {
 const OVERLAP_AXIS_ID = '__overlap';
 const OVERLAP_Y = 0.06; // near the bottom of the plot (just above the X-axis)
 
+/** Reserved synthetic y-axis used to scatter event dots near the top. */
+const EVENTS_AXIS_ID = '__events';
+const EVENTS_Y = 0.94; // near the top of the plot
+
 export const OverlayChart: React.FC<OverlayChartProps> = ({
   series,
   events,
@@ -68,8 +72,61 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
     [series, events, xDomain],
   );
 
+  // ---------------------------------------------------------------------
+  // Render-side downsample for the event scatter lane.
+  // The full `events` array is preserved (used by the tooltip for accurate
+  // readouts and by the CSV exporter). Only the dots actually rendered are
+  // bucketed: per (name, time-bucket) we keep the FIRST event in each bin.
+  // This keeps Recharts responsive even when the server returns thousands
+  // of alarms over a 7-day range.
+  // ---------------------------------------------------------------------
+  const renderEvents = React.useMemo(() => {
+    const HARD_CAP = 800;
+    if (events.length <= HARD_CAP) return events;
+    // Choose enough buckets that, with all names contributing one dot per
+    // bucket, we stay near the cap. Floor of 60 keeps the visual spread
+    // useful even for a single very chatty alarm name.
+    const distinctNames = new Set(events.map(e => e.categoryId)).size || 1;
+    const bucketCount = Math.max(60, Math.floor(HARD_CAP / distinctNames));
+    const span = xDomain[1] - xDomain[0];
+    const binWidth = span > 0 ? span / bucketCount : 1;
+    const seen = new Set<string>();
+    const out: typeof events = [];
+    for (const e of events) {
+      const bin = Math.floor((e.t - xDomain[0]) / binWidth);
+      const key = `${e.categoryId}|${bin}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(e);
+      if (out.length >= HARD_CAP) break;
+    }
+    return out;
+  }, [events, xDomain]);
+
+  const eventsTruncated = renderEvents.length < events.length;
+
+  /**
+   * Scatter dataset for events. Each point carries the underlying
+   * EventInstance so the click handler and custom shape have full context.
+   * MUST be sorted ascending by `t` because Recharts <Line> uses the array
+   * order to draw the path; our line is invisible (stroke=none) but the
+   * dots' (cx, cy) computation still depends on a well-formed series.
+   */
+  const scatterData = React.useMemo(() => {
+    const arr = renderEvents.map(e => ({
+      t: e.t,
+      y: EVENTS_Y,
+      evt: e,
+    }));
+    arr.sort((a, b) => a.t - b.t);
+    return arr;
+  }, [renderEvents]);
+
   // Track the most recent hover x so we can convert a click into a pin toggle.
   const hoverXRef = React.useRef<number | null>(null);
+  // Suppress the next chart-level click after an event-dot click so we
+  // don't double-toggle (dot pins, then chart-level click would un-pin).
+  const suppressNextChartClickRef = React.useRef(false);
 
   const handleMouseMove = React.useCallback((state: { activeLabel?: number | string }) => {
     const al = state?.activeLabel;
@@ -82,6 +139,11 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   }, []);
 
   const handleClick = React.useCallback(() => {
+    if (suppressNextChartClickRef.current) {
+      // Reset and skip — an event-dot click handled the pin.
+      suppressNextChartClickRef.current = false;
+      return;
+    }
     if (!onPinToggle) return;
     const t = hoverXRef.current;
     if (t != null) onPinToggle(t);
@@ -91,9 +153,32 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   // pass its `points` directly via the `data` prop (rather than a single
   // joined dataset) so each series keeps its own y-axis cleanly.
   return (
-    <div style={{ width: '100%', height }}>
+    <div style={{ width: '100%', height, position: 'relative' }}>
+      {eventsTruncated && (
+        <div
+          role="status"
+          aria-live="polite"
+          title="Tooltip and CSV export still see all events; only on-chart dots are throttled for performance."
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 8,
+            zIndex: 2,
+            fontSize: 10,
+            padding: '2px 6px',
+            borderRadius: 3,
+            background: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            color: 'var(--text-secondary)',
+            fontVariantNumeric: 'tabular-nums',
+            pointerEvents: 'none',
+          }}
+        >
+          Showing {renderEvents.length} of {events.length} events
+        </div>
+      )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <ComposedChart
           margin={{ top: 18, right: 16, bottom: 8, left: 8 }}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => {
@@ -134,7 +219,10 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
           ))}
 
           {/* Hidden axis dedicated to overlap markers, fixed [0,1] domain. */}
-          <YAxis yAxisId={OVERLAP_AXIS_ID} domain={[0, 1]} hide />
+          <YAxis yAxisId={OVERLAP_AXIS_ID} type="number" domain={[0, 1]} hide />
+
+          {/* Hidden axis dedicated to the event scatter lane (top of plot). */}
+          <YAxis yAxisId={EVENTS_AXIS_ID} type="number" domain={[0, 1]} hide />
 
           {/* Tooltip — single instance, custom body. */}
           <Tooltip
@@ -151,9 +239,24 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             )}
           />
 
-          {/* Series lines. Thin, slightly transparent. */}
-          {series.map(s =>
-            s.points.length === 0 ? null : (
+          {/* Series lines. Thin, slightly transparent, with per-sample dots
+              so users can see exactly where data points exist (parity with
+              the History chart cards). Dot size scales down on dense series
+              to keep the chart readable. */}
+          {series.map(s => {
+            if (s.points.length === 0) return null;
+            // Smaller dots when many samples; hide entirely if exceptionally dense.
+            const n = s.points.length;
+            const dotProps =
+              n > 1200
+                ? false
+                : ({
+                    r: n > 400 ? 1.4 : n > 150 ? 1.8 : 2.2,
+                    fill: s.color,
+                    stroke: 'var(--bg-elevated)',
+                    strokeWidth: 0.5,
+                  } as const);
+            return (
               <Line
                 key={`line-${s.id}`}
                 yAxisId={s.id}
@@ -164,34 +267,97 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                 strokeWidth={1.5}
                 strokeOpacity={0.85}
                 strokeDasharray={s.dash}
-                dot={false}
-                activeDot={{ r: 3, fill: s.color, strokeWidth: 0 }}
+                dot={dotProps}
+                activeDot={{ r: 4, fill: s.color, strokeWidth: 0 }}
                 isAnimationActive={false}
                 connectNulls={false}
                 name={s.label}
               />
-            ),
-          )}
+            );
+          })}
 
-          {/* Event markers — vertical reference lines + a small glyph at top. */}
-          {events.map(e => (
-            <ReferenceLine
-              key={`evt-${e.id}`}
-              x={e.t}
+          {/* Event markers rendered via a transparent <Line> with a custom
+              `dot` function. Why a Line (and not Scatter): Lines reuse the
+              exact same axis-binding pipeline as the signal lines, which we
+              already know align perfectly to the time XAxis. The Scatter
+              path was unreliable when multiple independent Y-axes exist on
+              the same chart. The line itself is invisible (stroke=none); we
+              only render the dots, each of which:
+                - sits exactly on the event's timestamp on the X axis
+                - accepts pointer events (cursor=pointer)
+                - on click, pins the event's exact timestamp
+              The full hover/tooltip is provided by the chart-level Tooltip
+              (CorrelationTooltip), which already lists all events within
+              ±tolerance of the cursor. */}
+          {scatterData.length > 0 && (
+            <Line
+              data={scatterData}
               xAxisId={0}
-              stroke={e.color}
-              strokeOpacity={0.55}
-              strokeDasharray="3 3"
-              strokeWidth={1}
-              ifOverflow="extendDomain"
-              label={{
-                value: e.glyph ?? '◆',
-                position: 'top',
-                fill: e.color,
-                fontSize: 10,
+              yAxisId={EVENTS_AXIS_ID}
+              dataKey="y"
+              type="linear"
+              name="__events_lane"
+              stroke="transparent"
+              strokeWidth={0}
+              fill="transparent"
+              isAnimationActive={false}
+              legendType="none"
+              connectNulls={false}
+              dot={(props: {
+                cx?: number;
+                cy?: number;
+                index?: number;
+                payload?: { evt?: EventInstance };
+              }) => {
+                const { cx = 0, cy = 0, payload, index = 0 } = props;
+                const e = payload?.evt;
+                if (!e || !Number.isFinite(cx) || !Number.isFinite(cy)) {
+                  // Recharts requires the `dot` function to always return an
+                  // SVG element; an empty <g/> is the safest no-op.
+                  return <g key={`evt-empty-${index}`} />;
+                }
+                // Active = filled, cleared (value === 0) = ring (hollow).
+                const filled = e.value !== 0;
+                return (
+                  <g
+                    key={`evt-${e.id}`}
+                    aria-label={`Event: ${e.title} at ${new Date(e.t).toLocaleString()}`}
+                    style={{ cursor: onPinToggle ? 'pointer' : 'default' }}
+                    onClick={(ev: React.MouseEvent) => {
+                      ev.stopPropagation();
+                      // Belt-and-suspenders: also flag the chart-level
+                      // handler to skip its next invocation, since
+                      // Recharts' synthetic onClick may fire regardless
+                      // of DOM-level stopPropagation.
+                      suppressNextChartClickRef.current = true;
+                      if (onPinToggle) onPinToggle(e.t);
+                    }}
+                  >
+                    {/* Wider invisible hit target for easier hover/click.
+                        `pointer-events: all` is required because SVG by
+                        default ignores events on `fill="transparent"`. */}
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={9}
+                      fill="transparent"
+                      style={{ pointerEvents: 'all' }}
+                    />
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      fill={filled ? e.color : 'var(--bg-elevated)'}
+                      stroke={e.color}
+                      strokeWidth={1.4}
+                      style={{ pointerEvents: 'all' }}
+                    />
+                  </g>
+                );
               }}
+              activeDot={false}
             />
-          ))}
+          )}
 
           {/* Pinned timestamps — solid thin reference lines + per-series chips. */}
           {pins.map((pt, idx) => {
@@ -247,6 +413,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
               key={`ovl-${i}`}
               x={o.t}
               y={OVERLAP_Y}
+              xAxisId={0}
               yAxisId={OVERLAP_AXIS_ID}
               r={4}
               shape={(props: { cx?: number; cy?: number }) => {
@@ -277,7 +444,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
               }}
             />
           ))}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

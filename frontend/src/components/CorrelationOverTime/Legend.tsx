@@ -25,13 +25,13 @@ function formatRange(s: SignalSeries): string {
 export const Legend: React.FC<LegendProps> = ({ series, events }) => {
   // Distinct event categories present in the resolved instances.
   const eventCategories = React.useMemo(() => {
-    const seen = new Map<string, { label: string; color: string; glyph?: string; count: number }>();
+    const seen = new Map<string, { label: string; color: string; count: number }>();
     for (const e of events) {
       const prev = seen.get(e.categoryId);
       if (prev) prev.count += 1;
-      else seen.set(e.categoryId, { label: e.categoryLabel, color: e.color, glyph: e.glyph, count: 1 });
+      else seen.set(e.categoryId, { label: e.categoryLabel, color: e.color, count: 1 });
     }
-    return Array.from(seen.values());
+    return Array.from(seen.values()).sort((a, b) => b.count - a.count);
   }, [events]);
 
   if (series.length === 0 && eventCategories.length === 0) return null;
@@ -99,9 +99,17 @@ export const Legend: React.FC<LegendProps> = ({ series, events }) => {
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           title={`${c.label} — ${c.count} event${c.count === 1 ? '' : 's'}`}
         >
-          <span aria-hidden style={{ color: c.color, fontSize: 10 }}>
-            {c.glyph ?? '◆'}
-          </span>
+          <span
+            aria-hidden
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: c.color,
+              display: 'inline-block',
+              flex: '0 0 auto',
+            }}
+          />
           <span style={{ color: 'var(--text-primary)' }}>{c.label}</span>
           <span style={{ color: 'var(--text-tertiary)' }}>· {c.count}</span>
         </span>

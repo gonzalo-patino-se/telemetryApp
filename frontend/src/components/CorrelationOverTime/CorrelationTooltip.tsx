@@ -119,9 +119,17 @@ export const CorrelationTooltip: React.FC<CorrelationTooltipProps> = ({
                 padding: '1px 0',
               }}
             >
-              <span aria-hidden style={{ color: e.color, fontSize: 10, lineHeight: '14px' }}>
-                {e.glyph ?? '◆'}
-              </span>
+              <span
+                aria-hidden
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: e.color,
+                  flex: '0 0 auto',
+                  marginTop: 4,
+                }}
+              />
               <span style={{ flex: 1 }}>
                 <span style={{ color: 'var(--text-primary)' }}>{e.title}</span>
                 {e.description && (

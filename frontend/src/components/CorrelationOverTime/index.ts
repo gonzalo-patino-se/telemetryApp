@@ -5,8 +5,8 @@ export { CorrelationOverTimeCard } from './CorrelationOverTimeCard';
 export { default } from './CorrelationOverTimeCard';
 export type {
   SignalDef,
-  EventDef,
   SignalSeries,
   EventInstance,
+  EventNameInfo,
   CorrelationData,
 } from './types';
