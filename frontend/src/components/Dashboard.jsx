@@ -1,4 +1,4 @@
-// src/components/Dashboard.jsx
+mer// src/components/Dashboard.jsx
 // Dashboard component - displays device telemetry data from Azure ADX
 // All data is fetched from cloud - no mock/hardcoded values
 
