@@ -5,6 +5,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { buildCellularSignalLatestKql } from '../utils/kqlBuilders';
 
 // ============================================================================
 // Types
@@ -140,6 +141,10 @@ const ALARM_IDS = ['batMainRelay', 'bat1Relay', 'bat2Relay', 'bat3Relay'];
 // WiFi uses TelemetryLive table (requires separate query)
 const WIFI_ID = 'wifiSignal';
 
+// Cellular uses Alarms table (separate query, latest row)
+// value = 1 -> LOW SIGNAL alarm active (BAD), value = 0 -> cleared / OK
+const CELLULAR_ID = 'cellularSignal';
+
 const BATCH_TELEMETRY_PATH = '/batch_telemetry/';
 const QUERY_PATH = '/query_adx/'; // Only for WiFi (TelemetryLive table)
 const REFRESH_INTERVAL = 300000; // 5 minutes (300 seconds)
@@ -267,6 +272,8 @@ interface InverterProps {
   isActive: boolean;
   wifiSignal: number | null;
   wifiLoading: boolean;
+  cellularSignal: number | null;
+  cellularLoading: boolean;
 }
 
 // Get WiFi signal strength level (0-4 bars based on dBm)
@@ -297,9 +304,21 @@ const getWifiStatusText = (signal: number | null): string => {
   return 'Very Weak';
 };
 
-const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoading }) => {
+const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoading, cellularSignal, cellularLoading }) => {
   const wifiLevel = getWifiLevel(wifiSignal);
   const wifiStatus = getWifiStatusText(wifiSignal);
+
+  // Cellular: value=1 means LOW SIGNAL alarm active (BAD), 0 means OK.
+  // null = no data yet.
+  const cellularState: 'ok' | 'low' | 'unknown' =
+    cellularSignal === null ? 'unknown' :
+    cellularSignal >= 1 ? 'low' : 'ok';
+  const cellularColor = cellularState === 'low' ? '#ef4444' :
+                        cellularState === 'ok' ? '#22c55e' : '#64748b';
+  const cellularLabel = cellularLoading ? '...' :
+                        cellularState === 'low' ? 'LOW' :
+                        cellularState === 'ok' ? 'OK' : '--';
+  const cellularBars = cellularState === 'ok' ? 4 : cellularState === 'low' ? 1 : 0;
   
   return (
     <g transform={`translate(${x}, ${y})`} className="inverter-group">
@@ -387,6 +406,27 @@ const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoa
         </text>
         <text x={22} y={15} textAnchor="middle" className="wifi-status-text">
           {wifiLoading ? '' : wifiStatus}
+        </text>
+      </g>
+
+      {/* Cellular signal indicator - below the WiFi value display.
+          Binary alarm: 1 = LOW (red), 0 = OK (green). */}
+      <g transform="translate(110, 92)">
+        <rect x={-5} y={-12} width={55} height={32} rx={4} className="wifi-value-bg" />
+        {/* tower icon (simple antenna) + 3 bars */}
+        <g transform="translate(2, 0)" stroke={cellularColor} fill={cellularColor}>
+          <line x1={4} y1={6} x2={4} y2={-8} strokeWidth={1.5} />
+          <path d={`M 0 -4 Q 4 -10 8 -4`} fill="none" strokeWidth={1.2} opacity={cellularBars >= 1 ? 1 : 0.25} />
+          <path d={`M -2 -7 Q 4 -14 10 -7`} fill="none" strokeWidth={1.2} opacity={cellularBars >= 4 ? 1 : 0.25} />
+          <rect x={-1} y={4} width={3} height={5} opacity={cellularBars >= 1 ? 1 : 0.25} />
+          <rect x={3} y={1} width={3} height={8} opacity={cellularBars >= 2 ? 1 : 0.25} />
+          <rect x={7} y={-2} width={3} height={11} opacity={cellularBars >= 4 ? 1 : 0.25} />
+        </g>
+        <text x={32} y={4} textAnchor="middle" className="wifi-status-text" style={{ fill: cellularColor, fontWeight: 600 }}>
+          {cellularLabel}
+        </text>
+        <text x={32} y={15} textAnchor="middle" className="wifi-status-text" style={{ fontSize: 8 }}>
+          Cellular
         </text>
       </g>
     </g>
@@ -1021,6 +1061,33 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
       };
     }
 
+    // 3. Fetch Cellular Low-Signal-Strength alarm latest value (Alarms table).
+    //    value = 1 -> LOW SIGNAL alarm active (BAD); value = 0 -> cleared / OK.
+    try {
+      const cellKql = buildCellularSignalLatestKql(serial);
+      const cellRes = await api.post(QUERY_PATH, { kql: cellKql });
+      const cellArr = Array.isArray(cellRes.data?.data) ? cellRes.data.data : [];
+      const cellRow = cellArr[0];
+      newData[CELLULAR_ID] = {
+        // Treat "no rows" as OK (no alarm history -> not in low-signal state).
+        value: cellRow?.value_double ?? (cellArr.length === 0 ? 0 : null),
+        localtime: cellRow?.localtime ?? null,
+        loading: false,
+        error: null,
+      };
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        await logout();
+        return;
+      }
+      newData[CELLULAR_ID] = {
+        value: null,
+        localtime: null,
+        loading: false,
+        error: err?.response?.data?.error ?? 'Error',
+      };
+    }
+
     setTelemetryData(newData);
     setCountdown(REFRESH_INTERVAL / 1000);
   }, [serial, logout]);
@@ -1184,6 +1251,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // WiFi signal strength
   const wifiSignal = telemetryData.wifiSignal?.value ?? null;
   const wifiLoading = telemetryData.wifiSignal?.loading ?? true;
+
+  // Cellular Low-Signal-Strength alarm (binary 0/1; 1 = LOW = BAD)
+  const cellularSignal = telemetryData[CELLULAR_ID]?.value ?? null;
+  const cellularLoading = telemetryData[CELLULAR_ID]?.loading ?? true;
   
   // Load values
   const loadValues = {
@@ -1409,6 +1480,8 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           isActive={anyProducing || gridIsActive || anyBatteryActive}
           wifiSignal={wifiSignal}
           wifiLoading={wifiLoading}
+          cellularSignal={cellularSignal}
+          cellularLoading={cellularLoading}
         />
         
         {/* ==================== BGCS RELAY SECTION (Grid Connection Safety) ==================== */}

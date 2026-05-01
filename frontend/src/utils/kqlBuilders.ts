@@ -994,3 +994,82 @@ export function buildBgcsRelayStatusFastQuery(
     telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS',
   });
 }
+
+// ============================================================================
+// Cellular Signal Strength (Alarms table)
+// Value: 1 = LOW SIGNAL alarm active (BAD), 0 = cleared / OK
+// ============================================================================
+
+/**
+ * Build KQL query for Cellular Low-Signal-Strength alarm history.
+ * Reads the Alarms table and projects 'value' as 'value_double' so the
+ * BaseTimeSeriesWidget chart pipeline can render it like a 0/1 telemetry.
+ */
+export function buildCellularSignalStrengthQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  const escapedSerial = escapeKqlString(serial);
+  const startLocal = formatDateForKql(startDate);
+  const endLocal = formatDateForKql(endDate);
+
+  return `
+    let s = '${escapedSerial}';
+    let start = datetime(${startLocal});
+    let finish = datetime(${endLocal});
+    Alarms
+    | where comms_serial contains s
+    | where name contains '/CCM/DEV/EVENT/WARNING/LOW_SIGNAL_STRENGTH'
+    | where localtime between (start .. finish)
+    | project localtime, value_double = value
+    | order by localtime asc
+  `.trim();
+}
+
+/**
+ * Build KQL query for the latest Cellular Low-Signal-Strength alarm value.
+ * Used by the EnergyFlowDiagram instant indicator.
+ */
+export function buildCellularSignalLatestKql(serial: string): string {
+  const s = escapeKqlString(serial);
+  return `
+    let s = '${s}';
+    Alarms
+    | where comms_serial contains s
+    | where name contains '/CCM/DEV/EVENT/WARNING/LOW_SIGNAL_STRENGTH'
+    | top 1 by localtime desc
+    | project localtime, value_double = value
+  `.trim();
+}
+
+// ============================================================================
+// Firmware History (DevInfo table)
+// Returns distinct firmware records over the selected window.
+// ============================================================================
+
+/**
+ * Build KQL query for firmware history over a time range.
+ * Honors the global "Historical Data Time Range" by filtering on localtime.
+ */
+export function buildFirmwareHistoryQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+  const escapedSerial = escapeKqlString(serial);
+  const startLocal = formatDateForKql(startDate);
+  const endLocal = formatDateForKql(endDate);
+
+  return `
+    let s = '${escapedSerial}';
+    let start = datetime(${startLocal});
+    let finish = datetime(${endLocal});
+    DevInfo
+    | where comms_serial contains s
+    | where localtime between (start .. finish)
+    | distinct localtime, utctime, name, modelName, firmware_version
+    | order by localtime desc
+    | limit 5000
+  `.trim();
+}

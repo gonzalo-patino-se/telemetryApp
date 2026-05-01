@@ -9,6 +9,7 @@ export * from './widgetConfigs';
 
 // Specific widget components
 export { WifiSignalWidget } from './WifiSignalWidget';
+export { CellularSignalWidget } from './CellularSignalWidget';
 export { PV1VoltageWidget } from './PV1VoltageWidget';
 export { PV2VoltageWidget } from './PV2VoltageWidget';
 export { PV3VoltageWidget } from './PV3VoltageWidget';
