@@ -31,8 +31,9 @@ import {
   buildEtpConnectionStatusQuery, buildEtpConnectionStatusFastQuery,
   // BGCS Grid Relay Status queries
   buildBgcsRelayStatusQuery, buildBgcsRelayStatusFastQuery,
-} from '../../utils/kqlBuilders';
-// ============================================================================
+  // Cellular Low-Signal-Strength alarm history (Alarms table, value 0/1)
+  buildCellularSignalStrengthQuery,
+} from '../../utils/kqlBuilders';// ============================================================================
 // Grid Voltage RMS L1 Widget
 // ============================================================================
 export const gridVoltageL1Config: WidgetConfig = {
@@ -190,6 +191,27 @@ export const bgcsRelayStatusConfig: WidgetConfig = {
   buildQuery: buildBgcsRelayStatusQuery,
   buildFastQuery: buildBgcsRelayStatusFastQuery,
   valueMapping: BGCS_RELAY_STATUS_MAPPING,
+  integerYAxis: true,
+};
+
+// ============================================================================
+// Cellular Signal Strength Widget (Alarms table, 0/1)
+// value = 1  -> LOW SIGNAL alarm active (BAD)
+// value = 0  -> alarm cleared / OK
+// ============================================================================
+
+const CELLULAR_SIGNAL_MAPPING: Record<number, { label: string; color: string }> = {
+  0: { label: 'OK', color: '#22c55e' },
+  1: { label: 'LOW SIGNAL', color: '#ef4444' },
+};
+
+export const cellularSignalStrengthConfig: WidgetConfig = {
+  label: 'Cellular Signal Strength',
+  unit: 'State',
+  colorScheme: 'orange',
+  csvPrefix: 'cellular_signal_strength',
+  buildQuery: buildCellularSignalStrengthQuery,
+  valueMapping: CELLULAR_SIGNAL_MAPPING,
   integerYAxis: true,
 };
 

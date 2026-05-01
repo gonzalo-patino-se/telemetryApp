@@ -8,13 +8,14 @@ import DashboardLayout from './layout/DashboardLayout';
 import WidgetCard from './layout/WidgetCard';
 import CollapsibleSection from './common/CollapsibleSection';
 import AdxSearchWifiSignalWidget from './AdxSearchWifiSignalWidget';
-import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget, InverterOperatingStateWidget, EtpConnectionStatusWidget, BgcsRelayStatusWidget } from './widgets';
+import { PV1VoltageWidget, PV2VoltageWidget, PV3VoltageWidget, PV4VoltageWidget, PV1CurrentWidget, PV2CurrentWidget, PV3CurrentWidget, PV4CurrentWidget, GridVoltageL1Widget, GridVoltageL2Widget, GridCurrentL1Widget, GridCurrentL2Widget, GridFrequencyTotalWidget, Battery1VoltageWidget, Battery1TempWidget, Battery1SoCWidget, Battery1CurrentWidget, Battery2VoltageWidget, Battery2TempWidget, Battery2SoCWidget, Battery2CurrentWidget, Battery3VoltageWidget, Battery3TempWidget, Battery3SoCWidget, Battery3CurrentWidget, BatteryMainRelayWidget, LoadVoltageL1Widget, LoadVoltageL2Widget, LoadFrequencyTotalWidget, InverterOperatingStateWidget, EtpConnectionStatusWidget, BgcsRelayStatusWidget, CellularSignalWidget } from './widgets';
 import DeviceInfoWidget from './DeviceInfoWidget';
 import InstantaneousGauges from './InstantaneousGauges';
 import EnergyFlowDiagram from './EnergyFlowDiagram';
 import MasterTimeRangeWidget from './MasterTimeRangeWidget';
 import DashboardPDFExport from './DashboardPDFExport';
 import { CorrelationOverTimeCard } from './CorrelationOverTime';
+import FirmwareHistoryCard from './FirmwareHistoryCard';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -54,6 +55,10 @@ const Dashboard = () => {
     // Widget refresh controls
     const [wifiAutoFetch, setWifiAutoFetch] = useState(true);
     const [wifiFetchSignal, setWifiFetchSignal] = useState(0);
+
+    // Cellular Signal Strength (LOW_SIGNAL_STRENGTH alarm history)
+    const [cellularSignalAutoFetch, setCellularSignalAutoFetch] = useState(true);
+    const [cellularSignalFetchSignal, setCellularSignalFetchSignal] = useState(0);
 
     // Inverter Operating State
     const [inverterOperatingStateAutoFetch, setInverterOperatingStateAutoFetch] = useState(true);
@@ -164,6 +169,7 @@ const Dashboard = () => {
             // Batch 1: Most important widgets (immediate)
             setTimeout(() => {
                 setWifiFetchSignal((n) => n + 1);
+                setCellularSignalFetchSignal((n) => n + 1);
                 setPv1FetchSignal((n) => n + 1);
                 setDevInfoFetchSignal((n) => n + 1);
             }, 50);
@@ -549,15 +555,23 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* ==================== FIRMWARE HISTORY ==================== */}
+            {hasActiveSerial && (
+                <div style={{ marginTop: 16 }}>
+                    <FirmwareHistoryCard serial={activeSerial} />
+                </div>
+            )}
+
             {/* ==================== SYSTEM STATUS ==================== */}
             <CollapsibleSection
                 title="System Status"
                 icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>}
-                badge="4 widgets"
+                badge="5 widgets"
                 color="#3b82f6"
             >
                 <div style={styles.chartsGrid}>
                     {renderWidgetCard("Wi-Fi Signal Strength", AdxSearchWifiSignalWidget, wifiAutoFetch, setWifiAutoFetch, wifiFetchSignal, setWifiFetchSignal)}
+                    {renderWidgetCard("Cellular Signal Strength", CellularSignalWidget, cellularSignalAutoFetch, setCellularSignalAutoFetch, cellularSignalFetchSignal, setCellularSignalFetchSignal)}
                     {renderWidgetCard("Inverter Operating State", InverterOperatingStateWidget, inverterOperatingStateAutoFetch, setInverterOperatingStateAutoFetch, inverterOperatingStateFetchSignal, setInverterOperatingStateFetchSignal)}
                     {renderWidgetCard("ETP Connection Status", EtpConnectionStatusWidget, etpConnectionStatusAutoFetch, setEtpConnectionStatusAutoFetch, etpConnectionStatusFetchSignal, setEtpConnectionStatusFetchSignal)}
                     {renderWidgetCard("BGCS Grid Relay Status", BgcsRelayStatusWidget, bgcsRelayStatusAutoFetch, setBgcsRelayStatusAutoFetch, bgcsRelayStatusFetchSignal, setBgcsRelayStatusFetchSignal)}
