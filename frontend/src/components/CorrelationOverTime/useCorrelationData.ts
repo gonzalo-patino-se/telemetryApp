@@ -1,23 +1,30 @@
 // src/components/CorrelationOverTime/useCorrelationData.ts
-// Phase 1 data hook for the Correlation Over Time card.
 //
-// Responsibilities:
-//   - Resolve selected signal ids -> KQL queries -> AdxRow[] -> SignalSeries[]
-//   - Resolve selected event ids -> KQL -> EventInstance[]
-//   - Parse timestamps with the shared parseAdxLocaltime util
-//   - Down-sample defensively to keep the small card responsive
+// Data hook for the Correlation Over Time card.
 //
-// Out of scope (later phases): chart rendering, tooltip, pins, selector UI.
+// v2 changes (event picker became dynamic):
+//   - Events are now fetched ONCE per (serial, range) using outputFilter='all'.
+//   - The unique `name` values become the entries in the event picker.
+//   - Each name gets a deterministic color via colorForEventName().
+//   - Caller passes `excludedEventNames` to hide specific names, instead of
+//     selecting from a static category catalog.
+//
+// Out of scope: chart rendering, tooltip, pins, selector UI.
 
 import { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
 import { parseAdxLocaltime } from '../../utils/dateHelpers';
 import type { AdxRow } from '../../types';
 import { SIGNAL_BY_ID } from './signalCatalog';
-import { EVENT_BY_ID, buildEventQuery } from './eventCatalog';
+import {
+  buildEventQuery,
+  colorForEventName,
+  type EventsOutputFilter,
+} from './eventCatalog';
 import type {
   CorrelationData,
   EventInstance,
+  EventNameInfo,
   SignalSeries,
   TimePoint,
 } from './types';
@@ -32,7 +39,18 @@ interface UseCorrelationDataArgs {
   start: Date | null;
   end: Date | null;
   selectedSignalIds: string[];
-  selectedEventIds: string[];
+  /** When true, the hook fetches alarm transitions in the current range. */
+  eventsEnabled: boolean;
+  /**
+   * Names the user has explicitly turned OFF in the picker. Treating it as
+   * a denylist means newly-discovered names default to "shown".
+   */
+  excludedEventNames: string[];
+  /**
+   * Server-side alarm value filter. '1' = active only (default — keeps row
+   * counts manageable on 7d ranges), '0' = cleared only, 'all' = both.
+   */
+  eventsOutputFilter?: EventsOutputFilter;
   /** Bumped by the parent to force a refetch (e.g. on "Refresh" click). */
   refetchSignal?: number;
 }
@@ -54,13 +72,11 @@ function rowsToPoints(rows: AdxRow[]): TimePoint[] {
   return points;
 }
 
-/** Even-stride downsample to cap render cost without changing shape much. */
 function downsamplePoints(points: TimePoint[], cap: number): TimePoint[] {
   if (points.length <= cap) return points;
   const stride = Math.ceil(points.length / cap);
   const out: TimePoint[] = [];
   for (let i = 0; i < points.length; i += stride) out.push(points[i]);
-  // Always include the last point so the line reaches the right edge.
   const last = points[points.length - 1];
   if (out[out.length - 1]?.t !== last.t) out.push(last);
   return out;
@@ -78,33 +94,103 @@ function summarizeRange(points: TimePoint[]): { vMin?: number; vMax?: number } {
   return { vMin, vMax };
 }
 
+/**
+ * Convert raw Alarms rows to EventInstance + an aggregated availableEventNames
+ * list (one entry per distinct name, with palette color and occurrence count).
+ *
+ * Row shape mirrors src/pages/Events.tsx: { localtime, name, value }.
+ */
+function buildEvents(
+  rows: AdxRow[],
+): { events: EventInstance[]; available: EventNameInfo[] } {
+  const events: EventInstance[] = [];
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const lt = r.localtime as string | undefined;
+    if (!lt) continue;
+    const t = parseAdxLocaltime(lt);
+    if (!Number.isFinite(t) || t === 0) continue;
+    const name = ((r.name as string | undefined) ?? 'event').trim() || 'event';
+    // The Events tab reads `value` (not `value_double`); accept both for
+    // resilience but prefer `value`.
+    const valueRaw =
+      (r.value as number | string | undefined) ??
+      (r.value_double as number | string | undefined);
+    const valueNum =
+      valueRaw == null || valueRaw === '' ? undefined : Number(valueRaw);
+    const color = colorForEventName(name);
+    events.push({
+      id: `${name}:${t}:${valueNum ?? ''}`,
+      categoryId: name,
+      categoryLabel: name,
+      color,
+      t,
+      title: name,
+      description:
+        valueNum === 1
+          ? 'active'
+          : valueNum === 0
+            ? 'cleared'
+            : valueNum != null
+              ? `value=${valueNum}`
+              : undefined,
+      value: Number.isFinite(valueNum as number)
+        ? (valueNum as number)
+        : undefined,
+    });
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  events.sort((a, b) => a.t - b.t);
+  const available: EventNameInfo[] = Array.from(counts.entries())
+    .map(([name, count]) => ({
+      name,
+      count,
+      color: colorForEventName(name),
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return { events, available };
+}
+
 // ----------------------------------------------------------------------------
 // Hook
 // ----------------------------------------------------------------------------
 
-export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationData {
-  const { serial, start, end, selectedSignalIds, selectedEventIds, refetchSignal } = args;
+export function useCorrelationData(
+  args: UseCorrelationDataArgs,
+): CorrelationData {
+  const {
+    serial,
+    start,
+    end,
+    selectedSignalIds,
+    eventsEnabled,
+    excludedEventNames,
+    eventsOutputFilter = '1',
+    refetchSignal,
+  } = args;
 
   const [series, setSeries] = useState<SignalSeries[]>([]);
-  const [events, setEvents] = useState<EventInstance[]>([]);
+  const [allEvents, setAllEvents] = useState<EventInstance[]>([]);
+  const [availableEventNames, setAvailableEventNames] = useState<EventNameInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partial, setPartial] = useState(false);
 
-  // Avoid race conditions when the user changes selection rapidly.
   const reqIdRef = useRef(0);
 
   useEffect(() => {
     if (!serial || !start || !end) {
       setSeries([]);
-      setEvents([]);
+      setAllEvents([]);
+      setAvailableEventNames([]);
       setError(null);
       setPartial(false);
       return;
     }
-    if (selectedSignalIds.length === 0 && selectedEventIds.length === 0) {
+    if (selectedSignalIds.length === 0 && !eventsEnabled) {
       setSeries([]);
-      setEvents([]);
+      setAllEvents([]);
+      setAvailableEventNames([]);
       setError(null);
       setPartial(false);
       return;
@@ -115,94 +201,81 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
     setError(null);
     setPartial(false);
 
-    // Collected errors from per-series / per-event promises (first one wins).
     const errorBag: string[] = [];
     const captureError = (label: string, e: unknown) => {
       const msg =
-        (typeof e === 'object' && e && 'message' in e && typeof (e as { message: unknown }).message === 'string'
+        typeof e === 'object' && e && 'message' in e
+        && typeof (e as { message: unknown }).message === 'string'
           ? (e as { message: string }).message
-          : null) ?? 'request failed';
+          : 'request failed';
       errorBag.push(`${label}: ${msg}`);
     };
 
-    const signalPromises = selectedSignalIds.map(async (id): Promise<SignalSeries | null> => {
-      const def = SIGNAL_BY_ID[id];
-      if (!def) return null;
-      try {
-        const kql = def.buildQuery(serial, start, end);
-        const res = await api.post(QUERY_PATH, { kql });
-        const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
-        const points = downsamplePoints(rowsToPoints(rows), MAX_POINTS_PER_SERIES);
-        const { vMin, vMax } = summarizeRange(points);
-        return {
-          id: def.id,
-          label: def.label,
-          unit: def.unit,
-          color: def.color,
-          dash: def.dash,
-          points,
-          vMin,
-          vMax,
-        };
-      } catch (e) {
-        captureError(def.label, e);
-        return {
-          id: def.id,
-          label: def.label,
-          unit: def.unit,
-          color: def.color,
-          dash: def.dash,
-          points: [],
-        };
-      }
-    });
-
-    const eventPromises = selectedEventIds.map(async (id): Promise<EventInstance[]> => {
-      const def = EVENT_BY_ID[id];
-      if (!def) return [];
-      try {
-        const kql = buildEventQuery(serial, start, end, def.outputFilter);
-        const res = await api.post(QUERY_PATH, { kql });
-        const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
-        const out: EventInstance[] = [];
-        for (const r of rows) {
-          const lt = r.localtime as string | undefined;
-          if (!lt) continue;
-          const t = parseAdxLocaltime(lt);
-          if (!Number.isFinite(t) || t === 0) continue;
-          const name = (r.name as string | undefined) ?? 'event';
-          const value = (r.value as string | number | undefined) ?? '';
-          out.push({
-            id: `${def.id}:${t}:${name}`,
-            categoryId: def.id,
-            categoryLabel: def.label,
+    const signalPromises = selectedSignalIds.map(
+      async (id): Promise<SignalSeries | null> => {
+        const def = SIGNAL_BY_ID[id];
+        if (!def) return null;
+        try {
+          const kql = def.buildQuery(serial, start, end);
+          const res = await api.post(QUERY_PATH, { kql });
+          const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
+          const points = downsamplePoints(rowsToPoints(rows), MAX_POINTS_PER_SERIES);
+          const { vMin, vMax } = summarizeRange(points);
+          return {
+            id: def.id,
+            label: def.label,
+            unit: def.unit,
             color: def.color,
-            glyph: def.glyph,
-            t,
-            title: name,
-            description: value !== '' ? `value=${value}` : undefined,
-          });
+            dash: def.dash,
+            points,
+            vMin,
+            vMax,
+          };
+        } catch (e) {
+          captureError(def.label, e);
+          return {
+            id: def.id,
+            label: def.label,
+            unit: def.unit,
+            color: def.color,
+            dash: def.dash,
+            points: [],
+          };
         }
-        return out;
-      } catch (e) {
-        captureError(def.label, e);
-        return [];
-      }
-    });
+      },
+    );
 
-    Promise.all([Promise.all(signalPromises), Promise.all(eventPromises)])
-      .then(([sResults, eResults]) => {
+    const eventsPromise: Promise<{
+      events: EventInstance[];
+      available: EventNameInfo[];
+    }> = eventsEnabled
+      ? (async () => {
+          try {
+            const kql = buildEventQuery(serial, start, end, undefined, eventsOutputFilter);
+            const res = await api.post(QUERY_PATH, { kql });
+            const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
+            return buildEvents(rows);
+          } catch (e) {
+            captureError('events', e);
+            return { events: [], available: [] };
+          }
+        })()
+      : Promise.resolve({ events: [], available: [] });
+
+    Promise.all([Promise.all(signalPromises), eventsPromise])
+      .then(([sResults, eResult]) => {
         if (myReqId !== reqIdRef.current) return; // stale
-        const cleanSeries = sResults.filter((s): s is SignalSeries => s !== null);
-        const flatEvents = eResults.flat().sort((a, b) => a.t - b.t);
+        const cleanSeries = sResults.filter(
+          (s): s is SignalSeries => s !== null,
+        );
         const anyEmpty =
           cleanSeries.some(s => s.points.length === 0) ||
-          (selectedEventIds.length > 0 && flatEvents.length === 0);
+          (eventsEnabled && eResult.events.length === 0);
         setSeries(cleanSeries);
-        setEvents(flatEvents);
+        setAllEvents(eResult.events);
+        setAvailableEventNames(eResult.available);
         setPartial(anyEmpty);
         if (errorBag.length > 0) {
-          // Surface the first error; full list logged for debugging.
           // eslint-disable-next-line no-console
           console.warn('[CorrelationOverTime] errors:', errorBag);
           setError(errorBag[0]);
@@ -210,7 +283,8 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
       })
       .catch((e: unknown) => {
         if (myReqId !== reqIdRef.current) return;
-        const msg = e instanceof Error ? e.message : 'Failed to load correlation data';
+        const msg =
+          e instanceof Error ? e.message : 'Failed to load correlation data';
         setError(msg);
       })
       .finally(() => {
@@ -221,9 +295,25 @@ export function useCorrelationData(args: UseCorrelationDataArgs): CorrelationDat
     start?.getTime(),
     end?.getTime(),
     selectedSignalIds.join(','),
-    selectedEventIds.join(','),
+    eventsEnabled,
+    eventsOutputFilter,
     refetchSignal,
   ]);
 
-  return { series, events, loading, error, partial };
+  // Apply the deny-list filter on every render — cheap and avoids stale state
+  // when the user toggles names without changing the underlying fetch.
+  const excludedSet = new Set(excludedEventNames);
+  const events =
+    excludedSet.size === 0
+      ? allEvents
+      : allEvents.filter(e => !excludedSet.has(e.categoryId));
+
+  return {
+    series,
+    events,
+    availableEventNames,
+    loading,
+    error,
+    partial,
+  };
 }

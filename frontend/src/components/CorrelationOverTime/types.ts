@@ -50,38 +50,55 @@ export interface SignalSeries {
   vMax?: number;
 }
 
-/** Catalog entry: an event category the user *can* select in the picker. */
-export interface EventDef {
-  /** Stable id, e.g. "alarms_active" / "alarms_cleared". */
-  id: string;
-  /** Human label, e.g. "Active alarms". */
-  label: string;
-  /** Vertical-line / icon color. */
-  color: string;
-  /** "1" = active, "0" = cleared, "all" = both. Mirrors Events.tsx. */
-  outputFilter: '1' | '0' | 'all';
-  /** Optional glyph for the marker top, e.g. "▲", "◆", "●". */
-  glyph?: string;
-}
-
-/** A single event occurrence pinned to the time axis. */
+/**
+ * One event occurrence ("alarm transition") pinned to the time axis.
+ * After the v2 redesign the event picker is fully dynamic — there is no
+ * fixed category catalog; each unique `name` is its own logical group with
+ * a deterministic color (see `colorForEventName`).
+ *
+ * `categoryId` and `categoryLabel` are kept (both = `name`) so the existing
+ * overlap detector and tooltip code work unchanged.
+ */
 export interface EventInstance {
-  /** Synthetic id: `${categoryId}:${t}:${title}`. */
+  /** Synthetic id: `${name}:${t}:${value}`. */
   id: string;
+  /** = name. Used by overlap detection to distinguish entities. */
   categoryId: string;
+  /** = name. Human-readable. */
   categoryLabel: string;
+  /** Per-name palette color. */
   color: string;
-  glyph?: string;
   /** Epoch ms. */
   t: number;
+  /** Same as `categoryLabel`; kept for tooltip-row labels. */
   title: string;
+  /** e.g. "value=1" / "value=0" — active vs. cleared transition. */
   description?: string;
+  /** Raw alarm value (1 = active, 0 = cleared). */
+  value?: number;
+}
+
+/** One row in the dynamic event-name picker. */
+export interface EventNameInfo {
+  /** Alarm name as returned by the Alarms table. */
+  name: string;
+  /** Per-name palette color. */
+  color: string;
+  /** Number of occurrences in the current time range. */
+  count: number;
 }
 
 /** Aggregate result returned by useCorrelationData. */
 export interface CorrelationData {
   series: SignalSeries[];
+  /** Events filtered to the user's selection (= visible on the chart). */
   events: EventInstance[];
+  /**
+   * Every distinct event name observed in the current fetch — used to
+   * populate the event picker. Includes names the user has currently
+   * deselected (so they remain toggleable).
+   */
+  availableEventNames: EventNameInfo[];
   loading: boolean;
   error: string | null;
   /** Fired when any underlying request errored; UI may toast. */
