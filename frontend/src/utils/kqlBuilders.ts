@@ -451,18 +451,12 @@ export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDa
  * Value: 1 = Activated, 0 = Not Activated, -1 = Invalid
  */
 export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endDate: Date): string {
-  const escapedSerial = escapeKqlString(serial);
-  const startLocal = formatDateForKql(startDate);
-  const endLocal = formatDateForKql(endDate);
-
   return `
-    let s = '${escapedSerial}';
-    let start = datetime(${startLocal});
-    let finish = datetime(${endLocal});
+    let s = '${serial}';
     Alarms
     | where comms_serial contains s
-    | where name has '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
-    | where localtime between (start .. finish)
+    | where name contains '/BMS/CLUSTER/EVENT/ALARM/MAIN_RELAY_ERROR'
+    | where localtime between (datetime(${startDate.toISOString()}) .. datetime(${endDate.toISOString()}))
     | project localtime, value_double = value
     | order by localtime asc
   `.trim();
