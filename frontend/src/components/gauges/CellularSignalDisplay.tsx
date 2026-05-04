@@ -22,8 +22,8 @@ interface StateInfo {
   description: string;
 }
 
-const STATE_OK: StateInfo = { label: 'OK', color: '#22c55e', bars: 4, description: 'Cellular signal nominal' };
-const STATE_LOW: StateInfo = { label: 'LOW SIGNAL', color: '#ef4444', bars: 1, description: 'Low cellular signal alarm active' };
+const STATE_OK: StateInfo = { label: 'Low Signal Not Detected', color: '#22c55e', bars: 4, description: 'No low cellular signal detected' };
+const STATE_LOW: StateInfo = { label: 'Low Signal Detected', color: '#ef4444', bars: 1, description: 'Low cellular signal alarm active' };
 
 const CellularSignalDisplay: React.FC<CellularSignalDisplayProps> = ({
   value,
@@ -32,12 +32,10 @@ const CellularSignalDisplay: React.FC<CellularSignalDisplayProps> = ({
   timestamp = null,
 }) => {
   // Semantics:
-  //   value === 1            -> alarm active = LOW SIGNAL (BAD, red)
-  //   value === 0            -> alarm cleared = OK (green)
-  //   value === null/missing -> no LOW_SIGNAL_STRENGTH record exists for this device,
-  //                             which means the alarm has never fired = OK (green).
+  //   value === 1            -> alarm active = Low Signal Detected (BAD, red)
+  //   any other value        -> Low Signal Not Detected (OK, green)
   //   error                  -> show error state below the badge but still render OK badge.
-  const isLow = Number.isFinite(value as number) && (value as number) >= 1;
+  const isLow = Number.isFinite(value as number) && (value as number) === 1;
   const state: StateInfo = isLow ? STATE_LOW : STATE_OK;
   const stale = isTimestampStale(timestamp ?? null);
   const noHistory = !error && (value === null || value === undefined);
@@ -84,6 +82,8 @@ const CellularSignalDisplay: React.FC<CellularSignalDisplayProps> = ({
         justifyContent: 'center',
         position: 'relative',
         boxShadow: `0 0 20px ${state.color}30`,
+        paddingTop: 12,
+        paddingBottom: 8,
       }}>
         {isLow && (
           <div style={{
@@ -96,7 +96,7 @@ const CellularSignalDisplay: React.FC<CellularSignalDisplayProps> = ({
         )}
 
         {/* Cellular bars icon */}
-        <svg width="56" height="40" viewBox="0 0 56 40" style={{ marginBottom: 4 }}>
+        <svg width="56" height="40" viewBox="0 0 56 40" style={{ marginBottom: 10 }}>
           <g fill={state.color} stroke={state.color}>
             <rect x={2}  y={28} width={6} height={10} opacity={state.bars >= 1 ? 1 : 0.2} />
             <rect x={14} y={22} width={6} height={16} opacity={state.bars >= 2 ? 1 : 0.2} />
@@ -104,7 +104,7 @@ const CellularSignalDisplay: React.FC<CellularSignalDisplayProps> = ({
             <rect x={38} y={4}  width={6} height={34} opacity={state.bars >= 4 ? 1 : 0.2} />
           </g>
         </svg>
-        <div style={{ fontSize: 12, fontWeight: 700, color: state.color, letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: state.color, letterSpacing: 0.5, marginTop: 2, textAlign: 'center', maxWidth: 100, lineHeight: 1.2 }}>
           {state.label}
         </div>
       </div>
