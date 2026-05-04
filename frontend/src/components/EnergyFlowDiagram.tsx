@@ -1172,7 +1172,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // "Activated" means there's an alarm/error condition
   const batteryRelayValue = telemetryData.batMainRelay?.value ?? null;
   const batteryRelayStatus = batteryRelayValue !== null 
-    ? (batteryRelayValue === 1 ? 'Activated' : batteryRelayValue === 0 ? 'Not Activated' : 'Invalid') 
+    ? (batteryRelayValue === 1 ? 'Open' : batteryRelayValue === 0 ? 'Not Activated' : 'Closed') 
     : '--';
   const batteryRelayActive = batteryRelayValue === 1;  // Alarm is active
   const batteryRelayClosed = batteryRelayValue === 0;  // Relay is closed, power can flow
