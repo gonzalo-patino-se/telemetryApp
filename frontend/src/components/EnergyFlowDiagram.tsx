@@ -311,7 +311,7 @@ const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoa
   // Cellular: value === 1 means Low Signal Detected (BAD, red), any other value means Low Signal Not Detected (OK, green).
   const cellularState: 'not_detected' | 'detected' = (cellularSignal === 1) ? 'detected' : 'not_detected';
   const cellularColor = cellularState === 'detected' ? '#ef4444' : '#22c55e';
-  const cellularLabel = cellularLoading ? '...' : cellularState === 'detected' ? 'Low Signal Detected' : 'Low Signal Not Detected';
+  const cellularLabel = cellularLoading ? '...' : cellularState === 'detected' ? 'Low Signal Detected' : 'Low Signal Cellular Not Detected';
   const cellularBars = cellularState === 'detected' ? 1 : 4;
   
   return (
@@ -416,10 +416,10 @@ const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoa
           <rect x={3} y={1} width={3} height={8} opacity={cellularBars >= 2 ? 1 : 0.25} />
           <rect x={7} y={-2} width={3} height={11} opacity={cellularBars >= 4 ? 1 : 0.25} />
         </g>
-        <text x={32} y={4} textAnchor="middle" className="wifi-status-text" style={{ fill: cellularColor, fontWeight: 600 }}>
+        <text x={32} y={30} textAnchor="middle" className="wifi-status-text" style={{ fontSize: 10.6, fill: cellularColor, fontWeight: 400 }}>
           {cellularLabel}
         </text>
-        <text x={32} y={15} textAnchor="middle" className="wifi-status-text" style={{ fontSize: 8 }}>
+        <text x={32} y={15} textAnchor="middle" className="wifi-status-text" style={{ fontSize: 8.5 }}>
           Cellular
         </text>
       </g>
