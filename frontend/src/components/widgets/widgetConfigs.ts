@@ -24,7 +24,7 @@ import {
   buildBattery1TempFastQuery, buildBattery2TempFastQuery, buildBattery3TempFastQuery,
   buildBattery1SoCFastQuery, buildBattery2SoCFastQuery, buildBattery3SoCFastQuery,
   buildBattery1CurrentFastQuery, buildBattery2CurrentFastQuery, buildBattery3CurrentFastQuery,
-  buildBatteryMainRelayQuery,
+  buildBatteryMainRelayQuery, buildBatteryHeaterStatusQuery,
   // Inverter Operating State queries
   buildInverterOperatingStateQuery, buildInverterOperatingStateFastQuery,
   // ETP Connection Status queries
@@ -33,6 +33,7 @@ import {
   buildBgcsRelayStatusQuery, buildBgcsRelayStatusFastQuery,
   // Cellular Low-Signal-Strength alarm history (Alarms table, value 0/1)
   buildCellularSignalStrengthQuery,
+  
 } from '../../utils/kqlBuilders';// ============================================================================
 // Grid Voltage RMS L1 Widget
 // ============================================================================
@@ -479,9 +480,24 @@ export const battery3CurrentConfig: WidgetConfig = {
 export const batteryMainRelayConfig: WidgetConfig = {
   label: 'Battery Relay Status',
   unit: '',
-  colorScheme: 'orange',
+  colorScheme: 'blue',
   csvPrefix: 'battery_main_relay',
   buildQuery: buildBatteryMainRelayQuery,
+  integerYAxis: true,
+};
+
+// ============================================================================
+// Battery Heater Status Widget
+// ============================================================================
+
+
+export const batteryHeaterStatusConfig: WidgetConfig = {
+  label: 'Battery Heater Status',
+  unit: '',
+  colorScheme: 'orange',
+  csvPrefix: 'battery_heater_status',
+  buildQuery: buildBatteryHeaterStatusQuery,
+  integerYAxis: true,
 };
 
 // ============================================================================
@@ -589,6 +605,8 @@ export const allWidgetConfigs = {
   battery3Current: battery3CurrentConfig,
   // Battery Main Relay
   batteryMainRelay: batteryMainRelayConfig,
+  // Battery Heater Status
+  batteryHeaterStatus: batteryHeaterStatusConfig,
   // Load Measurements (Fast Telemetry)
   loadVoltageL1: loadVoltageL1Config,
   loadVoltageL2: loadVoltageL2Config,

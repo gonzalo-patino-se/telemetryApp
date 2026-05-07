@@ -39,6 +39,7 @@ import {
   battery3VoltageConfig, battery3TempConfig, battery3SoCConfig, battery3CurrentConfig,
   // Battery main relay
   batteryMainRelayConfig,
+  batteryHeaterStatusConfig,
 } from '../widgets/widgetConfigs';
 import type { WidgetConfig } from '../widgets/BaseTimeSeriesWidget';
 import type { SignalDef } from './types';
@@ -63,9 +64,9 @@ const PALETTE: Record<string, PaletteEntry> = {
   // System status — distinct hues, all solid
   wifi_rssi:        { color: '#ec4899', dash: DASH_SOLID },   // pink
   inverter_op:      { color: '#64748b', dash: DASH_SOLID },   // slate
-  etp_conn:         { color: '#9ca3af', dash: DASH_SOLID },   // gray
-  bgcs_relay:       { color: '#d946ef', dash: DASH_SOLID },   // fuchsia
-  battery_relay:    { color: '#c2410c', dash: DASH_DASHED },  // burnt orange
+  etp_conn:         { color: '#1909f3ff', dash: DASH_SOLID },   // gray
+  bgcs_relay:       { color: '#46efd3ff', dash: DASH_SOLID },   // fuchsia
+  battery_relay:    { color: '#b0c20cff', dash: DASH_DASHED },  // burnt orange
 
   // PV Voltage  (4 distinct hues — no shared family color)
   pv1_v: { color: '#10b981', dash: DASH_SOLID },     // emerald
@@ -79,38 +80,40 @@ const PALETTE: Record<string, PaletteEntry> = {
   pv4_i: { color: '#be123c', dash: DASH_SOLID },     // crimson
 
   // Grid
-  grid_v_l1: { color: '#f59e0b', dash: DASH_SOLID },   // amber solid
+  grid_v_l1: { color: '#f5130bff', dash: DASH_SOLID },   // amber solid
   grid_v_l2: { color: '#f59e0b', dash: DASH_DASHED },  // amber dashed
-  grid_i_l1: { color: '#ef4444', dash: DASH_SOLID },   // red solid
-  grid_i_l2: { color: '#ef4444', dash: DASH_DASHED },  // red dashed
-  grid_freq: { color: '#eab308', dash: DASH_SOLID },   // yellow solid
+  grid_i_l1: { color: '#ef44d0ff', dash: DASH_SOLID },   // red solid
+  grid_i_l2: { color: '#44ef5bff', dash: DASH_DASHED },  // red dashed
+  grid_freq: { color: '#c8ff00ff', dash: DASH_SOLID },   // yellow solid
   grid_p:    { color: '#a16207', dash: DASH_SOLID },   // brown solid
 
   // Load
   load_v_l1: { color: '#6366f1', dash: DASH_SOLID },   // indigo solid
-  load_v_l2: { color: '#6366f1', dash: DASH_DASHED },  // indigo dashed
-  load_i_l1: { color: '#f43f5e', dash: DASH_SOLID },   // rose solid
-  load_i_l2: { color: '#f43f5e', dash: DASH_DASHED },  // rose dashed
+  load_v_l2: { color: '#f16371ff', dash: DASH_DASHED },  // indigo dashed
+  load_i_l1: { color: '#e10786ff', dash: DASH_SOLID },   // rose solid
+  load_i_l2: { color: '#3ff4a6ff', dash: DASH_DASHED },  // rose dashed
   load_freq: { color: '#06b6d4', dash: DASH_SOLID },   // cyan solid
   load_p:    { color: '#3b82f6', dash: DASH_SOLID },   // blue solid
 
   // Battery Voltage  (violet family)
-  batt_v:  { color: '#8b5cf6', dash: DASH_SOLID },     // aggregate
+  batt_v:  { color: '#5cf661ff', dash: DASH_SOLID },     // aggregate
   batt1_v: { color: '#8b5cf6', dash: DASH_DASHED },
-  batt2_v: { color: '#8b5cf6', dash: DASH_DOTTED },
-  batt3_v: { color: '#8b5cf6', dash: DASH_DASHDOT },
+  batt2_v: { color: '#5cf1f6ff', dash: DASH_DOTTED },
+  batt3_v: { color: '#dc0a0aff', dash: DASH_DASHDOT },
   // Battery Temperature  (orange family)
-  batt1_t: { color: '#fb923c', dash: DASH_SOLID },
-  batt2_t: { color: '#fb923c', dash: DASH_DASHED },
+  batt1_t: { color: '#3c55fbff', dash: DASH_SOLID },
+  batt2_t: { color: '#de3cfbff', dash: DASH_DASHED },
   batt3_t: { color: '#fb923c', dash: DASH_DOTTED },
   // Battery SoC  (lime family)
   batt1_soc: { color: '#84cc16', dash: DASH_SOLID },
-  batt2_soc: { color: '#84cc16', dash: DASH_DASHED },
-  batt3_soc: { color: '#84cc16', dash: DASH_DOTTED },
+  batt2_soc: { color: '#3416ccff', dash: DASH_DASHED },
+  batt3_soc: { color: '#cc163dff', dash: DASH_DOTTED },
   // Battery Current  (sky family)
-  batt1_i: { color: '#0ea5e9', dash: DASH_SOLID },
+  batt1_i: { color: '#d70ee9ff', dash: DASH_SOLID },
   batt2_i: { color: '#0ea5e9', dash: DASH_DASHED },
-  batt3_i: { color: '#0ea5e9', dash: DASH_DOTTED },
+  batt3_i: { color: '#e9c10eff', dash: DASH_DOTTED },
+  // Battery Heater Status (red-orange, solid)
+  batt_heater: { color: '#f94016ff', dash: DASH_DOTTED },
 };
 
 /** Adapter: WidgetConfig + palette entry -> SignalDef. */
@@ -196,6 +199,7 @@ export const SIGNAL_CATALOG: SignalDef[] = [
   toSignal('batt3_t',   'Battery Module 3', battery3TempConfig),
   toSignal('batt3_soc', 'Battery Module 3', battery3SoCConfig),
   toSignal('batt3_i',   'Battery Module 3', battery3CurrentConfig),
+  toSignal('batt_heater', 'Battery', batteryHeaterStatusConfig),
 ];
 
 /** O(1) lookup for selection ids. */
