@@ -441,6 +441,8 @@ export function buildBattery3CurrentQuery(serial: string, startDate: Date, endDa
   return buildTelemetryQuery({ serial, startDate, endDate, telemetryName: '/BMS/MODULE3/STAT/I' });
 }
 
+
+
 // ============================================================================
 // Battery Relay Status Widget (Alarms table)
 // ============================================================================
@@ -462,6 +464,24 @@ export function buildBatteryMainRelayQuery(serial: string, startDate: Date, endD
   `.trim();
 }
 
+export function buildBatteryHeaterStatusQuery(
+  serial: string,
+  startDate: Date,
+  endDate: Date
+): string {
+
+  return `
+    let s = '${serial}';
+    let start = datetime(${startDate.toISOString()});
+    let finish = datetime(${endDate.toISOString()});
+    Alarms
+    | where comms_serial contains s
+    | where name contains '/BMS/CLUSTER/EVENT/INFO/HEATER_FUNCTION_STATUS'
+    | where localtime between (start .. finish)
+    | project localtime, value_double = value
+    | order by localtime asc
+  `.trim();
+}
 // ============================================================================
 // Fast Telemetry Widgets (Load Measurements- ACTUALLYACPORT MEasurements not load)
 // Uses sourcedatastreamingfornam table with fast-telemetry msgType
