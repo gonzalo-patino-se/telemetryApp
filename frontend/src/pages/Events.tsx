@@ -13,6 +13,13 @@ import { useAuth } from '../context/AuthContext';
 import { useTimeRangeOptional } from '../context/TimeRangeContext';
 import api from '../services/api';
 import {
+  normalizeAlarmRows,
+  severityFromName,
+  parseEventName,
+  type NormalizedEvent,
+  type EventSeverity,
+} from '../utils/eventsParser';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -29,12 +36,6 @@ import {
 // ============================================================================
 // Types
 // ============================================================================
-
-interface AlarmEvent {
-  localtime: string;
-  name: string;
-  value: string | number;
-}
 
 interface AggregatedEvent {
   name: string;
@@ -77,10 +78,12 @@ function buildEventsKql(serial: string, from: Date, to: Date, limit: number = MA
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
-  
-  // Build output filter clause
-  const outputClause = outputFilter === 'all' ? '' : `| where value == ${outputFilter}`;
-  
+
+  // ADX stores `value` as a string, so always compare as a string literal.
+  // Comparing `value == 1` (numeric) silently coerces and has tripped
+  // production queries in the past; `value == "1"` is unambiguous.
+  const outputClause = outputFilter === 'all' ? '' : `| where value == "${outputFilter}"`;
+
   return `
     let s = '${s}';
     let start = datetime(${startLocal});
@@ -100,9 +103,9 @@ function buildAggregationKql(serial: string, from: Date, to: Date, limit: number
   const s = escapeKqlString(serial);
   const startLocal = toLocalKqlDatetime(from);
   const endLocal = toLocalKqlDatetime(to);
-  
-  // Build output filter clause
-  const outputClause = outputFilter === 'all' ? '' : `| where value == ${outputFilter}`;
+
+  // Same string-comparison fix as `buildEventsKql` above.
+  const outputClause = outputFilter === 'all' ? '' : `| where value == "${outputFilter}"`;
   
   return `
     let s = '${s}';
@@ -119,16 +122,12 @@ function buildAggregationKql(serial: string, from: Date, to: Date, limit: number
   `.trim();
 }
 
-// Get severity level from event name
-function getSeverityFromName(name: string): 'critical' | 'warning' | 'info' {
-  const lower = name.toLowerCase();
-  if (lower.includes('error') || lower.includes('fault') || lower.includes('critical') || lower.includes('fail')) {
-    return 'critical';
-  }
-  if (lower.includes('warn') || lower.includes('alarm')) {
-    return 'warning';
-  }
-  return 'info';
+// Get severity level from event name.
+// Delegates to the shared parser, which understands the structured
+// `/SUBSYS/.../EVENT/<BUCKET>/<CODE>` layout and falls back to substring
+// matching for free-form names.
+function getSeverityFromName(name: string): EventSeverity {
+  return severityFromName(name);
 }
 
 // Get status color
@@ -141,14 +140,11 @@ function getStatusColor(severity: 'critical' | 'warning' | 'info'): string {
   }
 }
 
-// Format event name for display
+// Format event name for display (used by aggregation/Pareto labels).
+// Uses the parser's `pretty` field so the leaf code is humanised and the
+// breadcrumb is added as context.
 function formatEventName(name: string): string {
-  // Remove common prefixes and make readable
-  return name
-    .replace(/^\/[A-Z]+\//, '')
-    .replace(/\//g, ' → ')
-    .replace(/_/g, ' ')
-    .trim();
+  return parseEventName(name).pretty;
 }
 
 // ============================================================================
@@ -227,7 +223,7 @@ export default function Events() {
   const timeRangeContext = useTimeRangeOptional();
   
   // State
-  const [events, setEvents] = useState<AlarmEvent[]>([]);
+  const [events, setEvents] = useState<NormalizedEvent[]>([]);
   const [aggregation, setAggregation] = useState<{ name: string; count_: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -279,7 +275,12 @@ export default function Events() {
       const eventsKql = buildEventsKql(serial, fromDT, toDT, MAX_EVENTS_FETCH, outputFilter);
       const eventsRes = await api.post('/query_adx/', { kql: eventsKql });
       const eventsData = Array.isArray(eventsRes.data?.data) ? eventsRes.data.data : [];
-      setEvents(eventsData);
+      // Normalize every row up-front so the rest of the page works in terms
+      // of a single, well-typed shape (parsed timestamp, parsed name with
+      // breadcrumb + code, parsed value with Active/Cleared label,
+      // structured severity). Malformed rows are dropped instead of being
+      // rendered as "Invalid Date" or "(unnamed)".
+      setEvents(normalizeAlarmRows(eventsData));
       
       // Fetch aggregation
       const aggKql = buildAggregationKql(serial, fromDT, toDT, MAX_EVENTS_FETCH, outputFilter);
@@ -302,12 +303,14 @@ export default function Events() {
     fetchEvents();
   }, [fetchEvents]);
   
-  // Filtered events
+  // Filtered events. `event.name.raw` is the original ADX path; search
+  // matches the leaf code OR the breadcrumb so users can search by either
+  // "DC_DISCONNECT" or "ACPORT".
   const filteredEvents = useMemo(() => {
+    const needle = searchTerm.trim().toLowerCase();
     return events.filter(event => {
-      const severity = getSeverityFromName(event.name);
-      if (severityFilter !== 'all' && severity !== severityFilter) return false;
-      if (searchTerm && !event.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (severityFilter !== 'all' && event.severity !== severityFilter) return false;
+      if (needle && !event.name.raw.toLowerCase().includes(needle)) return false;
       return true;
     });
   }, [events, severityFilter, searchTerm]);
@@ -485,13 +488,15 @@ export default function Events() {
     },
   };
   
-  // Summary stats
+  // Summary stats. Iterate once instead of three filter passes.
   const stats = useMemo(() => {
-    const total = events.length;
-    const critical = events.filter(e => getSeverityFromName(e.name) === 'critical').length;
-    const warning = events.filter(e => getSeverityFromName(e.name) === 'warning').length;
-    const info = events.filter(e => getSeverityFromName(e.name) === 'info').length;
-    return { total, critical, warning, info };
+    let critical = 0, warning = 0, info = 0;
+    for (const e of events) {
+      if (e.severity === 'critical') critical++;
+      else if (e.severity === 'warning') warning++;
+      else info++;
+    }
+    return { total: events.length, critical, warning, info };
   }, [events]);
   
   return (
@@ -790,33 +795,48 @@ export default function Events() {
                 </thead>
                 <tbody>
                   {filteredEvents.slice(0, isTableExpanded ? MAX_EVENTS_DISPLAY : DEFAULT_EVENTS_DISPLAY).map((event, index) => {
-                    const severity = getSeverityFromName(event.name);
+                    const severity = event.severity;
                     return (
-                      <tr 
-                        key={`${event.localtime}-${event.name}-${index}`}
+                      <tr
+                        key={`${event.isoTimestamp}-${event.name.raw}-${index}`}
                         style={{
                           background: index % 2 === 0 ? 'transparent' : 'rgba(15, 23, 42, 0.3)',
                         }}
                       >
                         <td style={{ ...styles.td, width: '120px' }}>
                           <span style={styles.statusDot(severity)} />
-                          <span style={{ 
-                            fontSize: '13px', 
-                            fontWeight: 600, 
+                          <span style={{
+                            fontSize: '13px',
+                            fontWeight: 600,
                             color: getStatusColor(severity),
-                            textTransform: 'uppercase' 
+                            textTransform: 'uppercase'
                           }}>
                             {severity}
                           </span>
                         </td>
                         <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'nowrap' as const, width: '200px' }}>
-                          {new Date(event.localtime).toLocaleString()}
+                          {/*
+                            Render via the parsed epoch ms so all browsers
+                            (Chrome / Firefox / Safari / WebKit-based) format
+                            consistently. `new Date(rawString)` was unreliable
+                            for the ADX "YYYY-MM-DD HH:MM:SS+HH:MM" form.
+                          */}
+                          {new Date(event.timestamp).toLocaleString()}
                         </td>
                         <td style={{ ...styles.td, wordBreak: 'break-word' as const }}>
-                          {event.name}
+                          {/* Show the code prominently with the breadcrumb subtle. */}
+                          <div style={{ fontWeight: 600, color: colors.textPrimary }}>
+                            {event.name.code}
+                          </div>
+                          {event.name.breadcrumb && (
+                            <div style={{ fontSize: '11px', color: colors.textTertiary, marginTop: 2 }}>
+                              {event.name.breadcrumb}
+                            </div>
+                          )}
                         </td>
                         <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '13px', width: '120px' }}>
-                          {String(event.value)}
+                          {/* Human-readable Active/Cleared instead of raw 1/0. */}
+                          {event.value.label}
                         </td>
                       </tr>
                     );
