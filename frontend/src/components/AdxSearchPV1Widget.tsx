@@ -287,8 +287,12 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
-    // Calculate statistics from points
-    const stats = useMemo(() => calculatePointStatistics(points), [points]);
+    // Calculate statistics from points.
+    // Ignore 0 values so they do not skew min / max / avg / sample deviation.
+    const stats = useMemo(
+      () => calculatePointStatistics(points, [0]),
+      [points],
+    );
 
     // Dynamic point styles to highlight zero values with a star
     const pointStyles = useMemo(() => {
@@ -557,7 +561,7 @@
                 <div className="text-[10px] text-text-tertiary">V</div>
               </div>
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Std Dev</div>
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Sample Deviation</div>
                 <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.stdDev)}</div>
                 <div className="text-[10px] text-text-tertiary">V</div>
               </div>

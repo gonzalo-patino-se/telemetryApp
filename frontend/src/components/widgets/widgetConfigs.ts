@@ -107,6 +107,9 @@ export const wifiSignalConfig: WidgetConfig = {
   offlineLabel: 'Device Offline',
   csvPrefix: 'wifi_signal',
   buildQuery: buildWifiSignalQuery,
+  // Ignore offline sentinel (-127 dBm) and invalid 0 dBm readings when
+  // computing min / max / avg / sample deviation.
+  statsExcludeValues: [-127, 0],
 };
 
 // ============================================================================
