@@ -19,34 +19,58 @@ export interface DataStatistics {
 }
 
 /**
- * Calculate statistics from an array of numeric values
- * Returns min, max, average, and standard deviation
+ * Calculate statistics from an array of numeric values.
+ *
+ * Returns min, max, average and the sample standard deviation
+ * (a.k.a. "sample deviation", using Bessel's correction with N-1).
+ *
+ * @param values    Array of numeric values to analyze.
+ * @param exclude   Optional list of values to ignore for the analysis
+ *                  (e.g. sentinel/offline readings such as 0 or -127 dBm).
  */
-export function calculateStatistics(values: number[]): DataStatistics | null {
+export function calculateStatistics(
+  values: number[],
+  exclude?: number[],
+): DataStatistics | null {
   if (!values || values.length === 0) return null;
-  
-  const count = values.length;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const sum = values.reduce((acc, val) => acc + val, 0);
+
+  // Filter out non-finite values and any explicitly excluded sentinel values.
+  const excludeSet = exclude && exclude.length > 0 ? new Set(exclude) : null;
+  const filtered = values.filter(
+    v => Number.isFinite(v) && (!excludeSet || !excludeSet.has(v)),
+  );
+  if (filtered.length === 0) return null;
+
+  const count = filtered.length;
+  const min = Math.min(...filtered);
+  const max = Math.max(...filtered);
+  const sum = filtered.reduce((acc, val) => acc + val, 0);
   const avg = sum / count;
-  
-  // Calculate standard deviation
-  const squaredDiffs = values.map(val => Math.pow(val - avg, 2));
-  const avgSquaredDiff = squaredDiffs.reduce((acc, val) => acc + val, 0) / count;
-  const stdDev = Math.sqrt(avgSquaredDiff);
-  
+
+  // Sample standard deviation (Bessel's correction: divide by N-1).
+  // For a single sample the sample deviation is undefined; fall back to 0.
+  const squaredDiffs = filtered.map(val => (val - avg) ** 2);
+  const sumSquaredDiff = squaredDiffs.reduce((acc, val) => acc + val, 0);
+  const stdDev = count > 1 ? Math.sqrt(sumSquaredDiff / (count - 1)) : 0;
+
   return { count, min, max, avg, stdDev };
 }
 
 /**
- * Calculate statistics from chart scatter points
+ * Calculate statistics from chart scatter points.
+ *
+ * @param points   Scatter points whose `y` values will be analyzed.
+ * @param exclude  Optional list of values to ignore (e.g. `[0]` for power
+ *                 charts or `[-127, 0]` for Wi‑Fi signal strength).
  */
-export function calculatePointStatistics(points: ScatterDataPoint[]): DataStatistics | null {
+export function calculatePointStatistics(
+  points: ScatterDataPoint[],
+  exclude?: number[],
+): DataStatistics | null {
   const values = points
     .map(p => p.y as number)
     .filter(v => Number.isFinite(v));
-  return calculateStatistics(values);
+  return calculateStatistics(values, exclude);
 }
 
 /**

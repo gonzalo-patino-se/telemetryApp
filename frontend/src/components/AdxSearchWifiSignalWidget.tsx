@@ -339,8 +339,13 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
-    // Calculate statistics from points
-    const stats = useMemo(() => calculatePointStatistics(points), [points]);
+    // Calculate statistics from points.
+    // Ignore the -127 dBm offline sentinel and invalid 0 dBm readings so
+    // they do not skew min / max / avg / sample deviation.
+    const stats = useMemo(
+      () => calculatePointStatistics(points, [OFFLINE_VALUE, 0]),
+      [points],
+    );
 
     // Helper to determine point type: offline, zero, or normal
     const getPointType = (value: number): 'offline' | 'zero' | 'normal' => {
@@ -699,7 +704,7 @@
                 <div className="text-[10px] text-text-tertiary">dBm</div>
               </div>
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Std Dev</div>
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Sample Deviation</div>
                 <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.stdDev)}</div>
                 <div className="text-[10px] text-text-tertiary">dBm</div>
               </div>

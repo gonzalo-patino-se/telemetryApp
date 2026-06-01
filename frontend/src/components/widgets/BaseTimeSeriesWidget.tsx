@@ -91,6 +91,13 @@ export interface WidgetConfig {
   valueMapping?: Record<number, { label: string; color: string }>;
   /** Force Y-axis to show only integers (useful for discrete state values) */
   integerYAxis?: boolean;
+  /**
+   * Values to exclude from statistical analysis (min/max/avg/sample deviation).
+   * Defaults to `[0]` so that "no reading" / zero samples do not skew stats.
+   * For Wi‑Fi signal strength this should be `[-127, 0]` because -127 dBm is
+   * the offline sentinel and 0 dBm is an invalid reading.
+   */
+  statsExcludeValues?: number[];
 }
 
 export interface BaseTimeSeriesWidgetProps {
@@ -355,8 +362,14 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     return downsampleData(list, 5000);
   }, [rows]);
 
-  // Calculate statistics from points
-  const stats = useMemo(() => calculatePointStatistics(points), [points]);
+  // Calculate statistics from points.
+  // Excluded values (e.g. 0, or -127 dBm for Wi‑Fi) are filtered out so that
+  // sentinel/offline readings do not skew the min/max/avg/sample deviation.
+  const statsExcludeValues = config.statsExcludeValues ?? [0];
+  const stats = useMemo(
+    () => calculatePointStatistics(points, statsExcludeValues),
+    [points, statsExcludeValues],
+  );
 
   // Point styles for offline values
   const isSpecialValue = offlineValue !== undefined 
@@ -877,7 +890,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
                 <div className="text-[10px] text-text-tertiary">{unit}</div>
               </div>
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Std Dev</div>
+                <div className="text-[10px] uppercase tracking-wide text-text-tertiary mb-0.5">Sample Deviation</div>
                 <div className="text-sm font-semibold text-text-primary">{formatStatValue(stats.stdDev)}</div>
                 <div className="text-[10px] text-text-tertiary">{unit}</div>
               </div>
