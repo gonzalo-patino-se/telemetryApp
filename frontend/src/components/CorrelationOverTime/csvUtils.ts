@@ -142,3 +142,98 @@ export function buildPinsCsvFilename(serial: string | null | undefined): string 
   const safeSerial = (serial ?? 'unknown').replace(/[^A-Za-z0-9_.-]/g, '_');
   return `correlation_pins_${safeSerial}_${stamp}.csv`;
 }
+
+// ---------------------------------------------------------------------------
+// Full export: every signal sample + every event currently on the chart.
+// ---------------------------------------------------------------------------
+
+export interface BuildFullCsvArgs {
+  series: SignalSeries[];
+  events: EventInstance[];
+  /** Optional serial included in every row for traceability. */
+  serial?: string;
+}
+
+/**
+ * Build a CSV string containing **every** signal sample and **every** event
+ * currently loaded in the Correlation Over Time card. Rows are sorted by
+ * timestamp ascending so the file is easy to scan / diff.
+ *
+ * Columns: iso_timestamp, epoch_ms, serial, type, name, value, unit, detail
+ *
+ * `type` is `signal` or `event`.
+ *   - For signals: `value` is the numeric reading, `unit` is the signal unit.
+ *   - For events:  `value` is the raw alarm value (1/0), `unit` is empty,
+ *                  `detail` carries the human-readable description.
+ */
+export function buildFullCsv(args: BuildFullCsvArgs): string {
+  const { series, events, serial } = args;
+  const header = [
+    'iso_timestamp',
+    'epoch_ms',
+    'serial',
+    'type',
+    'name',
+    'value',
+    'unit',
+    'detail',
+  ].join(',');
+
+  type Row = { t: number; cells: string[] };
+  const rows: Row[] = [];
+
+  // Signal samples — one row per point per series.
+  for (const s of series) {
+    for (const p of s.points) {
+      rows.push({
+        t: p.t,
+        cells: [
+          new Date(p.t).toISOString(),
+          String(p.t),
+          csvEscape(serial ?? ''),
+          'signal',
+          csvEscape(s.label),
+          formatValue(p.v),
+          csvEscape(s.unit),
+          '',
+        ],
+      });
+    }
+  }
+
+  // Events — one row per event occurrence.
+  for (const e of events) {
+    rows.push({
+      t: e.t,
+      cells: [
+        new Date(e.t).toISOString(),
+        String(e.t),
+        csvEscape(serial ?? ''),
+        'event',
+        csvEscape(e.title),
+        e.value != null ? String(e.value) : '',
+        '',
+        csvEscape(e.description ?? ''),
+      ],
+    });
+  }
+
+  // Sort by timestamp ascending; ties keep insertion order (signals before
+  // events for the same instant because we pushed signals first).
+  rows.sort((a, b) => a.t - b.t);
+
+  const lines: string[] = [header];
+  for (const r of rows) lines.push(r.cells.join(','));
+  return lines.join('\r\n') + '\r\n';
+}
+
+/** Build a deterministic, filesystem-safe filename for the "export all" CSV. */
+export function buildFullCsvFilename(serial: string | null | undefined): string {
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, '-')
+    .replace(/T/, '_')
+    .replace(/Z$/, 'Z');
+  const safeSerial = (serial ?? 'unknown').replace(/[^A-Za-z0-9_.-]/g, '_');
+  return `correlation_all_${safeSerial}_${stamp}.csv`;
+}
