@@ -27,7 +27,7 @@ import {
   togglePin,
   toleranceFromSpan,
 } from './interactionUtils';
-import { buildPinsCsv, buildPinsCsvFilename } from './csvUtils';
+import { buildPinsCsv, buildPinsCsvFilename, buildFullCsv, buildFullCsvFilename } from './csvUtils';
 import type { EventInstance, SignalSeries } from './types';
 
 let failures = 0;
@@ -304,6 +304,46 @@ console.log('\n[csvUtils.buildPinsCsvFilename]');
   assert(f1.endsWith('.csv'), 'filename ends with .csv');
   const f2 = buildPinsCsvFilename(null);
   assert(f2.startsWith('correlation_pins_unknown_'), 'null serial -> "unknown"');
+}
+
+// ---------------------------------------------------------------------------
+console.log('\n[csvUtils.buildFullCsv]');
+{
+  const series: SignalSeries[] = [
+    { id: 'pv1_v', label: 'PV1 Voltage', unit: 'V', color: '#10b981',
+      points: [{ t: 3000, v: 382.1 }, { t: 1000, v: 380.5 }] },
+    { id: 'gridv', label: 'Grid, V', unit: 'V', color: '#f59e0b',
+      points: [{ t: 2000, v: 119.8 }] },
+  ];
+  const events: EventInstance[] = [
+    { id: 'e1', categoryId: 'AC_VOLT_HIGH', categoryLabel: 'AC_VOLT_HIGH',
+      color: '#ef4444', t: 2500, title: 'AC_VOLT_HIGH', value: 1, description: 'active' },
+  ];
+  const csv = buildFullCsv({ series, events, serial: 'XYZ' });
+  const lines = csv.trim().split(/\r?\n/);
+  assert(lines[0].startsWith('iso_timestamp,epoch_ms,'), 'full-csv header present');
+  // 2 + 1 signal rows + 1 event row = 4 data rows
+  assert(lines.length === 1 + 4, `expected 4 data rows, got ${lines.length - 1}`);
+  // Rows should be sorted by epoch_ms ascending: 1000, 2000, 2500, 3000
+  const tCols = lines.slice(1).map(l => Number(l.split(',')[1]));
+  assert(
+    tCols.every((v, i, a) => i === 0 || a[i - 1] <= v),
+    `rows sorted ascending by epoch_ms, got ${tCols.join(',')}`,
+  );
+  assert(csv.includes('"Grid, V"'), 'comma-containing signal label is quoted');
+  assert(csv.includes(',event,AC_VOLT_HIGH,1,,active'), 'event row formatted correctly');
+  assert(csv.split('\r\n').slice(1).every(l => !l || l.includes('XYZ')), 'serial column populated on every row');
+
+  // Empty inputs -> header-only file (no data rows, no crash).
+  const empty = buildFullCsv({ series: [], events: [] });
+  assert(empty.trim().split(/\r?\n/).length === 1, 'empty input yields header-only CSV');
+}
+
+console.log('\n[csvUtils.buildFullCsvFilename]');
+{
+  const f = buildFullCsvFilename('serial/with*bad?chars');
+  assert(/^correlation_all_serial_with_bad_chars_/.test(f), 'full-csv filename sanitizes serial');
+  assert(f.endsWith('.csv'), 'full-csv filename ends with .csv');
 }
 
 // ---------------------------------------------------------------------------

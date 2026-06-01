@@ -11,13 +11,13 @@ import React from 'react';
 import WidgetCard from '../layout/WidgetCard';
 import { useSerial } from '../../context/SerialContext';
 import { useTimeRangeOptional } from '../../context/TimeRangeContext';
+import { useAuth } from '../../context/AuthContext';
 
 import { OverlayChart } from './OverlayChart';
 import { Legend } from './Legend';
 import { Selector } from './Selector';
 import type { SelectorEventItem } from './Selector';
 import { useCorrelationData } from './useCorrelationData';
-import { DEFAULT_SIGNAL_IDS } from './signalCatalog';
 import type { EventsOutputFilter } from './eventCatalog';
 import { computeXDomain } from './chartUtils';
 import {
@@ -26,6 +26,8 @@ import {
   toleranceFromSpan,
 } from './interactionUtils';
 import {
+  buildFullCsv,
+  buildFullCsvFilename,
   buildPinsCsv,
   buildPinsCsvFilename,
   downloadCsv,
@@ -65,17 +67,21 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
   // ----- Time + serial bindings -----------------------------------------
   const serialCtx = useSerial();
   const tr = useTimeRangeOptional();
+  const { isAuthenticated } = useAuth();
 
   const serial = (serialProp ?? serialCtx.serial ?? '').trim();
   const start = tr?.globalTimeRange.startDate ?? null;
   const end = tr?.globalTimeRange.endDate ?? null;
 
   // ----- Selection state -------------------------------------------------
+  // Defaults are intentionally empty: when the user (re)opens the dashboard
+  // — including after a session timeout that forces re-login — nothing is
+  // pre-selected. They must explicitly pick signals and/or turn events on.
   const [selectedSignalIds, setSelectedSignalIds] =
-    React.useState<string[]>(DEFAULT_SIGNAL_IDS);
+    React.useState<string[]>([]);
 
-  // Events default to ON; user picks individual names from the dynamic list.
-  const [eventsEnabled, setEventsEnabled] = React.useState(true);
+  // Events start OFF; user opts in.
+  const [eventsEnabled, setEventsEnabled] = React.useState(false);
   // DENY-list: names the user has explicitly turned OFF. New names default
   // to "shown" because they aren't in this set.
   const [excludedEventNames, setExcludedEventNames] = React.useState<string[]>(
@@ -122,6 +128,19 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
       return next.length === prev.length ? prev : next;
     });
   }, [xDomain[0], xDomain[1]]);
+
+  // ----- Session-timeout reset ------------------------------------------
+  // Whenever the user is no longer authenticated (logout or session timeout
+  // forcing a re-login), wipe every selection so that on the next sign-in
+  // the card opens with nothing pre-selected — matching the "fresh" defaults.
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      setSelectedSignalIds([]);
+      setEventsEnabled(false);
+      setExcludedEventNames([]);
+      setPins([]);
+    }
+  }, [isAuthenticated]);
 
   // ----- Event picker bridging ------------------------------------------
   // selector items: every available name with color + count
@@ -179,6 +198,18 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
     const csv = buildPinsCsv({ pins, series, events, tolerance: tol, serial });
     downloadCsv(buildPinsCsvFilename(serial || null), csv);
   }, [pins, series, events, xDomain, serial]);
+
+  // Export every signal sample + every event currently loaded into the
+  // chart (not just the pinned timestamps).
+  const handleExportAll = React.useCallback(() => {
+    const csv = buildFullCsv({ series, events, serial });
+    downloadCsv(buildFullCsvFilename(serial || null), csv);
+  }, [series, events, serial]);
+
+  const hasAnyData = React.useMemo(
+    () => series.some(s => s.points.length > 0) || events.length > 0,
+    [series, events],
+  );
 
   const handleToggleEventsEnabled = React.useCallback(() => {
     setEventsEnabled(prev => {
@@ -274,6 +305,18 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
       >
         ↻ Refresh
       </button>
+
+      {hasAnyData && (
+        <button
+          type="button"
+          onClick={handleExportAll}
+          style={buttonStyle}
+          aria-label="Export all signals and events currently shown in the chart to CSV"
+          title="Download a CSV with every signal sample and every event currently loaded in the chart"
+        >
+          ⤓ Export all
+        </button>
+      )}
 
       {pins.length > 0 && (
         <>
