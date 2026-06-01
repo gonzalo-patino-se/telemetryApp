@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTimeRangeOptional } from '../../context/TimeRangeContext';
+import { useRefreshIntervalOptional } from '../../context/RefreshIntervalContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -180,6 +181,12 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 }) => {
   const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
+  // Subscribe to the global auto-refresh tick (Settings → Data Refresh).
+  // We only need the signal value -- when it increments, the auto-fetch
+  // effect below re-runs and pulls fresh data. The hook is optional so the
+  // widget can still be rendered in tests / stories without a provider.
+  const refreshContext = useRefreshIntervalOptional();
+  const refreshSignal = refreshContext?.refreshSignal ?? 0;
   const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode, valueMapping, integerYAxis } = config;
   const colors = chartColorSchemes[colorScheme];
   
@@ -288,7 +295,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     
     // Cleanup: abort pending request when dependencies change
     return () => abortController.abort();
-  }, [autoFetch, canFetch, serial, fromDT, toDT, logout, activeQueryBuilder, telemetryMode]);
+  }, [autoFetch, canFetch, serial, fromDT, toDT, logout, activeQueryBuilder, telemetryMode, refreshSignal]);
 
   // Parent-triggered fetch with abort controller
   useEffect(() => {
@@ -501,9 +508,9 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         gap: '12px',
         marginBottom: '16px',
         padding: '12px',
-        background: 'rgba(15, 23, 42, 0.4)',
+        background: 'var(--bg-surface-hover)',
         borderRadius: '10px',
-        border: '1px solid rgba(148, 163, 184, 0.1)',
+        border: '1px solid var(--border-subtle)',
       }}>
         {/* Link/Unlink to Global Time Range */}
         {useGlobalTimeRange && timeRangeContext && (
@@ -663,9 +670,9 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
               alignItems: 'center', 
               gap: '8px',
               padding: '4px',
-              background: 'rgba(15, 23, 42, 0.6)',
+              background: 'var(--bg-input)',
               borderRadius: '20px',
-              border: '1px solid rgba(148, 163, 184, 0.15)',
+              border: '1px solid var(--border-subtle)',
             }}>
               <button
                 type="button"

@@ -4,8 +4,8 @@ import { useTheme } from '../context/ThemeContext';
 const buttonStyle = {
   padding: '10px',
   borderRadius: '8px',
-  background: 'rgba(15, 23, 42, 0.6)',
-  border: '1px solid rgba(148, 163, 184, 0.2)',
+  background: 'var(--bg-input)',
+  border: '1px solid var(--border-medium)',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -16,7 +16,7 @@ const buttonStyle = {
 const iconStyle = {
   width: '18px',
   height: '18px',
-  color: '#94a3b8',
+  color: 'var(--text-primary)',
 };
 
 export default function ThemeToggle() {
@@ -29,12 +29,10 @@ export default function ThemeToggle() {
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(148, 163, 184, 0.15)';
-        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+        e.currentTarget.style.background = 'var(--bg-surface-hover)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.6)';
-        e.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        e.currentTarget.style.background = 'var(--bg-input)';
       }}
     >
       {theme === 'dark' ? (

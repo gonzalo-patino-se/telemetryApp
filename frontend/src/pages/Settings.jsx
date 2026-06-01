@@ -1,9 +1,18 @@
 ﻿// src/pages/Settings.jsx
-import React, { useState } from 'react';
+//
+// Settings page. Everything here is rendered with CSS variables (defined
+// in src/index.css under :root / [data-theme=`light`]) so the theme switch
+// produces an immediately visible change. Pages still using the hardcoded
+// `colors` tokens will be migrated incrementally.
+import React from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import WidgetCard from '../components/layout/WidgetCard';
 import { useTheme } from '../context/ThemeContext';
-import { colors, spacing, borderRadius, typography } from '../styles/tokens';
+import {
+  useRefreshInterval,
+  INTERVAL_LABELS,
+  REFRESH_INTERVAL_OPTIONS,
+} from '../context/RefreshIntervalContext';
 
 const styles = {
   grid: {
@@ -16,7 +25,7 @@ const styles = {
     display: 'block',
     fontSize: '11px',
     fontWeight: 500,
-    color: colors.textTertiary,
+    color: 'var(--text-tertiary)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     marginBottom: '8px',
@@ -25,9 +34,9 @@ const styles = {
     width: '100%',
     padding: '10px 14px',
     fontSize: '13px',
-    color: colors.textPrimary,
-    background: colors.bgInput,
-    border: '1px solid ' + colors.borderMedium,
+    color: 'var(--text-primary)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border-medium)',
     borderRadius: '8px',
     outline: 'none',
     cursor: 'pointer',
@@ -36,9 +45,9 @@ const styles = {
     width: '100%',
     padding: '10px 14px',
     fontSize: '13px',
-    color: colors.textTertiary,
-    background: colors.bgInput,
-    border: '1px solid ' + colors.borderSubtle,
+    color: 'var(--text-tertiary)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: '8px',
     cursor: 'not-allowed',
   },
@@ -46,30 +55,29 @@ const styles = {
     flex: 1,
     padding: '16px',
     borderRadius: '12px',
-    border: '1px solid ' + (isActive ? colors.accentPrimary : colors.borderSubtle),
-    background: isActive ? 'rgba(59, 130, 246, 0.15)' : colors.bgInput,
-    color: isActive ? colors.textPrimary : colors.textSecondary,
+    border: '1px solid ' + (isActive ? 'var(--accent-primary)' : 'var(--border-subtle)'),
+    background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-input)',
+    color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   }),
-  checkbox: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    cursor: 'pointer',
-  },
   button: {
     width: '100%',
     padding: '10px 16px',
     fontSize: '13px',
     fontWeight: 500,
-    color: colors.textPrimary,
-    background: colors.bgInput,
-    border: '1px solid ' + colors.borderMedium,
+    color: 'var(--text-primary)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border-medium)',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+  },
+  hint: {
+    fontSize: '11px',
+    color: 'var(--text-tertiary)',
+    marginTop: '6px',
   },
   stack: {
     display: 'flex',
@@ -80,6 +88,7 @@ const styles = {
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
+  const { interval, setInterval } = useRefreshInterval();
 
   return (
     <DashboardLayout title="Settings" showFilters={false}>
@@ -106,34 +115,28 @@ export default function Settings() {
           </div>
         </WidgetCard>
 
-        <WidgetCard title="Notifications">
-          <div style={styles.stack}>
-            <label style={styles.checkbox}>
-              <span style={{ color: colors.textPrimary, fontSize: '13px' }}>Email alerts</span>
-              <input type="checkbox" defaultChecked />
-            </label>
-            <label style={styles.checkbox}>
-              <span style={{ color: colors.textPrimary, fontSize: '13px' }}>Push notifications</span>
-              <input type="checkbox" />
-            </label>
-            <label style={styles.checkbox}>
-              <span style={{ color: colors.textPrimary, fontSize: '13px' }}>Critical alerts only</span>
-              <input type="checkbox" />
-            </label>
-          </div>
-        </WidgetCard>
-
         <WidgetCard title="Data Refresh">
           <div style={styles.stack}>
             <div>
-              <label style={styles.label}>Auto-refresh interval</label>
-              <select style={styles.select}>
-                <option>5 seconds</option>
-                <option>15 seconds</option>
-                <option>30 seconds</option>
-                <option>1 minute</option>
-                <option>Disabled</option>
+              <label htmlFor="refresh-interval" style={styles.label}>
+                Auto-refresh interval
+              </label>
+              <select
+                id="refresh-interval"
+                value={interval}
+                onChange={(e) => setInterval(e.target.value)}
+                style={styles.select}
+              >
+                {REFRESH_INTERVAL_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {INTERVAL_LABELS[opt]}
+                  </option>
+                ))}
               </select>
+              <div style={styles.hint}>
+                Choose how often dashboard widgets and the events table
+                should re-query Azure Data Explorer. Saved automatically.
+              </div>
             </div>
           </div>
         </WidgetCard>

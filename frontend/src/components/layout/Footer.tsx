@@ -2,9 +2,10 @@ import React from 'react';
 
 const Footer: React.FC = () => {
     const footerStyle = {
-        borderTop: '1px solid rgba(148, 163, 184, 0.1)',
-        background: 'rgba(30, 41, 59, 0.5)',
+        borderTop: '1px solid var(--border-subtle)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(12px)',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease',
     };
 
     const containerStyle = {
@@ -16,7 +17,7 @@ const Footer: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'space-between',
         fontSize: '12px',
-        color: '#64748b',
+        color: 'var(--text-secondary)',
     };
 
     return (

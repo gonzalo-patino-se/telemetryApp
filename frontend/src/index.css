@@ -1307,8 +1307,8 @@ a:hover {
 }
 
 .load-values-panel {
-  fill: var(--bg-secondary);
-  stroke: var(--border-color);
+  fill: var(--bg-surface);
+  stroke: var(--border-medium);
   stroke-width: 1;
 }
 
@@ -1348,7 +1348,7 @@ a:hover {
 }
 
 .load-divider {
-  stroke: var(--border-color);
+  stroke: var(--border-medium);
   stroke-width: 1;
   opacity: 0.5;
 }

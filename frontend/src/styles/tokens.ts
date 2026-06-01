@@ -3,36 +3,37 @@
 // This enables scalability, maintainability, and consistency across the app
 
 export const colors = {
-  // Brand
+  // Brand (theme-independent)
   schneiderGreen: '#3dcd58',
   schneiderGreenDark: '#009530',
   
-  // Backgrounds
-  bgPrimary: '#0f172a',
-  bgSecondary: '#1e293b',
-  bgSurface: 'rgba(30, 41, 59, 0.6)',
-  bgSurfaceSolid: '#1e293b',
-  bgInput: 'rgba(15, 23, 42, 0.6)',
-  bgHover: 'rgba(148, 163, 184, 0.1)',
-  bgGlass: 'rgba(30, 41, 59, 0.8)',
+  // Backgrounds — bound to CSS variables defined in index.css
+  // (`:root`/[data-theme='dark'] vs [data-theme='light']) so they retheme live.
+  bgPrimary: 'var(--bg-primary)',
+  bgSecondary: 'var(--bg-surface)',
+  bgSurface: 'var(--bg-surface)',
+  bgSurfaceSolid: 'var(--bg-surface)',
+  bgInput: 'var(--bg-input)',
+  bgHover: 'var(--bg-surface-hover)',
+  bgGlass: 'var(--bg-surface)',
   
-  // Text
-  textPrimary: '#f1f5f9',
-  textSecondary: '#cbd5e1',
-  textTertiary: '#64748b',
-  textMuted: '#475569',
-  textInverse: '#ffffff',
+  // Text — bound to CSS variables
+  textPrimary: 'var(--text-primary)',
+  textSecondary: 'var(--text-secondary)',
+  textTertiary: 'var(--text-tertiary)',
+  textMuted: 'var(--text-tertiary)',
+  textInverse: 'var(--text-inverse)',
   
-  // Borders
-  borderSubtle: 'rgba(148, 163, 184, 0.1)',
-  borderMedium: 'rgba(148, 163, 184, 0.2)',
-  borderFocus: 'rgba(59, 130, 246, 0.5)',
+  // Borders — bound to CSS variables
+  borderSubtle: 'var(--border-subtle)',
+  borderMedium: 'var(--border-medium)',
+  borderFocus: 'var(--border-focus)',
   
-  // Accents
+  // Accents (same in both themes)
   accentPrimary: '#3b82f6',
   accentSecondary: '#8b5cf6',
   
-  // Status
+  // Status (same in both themes)
   statusHealthy: '#22c55e',
   statusWarning: '#f59e0b',
   statusCritical: '#ef4444',
@@ -42,7 +43,7 @@ export const colors = {
   gradients: {
     primary: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
     brand: 'linear-gradient(135deg, #3dcd58 0%, #009530 100%)',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+    background: 'linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-surface) 100%)',
   },
 } as const;
 

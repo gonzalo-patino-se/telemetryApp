@@ -18,32 +18,45 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [timeRange, setTimeRange] = useState('15m');
   const [environment, setEnvironment] = useState('prod');
 
+  // All chrome colors come from CSS variables so the theme switch
+  // (`[data-theme='light']` / `[data-theme='dark']` on <html>) instantly
+  // recolors the entire page shell. Hardcoded `#0f172a` / `#f1f5f9` etc.
+  // would have stayed dark in light mode -- exactly the bug we fixed.
   const selectStyle = {
     fontSize: '13px',
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(148, 163, 184, 0.2)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border-medium)',
     borderRadius: '8px',
     padding: '8px 12px',
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     outline: 'none',
-    cursor: 'pointer'
+    cursor: 'pointer',
   };
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+    <div
+      style={{
+        width: '100%',
+        minHeight: '100vh',
+        background: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+      }}
+    >
       {/* Modern top bar with filters */}
       {(title || toolbar || showFilters) && (
-        <div style={{ 
-          borderBottom: '1px solid rgba(148, 163, 184, 0.1)', 
-          background: 'rgba(30, 41, 59, 0.5)',
-          backdropFilter: 'blur(12px)'
-        }}>
+        <div
+          style={{
+            borderBottom: '1px solid var(--border-subtle)',
+            background: 'var(--bg-surface)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
           <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', gap: '16px', flexWrap: 'wrap' }}>
               {/* Left: Title */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                 {title && (
-                  <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#f1f5f9', margin: 0, letterSpacing: '-0.025em' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.025em' }}>
                     {title}
                   </h1>
                 )}
