@@ -22,12 +22,12 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
 }) => {
     return (
     <section style={{ 
-        background: 'rgba(30, 41, 59, 0.6)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(12px)',
         borderRadius: '16px',
-        border: '1px solid rgba(148, 163, 184, 0.1)',
+        border: '1px solid var(--border-subtle)',
         overflow: 'hidden',
-        transition: 'all 0.2s ease'
+        transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease'
     }} className={className}>
         {/* Header */}
         {(title || actions) && (
@@ -36,10 +36,10 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
             alignItems: 'center', 
             justifyContent: 'space-between', 
             padding: '16px 20px',
-            borderBottom: '1px solid rgba(148, 163, 184, 0.1)'
+            borderBottom: '1px solid var(--border-subtle)'
         }}>
             {title && (
-                <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f1f5f9', margin: 0 }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
                     {title}
                 </h3>
             )}
@@ -67,9 +67,9 @@ const WidgetCard: React.FC<WidgetCardProps> = ({
 // Skeleton loader component
 const SkeletonLoader: React.FC = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ height: '16px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '8px', width: '75%' }}></div>
-        <div style={{ height: '16px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '8px', width: '50%' }}></div>
-        <div style={{ height: '120px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '12px' }}></div>
+        <div style={{ height: '16px', background: 'var(--bg-surface-hover)', borderRadius: '8px', width: '75%' }}></div>
+        <div style={{ height: '16px', background: 'var(--bg-surface-hover)', borderRadius: '8px', width: '50%' }}></div>
+        <div style={{ height: '120px', background: 'var(--bg-surface-hover)', borderRadius: '12px' }}></div>
     </div>
 );
 
@@ -80,14 +80,14 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => (
             width: '48px', 
             height: '48px', 
             borderRadius: '12px', 
-            background: 'rgba(148, 163, 184, 0.1)', 
+            background: 'var(--bg-surface-hover)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             marginBottom: '12px'
         }}>
             <svg 
-                style={{ width: '24px', height: '24px', color: '#64748b' }}
+                style={{ width: '24px', height: '24px', color: 'var(--text-tertiary)' }}
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -100,7 +100,7 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => (
                 />
             </svg>
         </div>
-        <p style={{ fontSize: '13px', color: '#64748b', margin: 0, maxWidth: '200px' }}>{message}</p>
+        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', margin: 0, maxWidth: '200px' }}>{message}</p>
     </div>
 );
 

@@ -11,6 +11,7 @@ import { colors, spacing } from '../styles/tokens';
 import { useSerial } from '../context/SerialContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimeRangeOptional } from '../context/TimeRangeContext';
+import { useRefreshIntervalOptional } from '../context/RefreshIntervalContext';
 import api from '../services/api';
 import {
   normalizeAlarmRows,
@@ -298,10 +299,15 @@ export default function Events() {
     }
   }, [hasSerial, serial, fromDT, toDT, outputFilter, logout]);
   
-  // Auto-fetch on mount and when params change
+  // Auto-fetch on mount, when params change, AND when the global
+  // auto-refresh tick fires (Settings → Data Refresh). The tick value is
+  // intentionally part of the dependency array so React reruns the effect
+  // even when nothing else changed.
+  const refreshContext = useRefreshIntervalOptional();
+  const refreshSignal = refreshContext?.refreshSignal ?? 0;
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+  }, [fetchEvents, refreshSignal]);
   
   // Filtered events. `event.name.raw` is the original ADX path; search
   // matches the leaf code OR the breadcrumb so users can search by either

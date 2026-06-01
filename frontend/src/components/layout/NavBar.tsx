@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import LogoutButton from '../LogoutButton';
 import ThemeToggle from '../ThemeToggle';
 import Logo from '../common/Logo';
-import { colors, spacing } from '../../styles/tokens';
+import { spacing } from '../../styles/tokens';
 
 const tabs = [
   { label: 'Dashboard', to: '/dashboard', end: true },
@@ -20,11 +20,12 @@ const styles = {
     top: 0,
     zIndex: 50,
     width: '100%',
-    background: 'rgba(30, 41, 59, 0.85)',
+    background: 'var(--bg-surface)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    borderBottom: `1px solid ${colors.borderSubtle}`,
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+    borderBottom: '1px solid var(--border-subtle)',
+    boxShadow: 'var(--shadow-sm)',
+    transition: 'background-color 0.2s ease, border-color 0.2s ease',
   },
   container: {
     maxWidth: '1400px',
@@ -61,7 +62,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     padding: '8px 16px',
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     textDecoration: 'none',
     fontSize: '14px',
     fontWeight: 500,
@@ -70,12 +71,12 @@ const styles = {
     background: 'transparent',
   },
   tabLinkHover: {
-    color: '#f1f5f9',
-    background: 'rgba(148, 163, 184, 0.1)',
+    color: 'var(--text-primary)',
+    background: 'var(--bg-surface-hover)',
   },
   tabLinkActive: {
-    color: '#f1f5f9',
-    background: 'rgba(59, 130, 246, 0.15)',
+    color: 'var(--text-primary)',
+    background: 'var(--bg-surface-hover)',
   },
   activeIndicator: {
     position: 'absolute' as const,

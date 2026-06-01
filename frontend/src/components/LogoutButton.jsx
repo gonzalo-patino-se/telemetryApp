@@ -12,9 +12,9 @@ const LogoutButton = () => {
     const buttonStyle = {
         padding: '10px 18px',
         borderRadius: '8px',
-        background: isHovered ? 'rgba(239, 68, 68, 0.15)' : 'rgba(15, 23, 42, 0.6)',
-        border: `1px solid ${isHovered ? 'rgba(239, 68, 68, 0.5)' : 'rgba(148, 163, 184, 0.2)'}`,
-        color: isHovered ? '#ef4444' : '#f1f5f9',
+        background: isHovered ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-input)',
+        border: `1px solid ${isHovered ? 'rgba(239, 68, 68, 0.5)' : 'var(--border-medium)'}`,
+        color: isHovered ? '#ef4444' : 'var(--text-primary)',
         fontSize: '14px',
         fontWeight: 500,
         cursor: 'pointer',
