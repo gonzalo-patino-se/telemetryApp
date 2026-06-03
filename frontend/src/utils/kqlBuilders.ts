@@ -1077,11 +1077,8 @@ export function buildFirmwareHistoryQuery(
 
   return `
     let s = '${escapedSerial}';
-    let start = datetime(${startLocal});
-    let finish = datetime(${endLocal});
     DevInfo
     | where comms_serial contains s
-    | where localtime between (start .. finish)
     | distinct localtime, utctime, name, modelName, firmware_version
     | order by localtime desc
     | limit 5000
