@@ -24,6 +24,7 @@ import {
   // PV
   pv1VoltageConfig, pv2VoltageConfig, pv3VoltageConfig, pv4VoltageConfig,
   pv1CurrentConfig, pv2CurrentConfig, pv3CurrentConfig, pv4CurrentConfig,
+  pv1PowerConfig, pv2PowerConfig, pv3PowerConfig, pv4PowerConfig,
   // Grid
   gridVoltageL1Config, gridVoltageL2Config,
   gridCurrentL1Config, gridCurrentL2Config,
@@ -37,6 +38,8 @@ import {
   battery1VoltageConfig, battery1TempConfig, battery1SoCConfig, battery1CurrentConfig,
   battery2VoltageConfig, battery2TempConfig, battery2SoCConfig, battery2CurrentConfig,
   battery3VoltageConfig, battery3TempConfig, battery3SoCConfig, battery3CurrentConfig,
+  // Computed power (P = V x I)
+  battery1PowerConfig, battery2PowerConfig, battery3PowerConfig,
   // Battery main relay
   batteryMainRelayConfig,
   batteryHeaterStatusConfig,
@@ -78,6 +81,11 @@ const PALETTE: Record<string, PaletteEntry> = {
   pv2_i: { color: '#2916f9', dash: DASH_SOLID },     // orange
   pv3_i: { color: '#15803d', dash: DASH_SOLID },     // forest green
   pv4_i: { color: '#be123c', dash: DASH_SOLID },     // crimson
+  // PV Power  (amber/yellow family — computed V x I)
+  pv1_p: { color: '#f59e0b', dash: DASH_SOLID },     // amber
+  pv2_p: { color: '#eab308', dash: DASH_SOLID },     // yellow
+  pv3_p: { color: '#f97316', dash: DASH_SOLID },     // orange
+  pv4_p: { color: '#d97706', dash: DASH_SOLID },     // dark amber
 
   // Grid
   grid_v_l1: { color: '#f5130bff', dash: DASH_SOLID },   // amber solid
@@ -112,6 +120,10 @@ const PALETTE: Record<string, PaletteEntry> = {
   batt1_i: { color: '#d70ee9ff', dash: DASH_SOLID },
   batt2_i: { color: '#0ea5e9', dash: DASH_DASHED },
   batt3_i: { color: '#e9c10eff', dash: DASH_DOTTED },
+  // Battery Power  (teal family — computed V x I)
+  batt1_p: { color: '#14b8a6', dash: DASH_SOLID },
+  batt2_p: { color: '#0d9488', dash: DASH_DASHED },
+  batt3_p: { color: '#2dd4bf', dash: DASH_DOTTED },
   // Battery Heater Status (red-orange, solid)
   batt_heater: { color: '#f94016ff', dash: DASH_DOTTED },
 };
@@ -179,6 +191,10 @@ export const SIGNAL_CATALOG: SignalDef[] = [
   toSignal('pv2_i', 'PV', pv2CurrentConfig),
   toSignal('pv3_i', 'PV', pv3CurrentConfig),
   toSignal('pv4_i', 'PV', pv4CurrentConfig),
+  toSignal('pv1_p', 'PV', pv1PowerConfig),
+  toSignal('pv2_p', 'PV', pv2PowerConfig),
+  toSignal('pv3_p', 'PV', pv3PowerConfig),
+  toSignal('pv4_p', 'PV', pv4PowerConfig),
 
   // ---- Grid ----
   toSignal('grid_v_l1', 'Grid', gridVoltageL1Config),
@@ -205,18 +221,21 @@ export const SIGNAL_CATALOG: SignalDef[] = [
   toSignal('batt1_t',   'Battery Module 1', battery1TempConfig),
   toSignal('batt1_soc', 'Battery Module 1', battery1SoCConfig),
   toSignal('batt1_i',   'Battery Module 1', battery1CurrentConfig),
+  toSignal('batt1_p',   'Battery Module 1', battery1PowerConfig),
 
   // ---- Battery Module 2 ----
   toSignal('batt2_v',   'Battery Module 2', battery2VoltageConfig),
   toSignal('batt2_t',   'Battery Module 2', battery2TempConfig),
   toSignal('batt2_soc', 'Battery Module 2', battery2SoCConfig),
   toSignal('batt2_i',   'Battery Module 2', battery2CurrentConfig),
+  toSignal('batt2_p',   'Battery Module 2', battery2PowerConfig),
 
   // ---- Battery Module 3 ----
   toSignal('batt3_v',   'Battery Module 3', battery3VoltageConfig),
   toSignal('batt3_t',   'Battery Module 3', battery3TempConfig),
   toSignal('batt3_soc', 'Battery Module 3', battery3SoCConfig),
   toSignal('batt3_i',   'Battery Module 3', battery3CurrentConfig),
+  toSignal('batt3_p',   'Battery Module 3', battery3PowerConfig),
   toSignal('batt_heater', 'Battery', batteryHeaterStatusConfig),
 ];
 

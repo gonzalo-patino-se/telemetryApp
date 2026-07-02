@@ -15,7 +15,11 @@ import {
   // Load queries (normal + fast)
   buildLoadVoltageL1NormalQuery, buildLoadVoltageL2NormalQuery, buildLoadFrequencyTotalNormalQuery, buildLoadCurrentL1NormalQuery, buildLoadCurrentL2NormalQuery, buildLoadCurrentL1FastQuery,  buildLoadCurrentL2FastQuery,
   // Battery queries (normal + fast)
-  buildBatteryVoltageQuery, buildGridPowerQuery, buildLoadPowerQuery, 
+  buildBatteryVoltageQuery,
+  // Computed power queries (P = V x I at matching timestamps)
+  buildPV1PowerQuery, buildPV2PowerQuery, buildPV3PowerQuery, buildPV4PowerQuery,
+  buildGridPowerCalcQuery, buildLoadPowerCalcQuery,
+  buildBattery1PowerQuery, buildBattery2PowerQuery, buildBattery3PowerQuery, 
   buildBattery1VoltageQuery, buildBattery2VoltageQuery, buildBattery3VoltageQuery,
   buildBattery1TempQuery, buildBattery2TempQuery, buildBattery3TempQuery,
   buildBattery1SoCQuery, buildBattery2SoCQuery, buildBattery3SoCQuery,
@@ -336,7 +340,7 @@ export const batteryVoltageConfig: WidgetConfig = {
 };
 
 // ============================================================================
-// Grid Power Widget
+// Grid Power Widget (computed: P = V_L1xI_L1 + V_L2xI_L2)
 // ============================================================================
 
 export const gridPowerConfig: WidgetConfig = {
@@ -344,11 +348,11 @@ export const gridPowerConfig: WidgetConfig = {
   unit: 'W',
   colorScheme: 'orange',
   csvPrefix: 'grid_power',
-  buildQuery: buildGridPowerQuery,
+  buildQuery: buildGridPowerCalcQuery,
 };
 
 // ============================================================================
-// Load Power Widget
+// Load Power Widget (computed: P = V_L1xI_L1 + V_L2xI_L2)
 // ============================================================================
 
 export const loadPowerConfig: WidgetConfig = {
@@ -356,7 +360,71 @@ export const loadPowerConfig: WidgetConfig = {
   unit: 'W',
   colorScheme: 'purple',
   csvPrefix: 'load_power',
-  buildQuery: buildLoadPowerQuery,
+  buildQuery: buildLoadPowerCalcQuery,
+};
+
+// ============================================================================
+// PV Power Widgets (computed: P = V x I per string)
+// ============================================================================
+
+export const pv1PowerConfig: WidgetConfig = {
+  label: 'PV1 Power',
+  unit: 'W',
+  colorScheme: 'green',
+  csvPrefix: 'pv1_power',
+  buildQuery: buildPV1PowerQuery,
+};
+
+export const pv2PowerConfig: WidgetConfig = {
+  label: 'PV2 Power',
+  unit: 'W',
+  colorScheme: 'green',
+  csvPrefix: 'pv2_power',
+  buildQuery: buildPV2PowerQuery,
+};
+
+export const pv3PowerConfig: WidgetConfig = {
+  label: 'PV3 Power',
+  unit: 'W',
+  colorScheme: 'green',
+  csvPrefix: 'pv3_power',
+  buildQuery: buildPV3PowerQuery,
+};
+
+export const pv4PowerConfig: WidgetConfig = {
+  label: 'PV4 Power',
+  unit: 'W',
+  colorScheme: 'green',
+  csvPrefix: 'pv4_power',
+  buildQuery: buildPV4PowerQuery,
+};
+
+// ============================================================================
+// Battery Power Widgets (computed: P = V x I per module)
+// ============================================================================
+
+export const battery1PowerConfig: WidgetConfig = {
+  label: 'Battery 1 Power',
+  unit: 'W',
+  colorScheme: 'purple',
+  csvPrefix: 'battery1_power',
+  buildQuery: buildBattery1PowerQuery,
+};
+
+export const battery2PowerConfig: WidgetConfig = {
+  label: 'Battery 2 Power',
+  unit: 'W',
+  colorScheme: 'purple',
+  csvPrefix: 'battery2_power',
+  buildQuery: buildBattery2PowerQuery,
+};
+
+export const battery3PowerConfig: WidgetConfig = {
+  label: 'Battery 3 Power',
+  unit: 'W',
+  colorScheme: 'purple',
+  csvPrefix: 'battery3_power',
+  buildQuery: buildBattery3PowerQuery,
 };
 
 // ============================================================================
@@ -591,6 +659,14 @@ export const allWidgetConfigs = {
   batteryVoltage: batteryVoltageConfig,
   gridPower: gridPowerConfig,
   loadPower: loadPowerConfig,
+  // Computed Power (P = V x I)
+  pv1Power: pv1PowerConfig,
+  pv2Power: pv2PowerConfig,
+  pv3Power: pv3PowerConfig,
+  pv4Power: pv4PowerConfig,
+  battery1Power: battery1PowerConfig,
+  battery2Power: battery2PowerConfig,
+  battery3Power: battery3PowerConfig,
   // Battery Module 1
   battery1Voltage: battery1VoltageConfig,
   battery1Temp: battery1TempConfig,

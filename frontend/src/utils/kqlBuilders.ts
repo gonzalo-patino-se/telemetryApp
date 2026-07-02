@@ -315,6 +315,154 @@ export function buildLoadPowerQuery(
 }
 
 // ============================================================================
+// Computed Power Query Builders (P = V × I at matching timestamps)
+// Voltage and current live in the same Telemetry table, so an inner join on
+// `localtime` guarantees every product uses values sampled at the exact same
+// instant (accurate correlation, as opposed to reading an unreliable P channel).
+// ============================================================================
+
+interface ProductPowerParams {
+  serial: string;
+  startDate: Date;
+  endDate: Date;
+  voltageName: string;
+  currentName: string;
+}
+
+/**
+ * Build KQL for single-channel power: P = V × I.
+ * Only samples that share the exact same localtime contribute a point.
+ */
+export function buildProductPowerQuery(params: ProductPowerParams): string {
+  const { serial, startDate, endDate, voltageName, currentName } = params;
+  const s = escapeKqlString(serial);
+  const start = formatDateForKql(startDate);
+  const finish = formatDateForKql(endDate);
+  return `
+    let s = '${s}';
+    let start = datetime(${start});
+    let finish = datetime(${finish});
+    let vSeries = Telemetry
+        | where comms_serial contains s
+        | where name contains '${voltageName}'
+        | where localtime between (start .. finish)
+        | project localtime, v = value_double;
+    let iSeries = Telemetry
+        | where comms_serial contains s
+        | where name contains '${currentName}'
+        | where localtime between (start .. finish)
+        | project localtime, i = value_double;
+    vSeries
+    | join kind=inner iSeries on localtime
+    | project localtime, value_double = v * i
+    | order by localtime asc
+  `.trim();
+}
+
+interface DualProductPowerParams {
+  serial: string;
+  startDate: Date;
+  endDate: Date;
+  voltageName1: string;
+  currentName1: string;
+  voltageName2: string;
+  currentName2: string;
+}
+
+/**
+ * Build KQL for two-phase power: P = (V1 × I1) + (V2 × I2).
+ * All four series are inner-joined on localtime so each summed sample uses
+ * voltage and current captured at the same instant.
+ */
+export function buildDualProductPowerQuery(params: DualProductPowerParams): string {
+  const { serial, startDate, endDate, voltageName1, currentName1, voltageName2, currentName2 } = params;
+  const s = escapeKqlString(serial);
+  const start = formatDateForKql(startDate);
+  const finish = formatDateForKql(endDate);
+  return `
+    let s = '${s}';
+    let start = datetime(${start});
+    let finish = datetime(${finish});
+    let v1 = Telemetry
+        | where comms_serial contains s
+        | where name contains '${voltageName1}'
+        | where localtime between (start .. finish)
+        | project localtime, v1 = value_double;
+    let i1 = Telemetry
+        | where comms_serial contains s
+        | where name contains '${currentName1}'
+        | where localtime between (start .. finish)
+        | project localtime, i1 = value_double;
+    let v2 = Telemetry
+        | where comms_serial contains s
+        | where name contains '${voltageName2}'
+        | where localtime between (start .. finish)
+        | project localtime, v2 = value_double;
+    let i2 = Telemetry
+        | where comms_serial contains s
+        | where name contains '${currentName2}'
+        | where localtime between (start .. finish)
+        | project localtime, i2 = value_double;
+    v1
+    | join kind=inner i1 on localtime
+    | join kind=inner v2 on localtime
+    | join kind=inner i2 on localtime
+    | project localtime, value_double = (v1 * i1) + (v2 * i2)
+    | order by localtime asc
+  `.trim();
+}
+
+// ---- PV computed power: P = V × I per string --------------------------------
+export function buildPV1PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/INV/DCPORT/STAT/PV1/V', currentName: '/INV/DCPORT/STAT/PV1/I' });
+}
+
+export function buildPV2PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/INV/DCPORT/STAT/PV2/V', currentName: '/INV/DCPORT/STAT/PV2/I' });
+}
+
+export function buildPV3PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/INV/DCPORT/STAT/PV3/V', currentName: '/INV/DCPORT/STAT/PV3/I' });
+}
+
+export function buildPV4PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/INV/DCPORT/STAT/PV4/V', currentName: '/INV/DCPORT/STAT/PV4/I' });
+}
+
+// ---- Grid computed power: P = (V_L1 × I_L1) + (V_L2 × I_L2) ------------------
+export function buildGridPowerCalcQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildDualProductPowerQuery({
+    serial, startDate, endDate,
+    voltageName1: '/SYS/MEAS/STAT/GRID/VRMS_L1N', currentName1: '/SYS/MEAS/STAT/GRID/IRMS_L1',
+    voltageName2: '/SYS/MEAS/STAT/GRID/VRMS_L2N', currentName2: '/SYS/MEAS/STAT/GRID/IRMS_L2',
+  });
+}
+
+// ---- Load computed power: P = (V_L1 × I_L1) + (V_L2 × I_L2) ------------------
+// Uses normal-telemetry channels so voltage and current share the Telemetry
+// table (and therefore matching localtimes).
+export function buildLoadPowerCalcQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildDualProductPowerQuery({
+    serial, startDate, endDate,
+    voltageName1: '/INV/ACPORT/STAT/VRMS_L1N', currentName1: '/INV/ACPORT/STAT/IRMS_L1N',
+    voltageName2: '/INV/ACPORT/STAT/VRMS_L2N', currentName2: '/INV/ACPORT/STAT/IRMS_L2N',
+  });
+}
+
+// ---- Battery computed power: P = V × I per module ---------------------------
+export function buildBattery1PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/BMS/MODULE1/STAT/V', currentName: '/BMS/MODULE1/STAT/I' });
+}
+
+export function buildBattery2PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/BMS/MODULE2/STAT/V', currentName: '/BMS/MODULE2/STAT/I' });
+}
+
+export function buildBattery3PowerQuery(serial: string, startDate: Date, endDate: Date): string {
+  return buildProductPowerQuery({ serial, startDate, endDate, voltageName: '/BMS/MODULE3/STAT/V', currentName: '/BMS/MODULE3/STAT/I' });
+}
+
+// ============================================================================
 // Device Info Query Builder
 // ============================================================================
 
