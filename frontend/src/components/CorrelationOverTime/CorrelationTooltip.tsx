@@ -19,6 +19,8 @@ interface CorrelationTooltipProps {
   series: SignalSeries[];
   events: EventInstance[];
   xDomain: [number, number];
+  /** IANA timezone for rendering the timestamp header. */
+  timeZone?: string;
 }
 
 function formatValue(v: number, unit: string): string {
@@ -33,6 +35,7 @@ export const CorrelationTooltip: React.FC<CorrelationTooltipProps> = ({
   series,
   events,
   xDomain,
+  timeZone,
 }) => {
   if (!active || label == null) return null;
   const t = typeof label === 'number' ? label : Number(label);
@@ -67,7 +70,7 @@ export const CorrelationTooltip: React.FC<CorrelationTooltipProps> = ({
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {formatXFull(t)}
+        {formatXFull(t, timeZone)}
       </div>
 
       {readouts.length === 0 && nearbyEvents.length === 0 && (
@@ -142,7 +145,7 @@ export const CorrelationTooltip: React.FC<CorrelationTooltipProps> = ({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {new Date(e.t).toLocaleTimeString()}
+                  {new Date(e.t).toLocaleTimeString([], { timeZone })}
                 </div>
               </span>
             </div>

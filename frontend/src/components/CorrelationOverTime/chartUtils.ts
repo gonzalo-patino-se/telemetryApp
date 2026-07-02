@@ -61,25 +61,27 @@ export function computeXDomain(
 }
 
 /** Time-axis tick formatter — short labels appropriate for a small card. */
-export function formatXTick(t: number, span: number): string {
+export function formatXTick(t: number, span: number, timeZone?: string): string {
   const d = new Date(t);
   // < 6h: HH:MM
   if (span <= 6 * 3600_000) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone });
   }
   // < 3d: HH:MM on M/D
   if (span <= 3 * 24 * 3600_000) {
-    return `${d.getMonth() + 1}/${d.getDate()} ${d.toLocaleTimeString([], {
+    const md = d.toLocaleDateString([], { month: 'numeric', day: 'numeric', timeZone });
+    return `${md} ${d.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone,
     })}`;
   }
   // longer: just date
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  return d.toLocaleDateString([], { month: 'numeric', day: 'numeric', timeZone });
 }
 
 /** Format an x value for the tooltip header / pin label (full local time). */
-export function formatXFull(t: number): string {
+export function formatXFull(t: number, timeZone?: string): string {
   const d = new Date(t);
   return d.toLocaleString([], {
     month: 'short',
@@ -87,6 +89,7 @@ export function formatXFull(t: number): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone,
   });
 }
 

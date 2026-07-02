@@ -11,6 +11,7 @@ import React from 'react';
 import WidgetCard from '../layout/WidgetCard';
 import { useSerial } from '../../context/SerialContext';
 import { useTimeRangeOptional } from '../../context/TimeRangeContext';
+import { useTimezoneOptional } from '../../context/TimezoneContext';
 import { useAuth } from '../../context/AuthContext';
 
 import { OverlayChart } from './OverlayChart';
@@ -67,6 +68,7 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
   // ----- Time + serial bindings -----------------------------------------
   const serialCtx = useSerial();
   const tr = useTimeRangeOptional();
+  const tz = useTimezoneOptional();
   const { isAuthenticated } = useAuth();
 
   const serial = (serialProp ?? serialCtx.serial ?? '').trim();
@@ -562,6 +564,7 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
               onPinToggle={handlePinToggle}
               zoomDomain={zoomDomain}
               onZoomChange={setZoomDomain}
+              timeZone={tz?.effectiveTimeZone}
             />
             <Legend series={series} events={events} />
           </>

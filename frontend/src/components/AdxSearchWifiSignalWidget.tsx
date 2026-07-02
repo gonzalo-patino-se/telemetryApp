@@ -4,6 +4,8 @@
     import api from '../services/api';
     import { useAuth } from '../context/AuthContext';
     import { useTimeRangeOptional } from '../context/TimeRangeContext';
+    import { useTimezoneOptional } from '../context/TimezoneContext';
+    import { zoneDisplayShiftMs } from '../utils/timezone';
     import DatePicker from 'react-datepicker';
     import 'react-datepicker/dist/react-datepicker.css';
     import { calculatePointStatistics, formatStatValue } from '../utils/chartHelpers';
@@ -178,6 +180,10 @@
     
     // Global time range context
     const timeRangeContext = useTimeRangeOptional();
+
+    // Global display timezone (UTC / Browser Local / Customer Site).
+    const tz = useTimezoneOptional();
+    const displayZone = tz?.effectiveTimeZone;
     
     // Whether this widget is currently linked to global range
     const [isLinkedToGlobal, setIsLinkedToGlobal] = useState(useGlobalRange);
@@ -339,6 +345,16 @@
     return evenDownsample(list, 5000);
     }, [rows]);
 
+    // Points shifted so the (local-time) Chart.js axis visually renders in the
+    // active display timezone. Browser mode = no shift.
+    const displayPoints: ScatterDataPoint[] = useMemo(() => {
+    if (!displayZone) return points;
+    return points.map(p => {
+        const t = p.x ?? 0;
+        return { x: t + zoneDisplayShiftMs(t, displayZone), y: p.y };
+    });
+    }, [points, displayZone]);
+
     // Calculate statistics from points.
     // Ignore the -127 dBm offline sentinel and invalid 0 dBm readings so
     // they do not skew min / max / avg / sample deviation.
@@ -386,7 +402,7 @@
         datasets: [
         {
             label: 'Wi‑Fi Signal Strength (dBm)',
-            data: points,
+            data: displayPoints,
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.15)',
             fill: true,
@@ -426,7 +442,7 @@
         },
         ],
     }),
-    [points, pointStyles, pointRadii, pointColors]
+    [points, displayPoints, pointStyles, pointRadii, pointColors]
     );
 
     const chartOptions: ChartOptions<'line'> = useMemo(
@@ -603,7 +619,7 @@
         {timeRangeContext && isLinkedToGlobal && (
             <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                📅 {fromDT?.toLocaleString()} — {toDT?.toLocaleString()}
+                📅 {fromDT?.toLocaleString(undefined, { timeZone: displayZone })} — {toDT?.toLocaleString(undefined, { timeZone: displayZone })}
             </span>
             </div>
         )}

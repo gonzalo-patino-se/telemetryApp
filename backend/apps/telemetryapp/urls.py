@@ -9,6 +9,8 @@ from .views import (
     batch_telemetry_view,  # NEW: Optimized batch endpoint
     adx_stats_view,        # NEW: Query statistics
     auth_me_view,          # Authentication status check
+    geo_timezone_view,     # ZIP -> timezone lookup
+    weather_view,          # ZIP + range -> hourly weather
 )
 
 router = DefaultRouter()
@@ -28,5 +30,9 @@ urlpatterns = [
     # === OPTIMIZED ENDPOINTS (Use these for cost efficiency) ===
     path('batch_telemetry/', batch_telemetry_view),  # Batch telemetry (RECOMMENDED)
     path('adx_stats/', adx_stats_view),              # Query statistics/monitoring
+
+    # === WEATHER + TIMEZONE (customer site alignment) ===
+    path('geo_timezone/', geo_timezone_view),  # ZIP -> IANA timezone + UTC offset
+    path('weather/', weather_view),            # ZIP + range -> hourly weather
 ]
 

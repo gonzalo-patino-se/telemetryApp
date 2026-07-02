@@ -16,6 +16,7 @@ import MasterTimeRangeWidget from './MasterTimeRangeWidget';
 import DashboardPDFExport from './DashboardPDFExport';
 import { CorrelationOverTimeCard } from './CorrelationOverTime';
 import FirmwareHistoryCard from './FirmwareHistoryCard';
+import WeatherConditionsCard from './Weather/WeatherConditionsCard';
 import { colors, spacing, borderRadius, typography } from '../styles/tokens';
 import { formStyles, buttonStyles } from '../styles/components';
 import { useSerial } from '../context/SerialContext';
@@ -577,6 +578,9 @@ const Dashboard = () => {
                     {renderWidgetCard("BGCS Grid Relay Status", BgcsRelayStatusWidget, bgcsRelayStatusAutoFetch, setBgcsRelayStatusAutoFetch, bgcsRelayStatusFetchSignal, setBgcsRelayStatusFetchSignal)}
                 </div>
             </CollapsibleSection>
+
+            {/* ==================== WEATHER CONDITIONS ==================== */}
+            <WeatherConditionsCard />
 
             {/* ==================== SOLAR PV INPUTS ==================== */}
             <CollapsibleSection

@@ -49,6 +49,8 @@ interface OverlayChartProps {
   zoomDomain?: [number, number] | null;
   /** Fired when the user drag-selects a new zoom window on the chart. */
   onZoomChange?: (domain: [number, number]) => void;
+  /** IANA timezone for rendering axis/tooltip times (undefined = browser). */
+  timeZone?: string;
 }
 
 /** Reserved synthetic y-axis used solely to position overlap markers. */
@@ -73,6 +75,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   onPinToggle,
   zoomDomain = null,
   onZoomChange,
+  timeZone,
 }) => {
   const fullDomain = React.useMemo(
     () => computeXDomain(start, end, series, events),
@@ -409,7 +412,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             return (
               <div key={`pinbox-${idx}-${pt}`} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
-                  📌 {idx + 1} · {formatXTick(pt, span)}
+                  📌 {idx + 1} · {formatXTick(pt, span, timeZone)}
                 </div>
                 {readouts.length === 0 ? (
                   <div style={{ color: 'var(--text-tertiary)' }}>no data near this time</div>
@@ -468,7 +471,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             dataKey="t"
             domain={xDomain}
             scale="time"
-            tickFormatter={t => formatXTick(t as number, span)}
+            tickFormatter={t => formatXTick(t as number, span, timeZone)}
             tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
             axisLine={{ stroke: 'var(--border-subtle)' }}
             tickLine={false}
@@ -513,6 +516,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                 series={series}
                 events={events}
                 xDomain={xDomain}
+                timeZone={timeZone}
               />
             )}
           />
