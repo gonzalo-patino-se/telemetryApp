@@ -96,6 +96,13 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
   // ----- Pins state ------------------------------------------------------
   const [pins, setPins] = React.useState<number[]>([]);
 
+  // ----- Zoom state ------------------------------------------------------
+  // Active drag-zoom window [startMs, endMs]; null = full view. Driven by the
+  // OverlayChart's drag-select, cleared via "Reset zoom".
+  const [zoomDomain, setZoomDomain] = React.useState<[number, number] | null>(
+    null,
+  );
+
   // Manual refresh signal.
   const [refetchSignal, setRefetchSignal] = React.useState(0);
 
@@ -129,6 +136,75 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
     });
   }, [xDomain[0], xDomain[1]]);
 
+  // Reset any active zoom when the underlying global time range changes, so a
+  // stale window can't linger outside the newly-selected range.
+  React.useEffect(() => {
+    setZoomDomain(null);
+  }, [start?.getTime(), end?.getTime()]);
+
+  // ----- Button-driven zoom (in / out) ----------------------------------
+  // Step-zoom around the center of the currently-visible window. Zoom-in
+  // halves the span; zoom-out doubles it, clamped to the full range (and
+  // cleared entirely once it reaches the full extent).
+  const zoomBy = React.useCallback(
+    (factor: number) => {
+      const [fullLo, fullHi] = xDomain;
+      const fullSpan = fullHi - fullLo;
+      if (!(fullSpan > 0)) return;
+      const [lo, hi] = zoomDomain ?? xDomain;
+      const center = (lo + hi) / 2;
+      const newSpan = (hi - lo) * factor;
+      // Zooming out to (or past) the full range just clears the zoom.
+      if (newSpan >= fullSpan) {
+        setZoomDomain(null);
+        return;
+      }
+      let nextLo = center - newSpan / 2;
+      let nextHi = center + newSpan / 2;
+      // Keep the window inside the full range.
+      if (nextLo < fullLo) {
+        nextHi += fullLo - nextLo;
+        nextLo = fullLo;
+      }
+      if (nextHi > fullHi) {
+        nextLo -= nextHi - fullHi;
+        nextHi = fullHi;
+      }
+      setZoomDomain([Math.max(nextLo, fullLo), Math.min(nextHi, fullHi)]);
+    },
+    [xDomain, zoomDomain],
+  );
+  const zoomIn = React.useCallback(() => zoomBy(0.5), [zoomBy]);
+  const zoomOut = React.useCallback(() => zoomBy(2), [zoomBy]);
+
+  // ----- Button-driven pan (left / right) -------------------------------
+  // Shift the visible window along the time axis by a fraction of its span,
+  // clamped so it never slides past the full range. Only meaningful while a
+  // zoom window is active (fraction < 0: earlier, > 0: later).
+  const panBy = React.useCallback(
+    (fraction: number) => {
+      if (!zoomDomain) return;
+      const [fullLo, fullHi] = xDomain;
+      const [lo, hi] = zoomDomain;
+      const winSpan = hi - lo;
+      if (!(winSpan > 0)) return;
+      let nextLo = lo + winSpan * fraction;
+      let nextHi = hi + winSpan * fraction;
+      if (nextLo < fullLo) {
+        nextLo = fullLo;
+        nextHi = fullLo + winSpan;
+      }
+      if (nextHi > fullHi) {
+        nextHi = fullHi;
+        nextLo = fullHi - winSpan;
+      }
+      setZoomDomain([nextLo, nextHi]);
+    },
+    [xDomain, zoomDomain],
+  );
+  const panLeft = React.useCallback(() => panBy(-0.25), [panBy]);
+  const panRight = React.useCallback(() => panBy(0.25), [panBy]);
+
   // ----- Session-timeout reset ------------------------------------------
   // Whenever the user is no longer authenticated (logout or session timeout
   // forcing a re-login), wipe every selection so that on the next sign-in
@@ -139,6 +215,7 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
       setEventsEnabled(false);
       setExcludedEventNames([]);
       setPins([]);
+      setZoomDomain(null);
     }
   }, [isAuthenticated]);
 
@@ -190,7 +267,6 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
   }, []);
 
   const clearPins = React.useCallback(() => setPins([]), []);
-
   const handleExportPins = React.useCallback(() => {
     if (pins.length === 0) return;
     const span = xDomain[1] - xDomain[0];
@@ -318,6 +394,67 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
         </button>
       )}
 
+      {hasAnyData && (
+        <button
+          type="button"
+          onClick={zoomIn}
+          style={buttonStyle}
+          aria-label="Zoom in on the center of the current view"
+          title="Zoom in (show a narrower time range)"
+        >
+          ＋ Zoom in
+        </button>
+      )}
+
+      {hasAnyData && (
+        <button
+          type="button"
+          onClick={zoomOut}
+          style={buttonStyle}
+          aria-label="Zoom out from the center of the current view"
+          title="Zoom out (show a wider time range)"
+          disabled={!zoomDomain}
+        >
+          － Zoom out
+        </button>
+      )}
+
+      {zoomDomain && (
+        <button
+          type="button"
+          onClick={panLeft}
+          style={buttonStyle}
+          aria-label="Pan the view earlier in time"
+          title="Pan left (earlier) · tip: Shift+drag on the chart also pans"
+        >
+          ◀ Pan
+        </button>
+      )}
+
+      {zoomDomain && (
+        <button
+          type="button"
+          onClick={panRight}
+          style={buttonStyle}
+          aria-label="Pan the view later in time"
+          title="Pan right (later) · tip: Shift+drag on the chart also pans"
+        >
+          Pan ▶
+        </button>
+      )}
+
+      {zoomDomain && (
+        <button
+          type="button"
+          onClick={() => setZoomDomain(null)}
+          style={primaryButtonStyle}
+          aria-label="Reset zoom to the full time range"
+          title="Return to the full time range"
+        >
+          ⤢ Reset zoom
+        </button>
+      )}
+
       {pins.length > 0 && (
         <>
           <button
@@ -423,6 +560,8 @@ export const CorrelationOverTimeCard: React.FC<CorrelationOverTimeCardProps> = (
               height={chartHeight}
               pins={pins}
               onPinToggle={handlePinToggle}
+              zoomDomain={zoomDomain}
+              onZoomChange={setZoomDomain}
             />
             <Legend series={series} events={events} />
           </>

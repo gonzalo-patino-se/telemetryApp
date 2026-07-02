@@ -331,10 +331,11 @@ interface ProductPowerParams {
 
 /**
  * Build KQL for single-channel power: P = V × I.
- * Anchored on the voltage series via a LEFT-OUTER join: every voltage sample
- * yields a row. Where the matching current sample is missing, `value_double`
- * is null (a "gap") — the caller renders these as ✕ markers rather than
- * fabricating a value.
+ * Anchored on the UNION of the voltage and current timestamps: every instant
+ * where *either* input reported a sample yields a row. If the matching sample
+ * on the other side is missing, `value_double` is null (a "gap") — the caller
+ * renders these as ✕ markers rather than fabricating a value. In other words,
+ * power is only computed when BOTH variables are present at that timestamp.
  */
 export function buildProductPowerQuery(params: ProductPowerParams): string {
   const { serial, startDate, endDate, voltageName, currentName } = params;
@@ -355,7 +356,10 @@ export function buildProductPowerQuery(params: ProductPowerParams): string {
         | where name contains '${currentName}'
         | where localtime between (start .. finish)
         | project localtime, i = value_double;
-    vSeries
+    let ticks = union (vSeries | project localtime), (iSeries | project localtime)
+        | distinct localtime;
+    ticks
+    | join kind=leftouter vSeries on localtime
     | join kind=leftouter iSeries on localtime
     | project localtime, value_double = v * i
     | order by localtime asc
@@ -407,7 +411,12 @@ export function buildDualProductPowerQuery(params: DualProductPowerParams): stri
         | where name contains '${currentName2}'
         | where localtime between (start .. finish)
         | project localtime, i2 = value_double;
-    v1
+    let ticks = union
+        (v1 | project localtime), (i1 | project localtime),
+        (v2 | project localtime), (i2 | project localtime)
+        | distinct localtime;
+    ticks
+    | join kind=leftouter v1 on localtime
     | join kind=leftouter i1 on localtime
     | join kind=leftouter v2 on localtime
     | join kind=leftouter i2 on localtime
@@ -443,19 +452,74 @@ export function buildGridPowerCalcQuery(serial: string, startDate: Date, endDate
 }
 
 // ---- Load computed power: P = (V_L1 × I_L1) + (V_L2 × I_L2) ------------------
-// Uses the real load-side measurement channels (SYS/MEAS PANEL voltage × LOAD
-// current) that are populated in the normal Telemetry table — the same signals
-// the working PDF report reads. The previous ACPORT normal-current channel
-// (/INV/ACPORT/STAT/IRMS_L*N) carries no data (which is why the Load Current
-// widget defaults to fast telemetry), so joining on it produced only gaps.
-// Both PANEL voltage and LOAD current live in the same Telemetry table, so the
-// join still aligns voltage and current at identical timestamps.
+// Load Voltage comes from NORMAL Telemetry (~15 min) via
+// /INV/ACPORT/STAT/VRMS_L1N|L2N; Load Current comes from the FAST stream
+// (sourcedatastreamingfornam, ~15 s) via /SYS/MEAS/STAT/LOAD/IRMS_L1|L2.
+// Because voltage is the coarser (15-min) signal, power can only ever be as
+// accurate as the voltage cadence — so we compute it on a shared 15-min grid.
+//
+// For each 15-min bin we require ALL FOUR inputs (V1, V2, I1, I2) to be present
+// in that bin; the power point is placed at the bin start. If ANY input is
+// missing for a bin, value_double is null and the caller renders a ✕. This
+// guarantees power never appears where voltage OR current is absent (an earlier
+// as-of approach held the last voltage forward for up to 15 min, which made
+// power linger past the point where voltage actually stopped).
 export function buildLoadPowerCalcQuery(serial: string, startDate: Date, endDate: Date): string {
-  return buildDualProductPowerQuery({
-    serial, startDate, endDate,
-    voltageName1: '/SYS/MEAS/STAT/PANEL/VRMS_L1N', currentName1: '/SYS/MEAS/STAT/LOAD/IRMS_L1',
-    voltageName2: '/SYS/MEAS/STAT/PANEL/VRMS_L2N', currentName2: '/SYS/MEAS/STAT/LOAD/IRMS_L2',
-  });
+  const s = escapeKqlString(serial);
+  const start = formatDateForKql(startDate);
+  const finish = formatDateForKql(endDate);
+  return `
+    let s = '${s}';
+    let start = datetime(${start});
+    let finish = datetime(${finish});
+    let binSize = 15m;
+    // Normal ACPORT phase voltages, averaged per 15-min bin (one row per bin
+    // that actually contains a voltage sample).
+    let v1 = Telemetry
+        | where comms_serial contains s
+        | where name contains '/INV/ACPORT/STAT/VRMS_L1N'
+        | where localtime between (start .. finish)
+        | summarize v1 = avg(value_double) by t = bin(localtime, binSize);
+    let v2 = Telemetry
+        | where comms_serial contains s
+        | where name contains '/INV/ACPORT/STAT/VRMS_L2N'
+        | where localtime between (start .. finish)
+        | summarize v2 = avg(value_double) by t = bin(localtime, binSize);
+    // Fast LOAD phase currents (~15 s), averaged into the same 15-min bins.
+    let i1 = sourcedatastreamingfornam
+        | where timestamp between (start .. finish)
+        | extend telemetryArray = parse_json(data)
+        | where header has s
+        | mv-expand telemetry = telemetryArray
+        | where telemetry.msgType == "fast-telemetry"
+        | mv-expand item = telemetry.payload
+        | extend name = tostring(item.name), value = item.value
+        | where name contains "/SYS/MEAS/STAT/LOAD/IRMS_L1"
+        | summarize i1 = avg(todouble(value)) by t = bin(timestamp, binSize);
+    let i2 = sourcedatastreamingfornam
+        | where timestamp between (start .. finish)
+        | extend telemetryArray = parse_json(data)
+        | where header has s
+        | mv-expand telemetry = telemetryArray
+        | where telemetry.msgType == "fast-telemetry"
+        | mv-expand item = telemetry.payload
+        | extend name = tostring(item.name), value = item.value
+        | where name contains "/SYS/MEAS/STAT/LOAD/IRMS_L2"
+        | summarize i2 = avg(todouble(value)) by t = bin(timestamp, binSize);
+    // Anchor on every 15-min bin where ANY signal reported, attach all four,
+    // then compute P. A missing voltage OR current leg yields a null
+    // value_double (rendered as ✕) — power is only produced when V and I for
+    // BOTH phases exist in that bin.
+    let ticks = union (v1 | project t), (v2 | project t), (i1 | project t), (i2 | project t)
+        | distinct t;
+    ticks
+    | join kind=leftouter v1 on t
+    | join kind=leftouter v2 on t
+    | join kind=leftouter i1 on t
+    | join kind=leftouter i2 on t
+    | project localtime = t, value_double = (v1 * i1) + (v2 * i2)
+    | order by localtime asc
+  `.trim();
 }
 
 // ---- Battery computed power: P = V × I per module ---------------------------
