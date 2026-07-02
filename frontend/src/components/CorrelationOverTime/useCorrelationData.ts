@@ -34,6 +34,9 @@ const QUERY_PATH = '/query_adx/';
 /** Soft cap per series so the card stays smooth even on 7-day ranges. */
 const MAX_POINTS_PER_SERIES = 1500;
 
+/** Cap on ✕ "no data" markers per series so a fully-missing signal stays legible. */
+const MAX_GAP_MARKERS = 200;
+
 interface UseCorrelationDataArgs {
   serial: string;
   start: Date | null;
@@ -59,17 +62,26 @@ interface UseCorrelationDataArgs {
 // Helpers
 // ----------------------------------------------------------------------------
 
-function rowsToPoints(rows: AdxRow[]): TimePoint[] {
+function rowsToPointsAndGaps(
+  rows: AdxRow[],
+  collectGaps: boolean,
+): { points: TimePoint[]; gaps: number[] } {
   const points: TimePoint[] = [];
+  const gaps: number[] = [];
   for (const r of rows) {
-    if (!r.localtime || r.value_double == null) continue;
+    if (!r.localtime) continue;
     const t = parseAdxLocaltime(r.localtime as string);
-    const v = Number(r.value_double);
-    if (!Number.isFinite(t) || t === 0 || !Number.isFinite(v)) continue;
-    points.push({ t, v });
+    if (!Number.isFinite(t) || t === 0) continue;
+    const v = r.value_double == null ? NaN : Number(r.value_double);
+    if (Number.isFinite(v)) {
+      points.push({ t, v });
+    } else if (collectGaps) {
+      gaps.push(t);
+    }
   }
   points.sort((a, b) => a.t - b.t);
-  return points;
+  gaps.sort((a, b) => a - b);
+  return { points, gaps };
 }
 
 function downsamplePoints(points: TimePoint[], cap: number): TimePoint[] {
@@ -79,6 +91,17 @@ function downsamplePoints(points: TimePoint[], cap: number): TimePoint[] {
   for (let i = 0; i < points.length; i += stride) out.push(points[i]);
   const last = points[points.length - 1];
   if (out[out.length - 1]?.t !== last.t) out.push(last);
+  return out;
+}
+
+/** Uniform-stride downsample for a sorted list of timestamps (✕ markers). */
+function downsampleTimes(times: number[], cap: number): number[] {
+  if (times.length <= cap) return times;
+  const stride = Math.ceil(times.length / cap);
+  const out: number[] = [];
+  for (let i = 0; i < times.length; i += stride) out.push(times[i]);
+  const last = times[times.length - 1];
+  if (out[out.length - 1] !== last) out.push(last);
   return out;
 }
 
@@ -219,7 +242,12 @@ export function useCorrelationData(
           const kql = def.buildQuery(serial, start, end);
           const res = await api.post(QUERY_PATH, { kql });
           const rows: AdxRow[] = (res.data?.data ?? []) as AdxRow[];
-          const points = downsamplePoints(rowsToPoints(rows), MAX_POINTS_PER_SERIES);
+          const { points: rawPoints, gaps: rawGaps } = rowsToPointsAndGaps(
+            rows,
+            def.markMissing === true,
+          );
+          const points = downsamplePoints(rawPoints, MAX_POINTS_PER_SERIES);
+          const gaps = downsampleTimes(rawGaps, MAX_GAP_MARKERS);
           const { vMin, vMax } = summarizeRange(points);
           return {
             id: def.id,
@@ -228,6 +256,7 @@ export function useCorrelationData(
             color: def.color,
             dash: def.dash,
             points,
+            gaps,
             vMin,
             vMax,
           };

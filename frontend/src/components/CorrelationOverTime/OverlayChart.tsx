@@ -51,6 +51,10 @@ const OVERLAP_Y = 0.06; // near the bottom of the plot (just above the X-axis)
 const EVENTS_AXIS_ID = '__events';
 const EVENTS_Y = 0.94; // near the top of the plot
 
+/** Reserved synthetic y-axis for "no data" ✕ markers (computed series gaps). */
+const MISSING_AXIS_ID = '__missing';
+const MISSING_Y = 0.14; // just above the overlap lane
+
 export const OverlayChart: React.FC<OverlayChartProps> = ({
   series,
   events,
@@ -71,6 +75,36 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
     () => buildOverlapMarkers(series, events, xDomain),
     [series, events, xDomain],
   );
+
+  // ---------------------------------------------------------------------
+  // "No data" ✕ markers. Computed-power series (P = V × I) emit a gap
+  // timestamp wherever a required input was missing, so we never fabricate a
+  // value. Render them as small ✕ marks in a dedicated bottom lane, colored
+  // per series. Bucketed per (series, time-bin) and hard-capped so a fully
+  // missing signal stays legible instead of flooding the axis.
+  // ---------------------------------------------------------------------
+  const missingMarkers = React.useMemo(() => {
+    const HARD_CAP = 400;
+    const withGaps = series.filter(s => (s.gaps?.length ?? 0) > 0);
+    if (withGaps.length === 0) return [] as { key: string; t: number; color: string; label: string }[];
+    const span = xDomain[1] - xDomain[0];
+    const bucketCount = 120;
+    const binWidth = span > 0 ? span / bucketCount : 1;
+    const seen = new Set<string>();
+    const out: { key: string; t: number; color: string; label: string }[] = [];
+    for (const s of withGaps) {
+      for (const t of s.gaps ?? []) {
+        if (t < xDomain[0] || t > xDomain[1]) continue;
+        const bin = Math.floor((t - xDomain[0]) / binWidth);
+        const key = `${s.id}|${bin}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ key: `${s.id}-${t}`, t, color: s.color, label: s.label });
+        if (out.length >= HARD_CAP) return out;
+      }
+    }
+    return out;
+  }, [series, xDomain]);
 
   // ---------------------------------------------------------------------
   // Render-side downsample for the event scatter lane.
@@ -223,6 +257,9 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
 
           {/* Hidden axis dedicated to the event scatter lane (top of plot). */}
           <YAxis yAxisId={EVENTS_AXIS_ID} type="number" domain={[0, 1]} hide />
+
+          {/* Hidden axis dedicated to the "no data" ✕ lane (bottom of plot). */}
+          <YAxis yAxisId={MISSING_AXIS_ID} type="number" domain={[0, 1]} hide />
 
           {/* Tooltip — single instance, custom body. */}
           <Tooltip
@@ -437,6 +474,46 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                       y2={cy - r}
                       stroke="var(--accent-primary)"
                       strokeWidth={1.6}
+                      strokeLinecap="round"
+                    />
+                  </g>
+                );
+              }}
+            />
+          ))}
+
+          {/* ✕ "no data" markers — one per (series, time-bucket) where a computed
+              value could not be produced. Colored by the owning series so the
+              user can tell which signal is missing data at that instant. */}
+          {missingMarkers.map(m => (
+            <ReferenceDot
+              key={`miss-${m.key}`}
+              x={m.t}
+              y={MISSING_Y}
+              xAxisId={0}
+              yAxisId={MISSING_AXIS_ID}
+              r={4}
+              shape={(props: { cx?: number; cy?: number }) => {
+                const { cx = 0, cy = 0 } = props;
+                const r = 3.5;
+                return (
+                  <g aria-label={`No data: ${m.label} at ${new Date(m.t).toLocaleString()}`}>
+                    <line
+                      x1={cx - r}
+                      y1={cy - r}
+                      x2={cx + r}
+                      y2={cy + r}
+                      stroke={m.color}
+                      strokeWidth={1.4}
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={cx - r}
+                      y1={cy + r}
+                      x2={cx + r}
+                      y2={cy - r}
+                      stroke={m.color}
+                      strokeWidth={1.4}
                       strokeLinecap="round"
                     />
                   </g>
