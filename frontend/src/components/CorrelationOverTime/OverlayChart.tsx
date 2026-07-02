@@ -203,6 +203,22 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   const MARGIN_LEFT = 8;
   const MARGIN_RIGHT = 16;
 
+  // Track the container's pixel width so the hover tooltip can be parked in the
+  // top-right corner (out of the way of the curves) rather than following the
+  // cursor and covering the very points being inspected.
+  const [containerWidth, setContainerWidth] = React.useState(0);
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width ?? el.clientWidth;
+      setContainerWidth(w);
+    });
+    ro.observe(el);
+    setContainerWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
   const panByPixels = React.useCallback(
     (pixelDelta: number) => {
       const el = containerRef.current;
@@ -345,7 +361,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
           title="Tooltip and CSV export still see all events; only on-chart dots are throttled for performance."
           style={{
             position: 'absolute',
-            top: 4,
+            bottom: 4,
             right: 8,
             zIndex: 2,
             fontSize: 10,
@@ -480,15 +496,15 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
           {/* Hidden axis dedicated to the "no data" ✕ lane (bottom of plot). */}
           <YAxis yAxisId={MISSING_AXIS_ID} type="number" domain={[0, 1]} hide />
 
-          {/* Tooltip — single instance, custom body. Locked to the top of the
-              plot (y is fixed; it still tracks the cursor horizontally) and
-              allowed to escape the view box, so the readout never drops down
-              over the very lines the user is inspecting. */}
+          {/* Tooltip — single instance, custom body. Parked in the top-right
+              corner (fixed position, not cursor-following) so the readout panel
+              never covers the curves being inspected. The vertical cursor line
+              still shows exactly which timestamp is being read. */}
           <Tooltip
             cursor={{ stroke: 'var(--accent-primary)', strokeOpacity: 0.5, strokeDasharray: '3 3' }}
-            wrapperStyle={{ outline: 'none' }}
-            position={{ y: 0 }}
-            offset={16}
+            wrapperStyle={{ outline: 'none', zIndex: 4 }}
+            position={{ x: Math.max(containerWidth - 296, 8), y: 8 }}
+            offset={0}
             allowEscapeViewBox={{ x: true, y: true }}
             content={(props) => (
               <CorrelationTooltip
