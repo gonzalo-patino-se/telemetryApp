@@ -13,6 +13,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceArea,
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
@@ -41,6 +42,13 @@ interface OverlayChartProps {
   pins?: number[];
   /** Fired when the user clicks the chart at a given timestamp. */
   onPinToggle?: (t: number) => void;
+  /**
+   * Active zoom window [startMs, endMs]. When set, the chart renders only this
+   * sub-range of the full time domain. Null = full (un-zoomed) view.
+   */
+  zoomDomain?: [number, number] | null;
+  /** Fired when the user drag-selects a new zoom window on the chart. */
+  onZoomChange?: (domain: [number, number]) => void;
 }
 
 /** Reserved synthetic y-axis used solely to position overlap markers. */
@@ -63,10 +71,17 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   height = 240,
   pins = [],
   onPinToggle,
+  zoomDomain = null,
+  onZoomChange,
 }) => {
-  const xDomain = React.useMemo(
+  const fullDomain = React.useMemo(
     () => computeXDomain(start, end, series, events),
     [start, end, series, events],
+  );
+  // Effective domain: the zoom window when active, otherwise the full range.
+  const xDomain = React.useMemo<[number, number]>(
+    () => zoomDomain ?? fullDomain,
+    [zoomDomain, fullDomain],
   );
   const span = xDomain[1] - xDomain[0];
   const tol = React.useMemo(() => toleranceFromSpan(span), [span]);
@@ -162,19 +177,132 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   // don't double-toggle (dot pins, then chart-level click would un-pin).
   const suppressNextChartClickRef = React.useRef(false);
 
-  const handleMouseMove = React.useCallback((state: { activeLabel?: number | string }) => {
-    const al = state?.activeLabel;
-    if (al == null) {
-      hoverXRef.current = null;
+  // ---------------------------------------------------------------------
+  // Drag-to-zoom. While the primary button is held, we paint a translucent
+  // selection rectangle (ReferenceArea) between the mousedown time and the
+  // current hover time. On release, if the span is non-trivial we hand the
+  // [lo, hi] window up to the parent, which drives `zoomDomain`.
+  // ---------------------------------------------------------------------
+  const [refAreaLeft, setRefAreaLeft] = React.useState<number | null>(null);
+  const [refAreaRight, setRefAreaRight] = React.useState<number | null>(null);
+  const isSelectingRef = React.useRef(false);
+
+  // ---------------------------------------------------------------------
+  // Shift-drag to pan. When a zoom window is active, holding Shift and
+  // dragging grabs the plot and slides it left/right within the full range.
+  // We anchor on the pixel position at mousedown and translate pixel deltas
+  // into time deltas using the measured plot width, so the grabbed point
+  // tracks the cursor smoothly. Plain (no-Shift) drags still zoom.
+  // ---------------------------------------------------------------------
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const isPanningRef = React.useRef(false);
+  const panStartPxRef = React.useRef(0);
+  const panStartDomainRef = React.useRef<[number, number]>([0, 0]);
+  // Chart margins (mirror the <ComposedChart margin> below) so the usable plot
+  // width can be derived from the container width for px→time conversion.
+  const MARGIN_LEFT = 8;
+  const MARGIN_RIGHT = 16;
+
+  const panByPixels = React.useCallback(
+    (pixelDelta: number) => {
+      const el = containerRef.current;
+      if (!el) return;
+      const plotWidth = el.clientWidth - MARGIN_LEFT - MARGIN_RIGHT;
+      if (!(plotWidth > 0)) return;
+      const [startLo, startHi] = panStartDomainRef.current;
+      const winSpan = startHi - startLo;
+      if (!(winSpan > 0)) return;
+      // Dragging right (positive pixelDelta) reveals earlier data → shift left.
+      const deltaTime = -pixelDelta * (winSpan / plotWidth);
+      const [fullLo, fullHi] = fullDomain;
+      let lo = startLo + deltaTime;
+      let hi = startHi + deltaTime;
+      if (lo < fullLo) {
+        lo = fullLo;
+        hi = fullLo + winSpan;
+      }
+      if (hi > fullHi) {
+        hi = fullHi;
+        lo = fullHi - winSpan;
+      }
+      onZoomChange?.([lo, hi]);
+    },
+    [fullDomain, onZoomChange],
+  );
+
+  const handleMouseDown = React.useCallback(
+    (
+      state: { activeLabel?: number | string; chartX?: number },
+      e?: React.MouseEvent,
+    ) => {
+      // Shift-drag pans (only meaningful while zoomed); plain drag zooms.
+      if (e?.shiftKey && zoomDomain && typeof state?.chartX === 'number') {
+        isPanningRef.current = true;
+        panStartPxRef.current = state.chartX;
+        panStartDomainRef.current = [xDomain[0], xDomain[1]];
+        return;
+      }
+      const al = state?.activeLabel;
+      if (al == null) return;
+      const t = typeof al === 'number' ? al : Number(al);
+      if (!Number.isFinite(t)) return;
+      isSelectingRef.current = true;
+      setRefAreaLeft(t);
+      setRefAreaRight(t);
+    },
+    [zoomDomain, xDomain],
+  );
+
+  const handleMouseMove = React.useCallback(
+    (state: { activeLabel?: number | string; chartX?: number }) => {
+      if (isPanningRef.current && typeof state?.chartX === 'number') {
+        panByPixels(state.chartX - panStartPxRef.current);
+        return;
+      }
+      const al = state?.activeLabel;
+      if (al == null) {
+        hoverXRef.current = null;
+        return;
+      }
+      const t = typeof al === 'number' ? al : Number(al);
+      hoverXRef.current = Number.isFinite(t) ? t : null;
+      if (isSelectingRef.current && Number.isFinite(t)) {
+        setRefAreaRight(t);
+      }
+    },
+    [panByPixels],
+  );
+
+  const handleMouseUp = React.useCallback(() => {
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      // Swallow the click Recharts fires after a pan so it doesn't pin.
+      suppressNextChartClickRef.current = true;
       return;
     }
-    const t = typeof al === 'number' ? al : Number(al);
-    hoverXRef.current = Number.isFinite(t) ? t : null;
-  }, []);
+    if (!isSelectingRef.current) return;
+    isSelectingRef.current = false;
+    const l = refAreaLeft;
+    const r = refAreaRight;
+    setRefAreaLeft(null);
+    setRefAreaRight(null);
+    if (l == null || r == null) return;
+    const lo = Math.min(l, r);
+    const hi = Math.max(l, r);
+    // Require the drag to cover a meaningful slice (>0.5% of the current span)
+    // so an ordinary click still registers as a pin instead of a zoom.
+    const minSpan = Math.max((xDomain[1] - xDomain[0]) * 0.005, 1);
+    if (hi - lo >= minSpan) {
+      // A real drag happened — suppress the click that Recharts fires next so
+      // we don't also toggle a pin at the release point.
+      suppressNextChartClickRef.current = true;
+      onZoomChange?.([lo, hi]);
+    }
+  }, [refAreaLeft, refAreaRight, xDomain, onZoomChange]);
 
   const handleClick = React.useCallback(() => {
     if (suppressNextChartClickRef.current) {
-      // Reset and skip — an event-dot click handled the pin.
+      // Reset and skip — an event-dot click or a zoom drag handled this.
       suppressNextChartClickRef.current = false;
       return;
     }
@@ -187,7 +315,29 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   // pass its `points` directly via the `data` prop (rather than a single
   // joined dataset) so each series keeps its own y-axis cleanly.
   return (
-    <div style={{ width: '100%', height, position: 'relative' }}>
+    <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
+      {zoomDomain && (
+        <div
+          role="status"
+          aria-live="polite"
+          title="Drag to zoom further · Shift+drag to pan left/right · use “Reset zoom” to return to the full range."
+          style={{
+            position: 'absolute',
+            top: 4,
+            left: 8,
+            zIndex: 2,
+            fontSize: 10,
+            padding: '2px 6px',
+            borderRadius: 3,
+            background: 'rgba(59, 130, 246, 0.12)',
+            border: '1px solid var(--accent-primary)',
+            color: 'var(--accent-primary)',
+            pointerEvents: 'none',
+          }}
+        >
+          Zoomed · Shift+drag to pan
+        </div>
+      )}
       {eventsTruncated && (
         <div
           role="status"
@@ -211,13 +361,82 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
           Showing {renderEvents.length} of {events.length} events
         </div>
       )}
+      {/* Pin readouts panel. The exact values at each pinned timestamp are
+          listed here — in a solid-background overlay pinned to the bottom-left
+          corner — instead of as floating labels on the plot, so the numbers are
+          always legible and never sit on top of the very curves being read. */}
+      {pins.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            zIndex: 3,
+            maxWidth: '46%',
+            maxHeight: '70%',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            padding: '6px 8px',
+            borderRadius: 6,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+            fontSize: 11,
+            fontVariantNumeric: 'tabular-nums',
+            pointerEvents: 'none',
+          }}
+        >
+          {pins.map((pt, idx) => {
+            const readouts = readoutAt(series, pt, tol).filter(r => r.value != null);
+            return (
+              <div key={`pinbox-${idx}-${pt}`} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+                  📌 {idx + 1} · {formatXTick(pt, span)}
+                </div>
+                {readouts.length === 0 ? (
+                  <div style={{ color: 'var(--text-tertiary)' }}>no data near this time</div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px' }}>
+                    {readouts.map(r => (
+                      <span
+                        key={`pinbox-${idx}-${r.id}`}
+                        style={{ color: r.color, whiteSpace: 'nowrap' }}
+                      >
+                        {r.label}:{' '}
+                        {Math.abs(r.value as number) >= 1000
+                          ? (r.value as number).toFixed(0)
+                          : (r.value as number).toFixed(2)}
+                        {r.unit ? ` ${r.unit}` : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           margin={{ top: 18, right: 16, bottom: 8, left: 8 }}
+          onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => {
             hoverXRef.current = null;
+            // Abandon an in-progress selection if the pointer leaves the plot.
+            if (isSelectingRef.current) {
+              isSelectingRef.current = false;
+              setRefAreaLeft(null);
+              setRefAreaRight(null);
+            }
+            // Abandon an in-progress pan too.
+            if (isPanningRef.current) {
+              isPanningRef.current = false;
+            }
           }}
+          onMouseUp={handleMouseUp}
           onClick={handleClick}
         >
           {/* Horizontal-only, very low contrast grid. */}
@@ -238,7 +457,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             axisLine={{ stroke: 'var(--border-subtle)' }}
             tickLine={false}
             minTickGap={60}
-            allowDataOverflow={false}
+            allowDataOverflow={zoomDomain != null}
             allowDuplicatedCategory={false}
           />
 
@@ -261,10 +480,16 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
           {/* Hidden axis dedicated to the "no data" ✕ lane (bottom of plot). */}
           <YAxis yAxisId={MISSING_AXIS_ID} type="number" domain={[0, 1]} hide />
 
-          {/* Tooltip — single instance, custom body. */}
+          {/* Tooltip — single instance, custom body. Locked to the top of the
+              plot (y is fixed; it still tracks the cursor horizontally) and
+              allowed to escape the view box, so the readout never drops down
+              over the very lines the user is inspecting. */}
           <Tooltip
             cursor={{ stroke: 'var(--accent-primary)', strokeOpacity: 0.5, strokeDasharray: '3 3' }}
             wrapperStyle={{ outline: 'none' }}
+            position={{ y: 0 }}
+            offset={16}
+            allowEscapeViewBox={{ x: true, y: true }}
             content={(props) => (
               <CorrelationTooltip
                 active={props.active}
@@ -285,10 +510,10 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
             // Smaller dots when many samples; hide entirely if exceptionally dense.
             const n = s.points.length;
             const dotProps =
-              n > 1200
+              n > 2000
                 ? false
                 : ({
-                    r: n > 400 ? 1.4 : n > 150 ? 1.8 : 2.2,
+                    r: n > 800 ? 2.4 : n > 300 ? 3 : 3.6,
                     fill: s.color,
                     stroke: 'var(--bg-elevated)',
                     strokeWidth: 0.5,
@@ -305,7 +530,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                 strokeOpacity={0.85}
                 strokeDasharray={s.dash}
                 dot={dotProps}
-                activeDot={{ r: 4, fill: s.color, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: s.color, strokeWidth: 0 }}
                 isAnimationActive={false}
                 connectNulls={false}
                 name={s.label}
@@ -407,7 +632,7 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                   stroke="var(--accent-primary)"
                   strokeOpacity={0.85}
                   strokeWidth={1}
-                  ifOverflow="extendDomain"
+                  ifOverflow="hidden"
                   label={{
                     value: `📌 ${idx + 1}`,
                     position: 'top',
@@ -415,28 +640,18 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
                     fontSize: 10,
                   }}
                 />
-                {readouts.map((r, ri) =>
+                {readouts.map((r) =>
                   r.value == null ? null : (
                     <ReferenceDot
                       key={`pin-${idx}-${r.id}`}
                       x={pt}
                       y={r.value}
                       yAxisId={r.id}
-                      r={3}
+                      r={4.5}
                       fill={r.color}
                       stroke="var(--bg-elevated)"
-                      strokeWidth={1}
-                      ifOverflow="extendDomain"
-                      label={{
-                        value: `${r.label}: ${
-                          Math.abs(r.value) >= 1000
-                            ? r.value.toFixed(0)
-                            : r.value.toFixed(2)
-                        }${r.unit ? ' ' + r.unit : ''}`,
-                        position: ri % 2 === 0 ? 'right' : 'left',
-                        fill: r.color,
-                        fontSize: 10,
-                      }}
+                      strokeWidth={1.5}
+                      ifOverflow="hidden"
                     />
                   ),
                 )}
@@ -521,6 +736,29 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
               }}
             />
           ))}
+
+          {/* Drag-to-zoom selection marquee — painted LAST so it sits on top of
+              every series/marker (like the rectangle tool in Paint). It only
+              appears while a drag is in progress; releasing commits the zoom. */}
+          {refAreaLeft != null &&
+            refAreaRight != null &&
+            refAreaLeft !== refAreaRight && (
+              <ReferenceArea
+                xAxisId={0}
+                yAxisId={OVERLAP_AXIS_ID}
+                x1={refAreaLeft}
+                x2={refAreaRight}
+                y1={0}
+                y2={1}
+                stroke="var(--accent-primary)"
+                strokeOpacity={0.9}
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                fill="var(--accent-primary)"
+                fillOpacity={0.18}
+                ifOverflow="visible"
+              />
+            )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
