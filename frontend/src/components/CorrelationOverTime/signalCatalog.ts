@@ -82,9 +82,9 @@ const PALETTE: Record<string, PaletteEntry> = {
   pv3_i: { color: '#15803d', dash: DASH_SOLID },     // forest green
   pv4_i: { color: '#be123c', dash: DASH_SOLID },     // crimson
   // PV Power  (amber/yellow family — computed V x I)
-  pv1_p: { color: '#f59e0b', dash: DASH_SOLID },     // amber
-  pv2_p: { color: '#eab308', dash: DASH_SOLID },     // yellow
-  pv3_p: { color: '#f97316', dash: DASH_SOLID },     // orange
+  pv1_p: { color: '#0b36f5', dash: DASH_SOLID },     // amber
+  pv2_p: { color: '#f80606', dash: DASH_SOLID },     // yellow
+  pv3_p: { color: '#16f984', dash: DASH_SOLID },     // orange
   pv4_p: { color: '#d97706', dash: DASH_SOLID },     // dark amber
 
   // Grid

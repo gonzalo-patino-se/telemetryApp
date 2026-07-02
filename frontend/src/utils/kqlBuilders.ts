@@ -443,13 +443,18 @@ export function buildGridPowerCalcQuery(serial: string, startDate: Date, endDate
 }
 
 // ---- Load computed power: P = (V_L1 × I_L1) + (V_L2 × I_L2) ------------------
-// Uses normal-telemetry channels so voltage and current share the Telemetry
-// table (and therefore matching localtimes).
+// Uses the real load-side measurement channels (SYS/MEAS PANEL voltage × LOAD
+// current) that are populated in the normal Telemetry table — the same signals
+// the working PDF report reads. The previous ACPORT normal-current channel
+// (/INV/ACPORT/STAT/IRMS_L*N) carries no data (which is why the Load Current
+// widget defaults to fast telemetry), so joining on it produced only gaps.
+// Both PANEL voltage and LOAD current live in the same Telemetry table, so the
+// join still aligns voltage and current at identical timestamps.
 export function buildLoadPowerCalcQuery(serial: string, startDate: Date, endDate: Date): string {
   return buildDualProductPowerQuery({
     serial, startDate, endDate,
-    voltageName1: '/INV/ACPORT/STAT/VRMS_L1N', currentName1: '/INV/ACPORT/STAT/IRMS_L1N',
-    voltageName2: '/INV/ACPORT/STAT/VRMS_L2N', currentName2: '/INV/ACPORT/STAT/IRMS_L2N',
+    voltageName1: '/SYS/MEAS/STAT/PANEL/VRMS_L1N', currentName1: '/SYS/MEAS/STAT/LOAD/IRMS_L1',
+    voltageName2: '/SYS/MEAS/STAT/PANEL/VRMS_L2N', currentName2: '/SYS/MEAS/STAT/LOAD/IRMS_L2',
   });
 }
 
