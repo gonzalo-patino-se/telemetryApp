@@ -65,6 +65,8 @@ interface TimezoneContextValue {
   resolving: boolean;
   /** Error message from the last resolve attempt, if any. */
   resolveError: string | null;
+  /** Force a re-resolution of the site timezone from the current ZIP. */
+  retryResolve: () => void;
 
   /** IANA zone string to pass to Intl (undefined = browser-local). */
   effectiveTimeZone: string | undefined;
@@ -105,11 +107,24 @@ export const TimezoneProvider: React.FC<{ children: React.ReactNode }> = ({
   const [siteLocation, setSiteLocation] = useState<SiteLocation | null>(null);
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  // Bumping this forces the resolve effect to run again (retry / on-demand).
+  const [resolveTick, setResolveTick] = useState(0);
 
-  const setMode = useCallback((next: TimezoneMode) => {
-    setModeState(next);
-    localStorage.setItem(LS_MODE, next);
-  }, []);
+  const retryResolve = useCallback(() => setResolveTick(t => t + 1), []);
+
+  const setMode = useCallback(
+    (next: TimezoneMode) => {
+      setModeState(next);
+      localStorage.setItem(LS_MODE, next);
+      // When the user actively switches to Customer Site but we never managed
+      // to resolve the zone (e.g. a transient failure at startup), try again
+      // now so the cards actually shift instead of silently falling back.
+      if (next === 'site' && zip && !siteTimeZone) {
+        setResolveTick(t => t + 1);
+      }
+    },
+    [zip, siteTimeZone],
+  );
 
   const setZipCountry = useCallback((nextZip: string, nextCountry?: string) => {
     const z = (nextZip || '').trim();
@@ -172,7 +187,7 @@ export const TimezoneProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       cancelled = true;
     };
-  }, [zip, country]);
+  }, [zip, country, resolveTick]);
 
   const effectiveTimeZone = useMemo(
     () => resolveTimeZone(mode, siteTimeZone),
@@ -204,6 +219,7 @@ export const TimezoneProvider: React.FC<{ children: React.ReactNode }> = ({
     siteLocation,
     resolving,
     resolveError,
+    retryResolve,
     effectiveTimeZone,
     activeLabel,
     formatTick,
