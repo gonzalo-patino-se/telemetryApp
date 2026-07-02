@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SerialProvider } from './context/SerialContext';
 import { TimeRangeProvider } from './context/TimeRangeContext';
 import { RefreshIntervalProvider } from './context/RefreshIntervalContext';
+import { TimezoneProvider } from './context/TimezoneContext';
 
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
@@ -23,6 +24,7 @@ export default function App() {
       <SerialProvider>
         <TimeRangeProvider>
           <RefreshIntervalProvider>
+            <TimezoneProvider>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-bg-primary"><div className="text-text-secondary">Loading…</div></div>}>
               <Routes>
                 {/* Public */}
@@ -49,6 +51,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </Suspense>
+            </TimezoneProvider>
           </RefreshIntervalProvider>
         </TimeRangeProvider>
       </SerialProvider>

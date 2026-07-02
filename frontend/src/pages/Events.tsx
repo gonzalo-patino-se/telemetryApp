@@ -12,6 +12,7 @@ import { useSerial } from '../context/SerialContext';
 import { useAuth } from '../context/AuthContext';
 import { useTimeRangeOptional } from '../context/TimeRangeContext';
 import { useRefreshIntervalOptional } from '../context/RefreshIntervalContext';
+import { useTimezoneOptional } from '../context/TimezoneContext';
 import api from '../services/api';
 import {
   normalizeAlarmRows,
@@ -222,6 +223,8 @@ export default function Events() {
   const { serial, hasSerial } = useSerial();
   const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
+  const tz = useTimezoneOptional();
+  const displayZone = tz?.effectiveTimeZone;
   
   // State
   const [events, setEvents] = useState<NormalizedEvent[]>([]);
@@ -569,7 +572,7 @@ export default function Events() {
               fontSize: '13px',
               color: colors.textSecondary,
             }}>
-              📅 {fromDT?.toLocaleString()} — {toDT?.toLocaleString()}
+              📅 {fromDT?.toLocaleString(undefined, { timeZone: displayZone })} — {toDT?.toLocaleString(undefined, { timeZone: displayZone })}
             </div>
           </div>
         )}
@@ -827,7 +830,7 @@ export default function Events() {
                             consistently. `new Date(rawString)` was unreliable
                             for the ADX "YYYY-MM-DD HH:MM:SS+HH:MM" form.
                           */}
-                          {new Date(event.timestamp).toLocaleString()}
+                          {new Date(event.timestamp).toLocaleString(undefined, { timeZone: displayZone })}
                         </td>
                         <td style={{ ...styles.td, wordBreak: 'break-word' as const }}>
                           {/* Show the code prominently with the breadcrumb subtle. */}

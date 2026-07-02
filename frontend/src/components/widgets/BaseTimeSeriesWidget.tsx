@@ -8,6 +8,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTimeRangeOptional } from '../../context/TimeRangeContext';
 import { useRefreshIntervalOptional } from '../../context/RefreshIntervalContext';
+import { useTimezoneOptional } from '../../context/TimezoneContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -28,7 +29,8 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 
-import { parseAdxLocaltime, formatTooltipDate, getLastHours } from '../../utils/dateHelpers';
+import { parseAdxLocaltime, getLastHours } from '../../utils/dateHelpers';
+import { formatFullInZone, zoneDisplayShiftMs } from '../../utils/timezone';
 import { 
   chartColorSchemes, 
   getPointStyles, 
@@ -181,6 +183,11 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 }) => {
   const { logout } = useAuth();
   const timeRangeContext = useTimeRangeOptional();
+  // Global display timezone (UTC / Browser Local / Customer Site). Optional so
+  // the widget still renders in tests without the provider. `undefined` zone
+  // means "browser local", which matches the historical default.
+  const tz = useTimezoneOptional();
+  const displayZone = tz?.effectiveTimeZone;
   // Subscribe to the global auto-refresh tick (Settings → Data Refresh).
   // We only need the signal value -- when it increments, the auto-fetch
   // effect below re-runs and pulls fresh data. The hook is optional so the
@@ -369,6 +376,17 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     return downsampleData(list, 5000);
   }, [rows]);
 
+  // Points shifted so the (local-time) Chart.js axis visually renders in the
+  // active display timezone. Browser mode = no shift. Chart.js keeps its nice
+  // automatic tick spacing; the tooltip re-uses the same shifted value.
+  const displayPoints: ScatterDataPoint[] = useMemo(() => {
+    if (!displayZone) return points;
+    return points.map(p => {
+      const t = p.x ?? 0;
+      return { x: t + zoneDisplayShiftMs(t, displayZone), y: p.y };
+    });
+  }, [points, displayZone]);
+
   // Calculate statistics from points.
   // Excluded values (e.g. 0, or -127 dBm for Wi‑Fi) are filtered out so that
   // sentinel/offline readings do not skew the min/max/avg/sample deviation.
@@ -391,7 +409,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(() => ({
     datasets: [{
       label: `${label} (${unit})`,
-      data: points,
+      data: displayPoints,
       borderColor: colors.line,
       backgroundColor: colors.fill,
       fill: true,
@@ -407,7 +425,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       borderWidth: 1.5,
       tension: 0.2,
     }],
-  }), [points, colors, label, unit, pointStylesData]);
+  }), [displayPoints, colors, label, unit, pointStylesData]);
 
   const chartOptions: ChartOptions<'line'> = useMemo(() => ({
     responsive: true,
@@ -421,7 +439,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
           maxRotation: 0, 
           autoSkip: true,
           color: CHART_COLORS.tickColor,
-          font: { size: 10 }
+          font: { size: 10 },
         },
         grid: { display: false },
         title: { display: false },
@@ -464,8 +482,9 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
         callbacks: {
           title: (context) => {
             if (!context.length || context[0].parsed.x === null) return '';
-            const date = new Date(context[0].parsed.x as number);
-            return formatTooltipDate(date);
+            // The point x is already shifted into the display timezone, so we
+            // format it as-is (local) to read out that zone's wall clock.
+            return formatFullInZone(context[0].parsed.x as number, undefined);
           },
           label: (context) => {
             const value = context.parsed.y;
@@ -491,7 +510,7 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   const toLocalLabel = (d?: Date | string) => {
     try {
       const dt = typeof d === 'string' ? new Date(d) : d;
-      return dt ? dt.toLocaleString() : '';
+      return dt ? dt.toLocaleString(undefined, { timeZone: displayZone }) : '';
     } catch {
       return '';
     }

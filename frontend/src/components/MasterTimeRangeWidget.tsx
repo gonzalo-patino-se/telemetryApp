@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useTimeRange, getPresetLabel, type TimeRangePreset } from '../context/TimeRangeContext';
+import TimezoneSelector from './TimezoneSelector';
 
 // ============================================================================
 // Preset Buttons Configuration
@@ -192,6 +193,9 @@ const MasterTimeRangeWidget: React.FC = () => {
           Custom
         </button>
       </div>
+
+      {/* Global timezone display control (UTC / Local / Customer Site) */}
+      <TimezoneSelector />
 
       {/* Custom Date Picker (Expandable) */}
       {showCustomPicker && (

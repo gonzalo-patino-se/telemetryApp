@@ -378,6 +378,74 @@ def batch_telemetry_view(request):
         return Response({"error": str(e)}, status=500)
 
 
+# =============================================================================
+# Weather + Timezone Endpoints (customer site alignment)
+# =============================================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def geo_timezone_view(request):
+    """
+    Resolve a customer ZIP/postal code to its IANA timezone + UTC offset.
+
+    Request body: { "zip": "90210", "country": "us" (optional) }
+    Response: { "location": {...}, "timezone": "America/Los_Angeles",
+                "timezone_abbreviation": "PDT", "utc_offset_seconds": -25200 }
+    """
+    from .weather_service import fetch_timezone, WeatherServiceError
+
+    zip_code = request.data.get('zip')
+    country = request.data.get('country')
+    if not zip_code:
+        return Response({"error": "ZIP/postal code is required"}, status=400)
+
+    try:
+        return Response(fetch_timezone(zip_code, country))
+    except WeatherServiceError as e:
+        return Response({"error": str(e)}, status=400)
+    except Exception as e:
+        print(f"ERROR in geo_timezone_view: {str(e)}")
+        return Response({"error": "Timezone lookup failed"}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def weather_view(request):
+    """
+    Fetch hourly weather for a ZIP code across the selected dashboard range.
+
+    Request body:
+    {
+        "zip": "90210",
+        "country": "us" (optional),
+        "start_date": "2026-07-01" or ISO datetime,
+        "end_date": "2026-07-02" or ISO datetime
+    }
+    Response: { "location": {...}, "timezone": "...", "utc_offset_seconds": ...,
+                "units": {...}, "hourly": { "time": [...], "temperature_2m": [...],
+                "cloudcover": [...], "precipitation": [...],
+                "shortwave_radiation": [...], "weathercode": [...] } }
+    """
+    from .weather_service import fetch_weather, WeatherServiceError
+
+    zip_code = request.data.get('zip')
+    country = request.data.get('country')
+    start_date = request.data.get('start_date')
+    end_date = request.data.get('end_date')
+
+    if not zip_code:
+        return Response({"error": "ZIP/postal code is required"}, status=400)
+    if not start_date or not end_date:
+        return Response({"error": "start_date and end_date are required"}, status=400)
+
+    try:
+        return Response(fetch_weather(zip_code, start_date, end_date, country))
+    except WeatherServiceError as e:
+        return Response({"error": str(e)}, status=400)
+    except Exception as e:
+        print(f"ERROR in weather_view: {str(e)}")
+        return Response({"error": "Weather lookup failed"}, status=500)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def adx_stats_view(request):
