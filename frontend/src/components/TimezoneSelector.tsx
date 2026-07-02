@@ -72,6 +72,7 @@ const TimezoneSelector: React.FC = () => {
     siteLocation,
     resolving,
     resolveError,
+    retryResolve,
     activeLabel,
   } = useTimezone();
 
@@ -237,6 +238,25 @@ const TimezoneSelector: React.FC = () => {
                     } (${siteTimeZone})`
                   : '· enter a ZIP code'}
           </span>
+        )}
+        {mode === 'site' && !resolving && zip && (!siteTimeZone || resolveError) && (
+          <button
+            type="button"
+            onClick={retryResolve}
+            title="Retry resolving the customer site timezone"
+            style={{
+              padding: '2px 10px',
+              borderRadius: 12,
+              border: '1px solid var(--border-subtle)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Retry
+          </button>
         )}
       </div>
     </div>

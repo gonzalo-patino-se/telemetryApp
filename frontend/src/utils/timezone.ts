@@ -35,32 +35,37 @@ export function resolveTimeZone(
  * Positive east of UTC. DST-aware because it asks Intl for that exact instant.
  */
 export function zoneOffsetMs(instant: number, timeZone: string): number {
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-  const parts = dtf.formatToParts(new Date(instant));
-  const map: Record<string, number> = {};
-  for (const p of parts) {
-    if (p.type !== 'literal') map[p.type] = Number(p.value);
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const parts = dtf.formatToParts(new Date(instant));
+    const map: Record<string, number> = {};
+    for (const p of parts) {
+      if (p.type !== 'literal') map[p.type] = Number(p.value);
+    }
+    // Intl gives hour 24 for midnight in some engines; normalise.
+    const hour = map.hour === 24 ? 0 : map.hour;
+    const asUtc = Date.UTC(
+      map.year,
+      map.month - 1,
+      map.day,
+      hour,
+      map.minute,
+      map.second,
+    );
+    return asUtc - instant;
+  } catch {
+    // Unknown/invalid IANA zone — treat as UTC (0 offset).
+    return 0;
   }
-  // Intl gives hour 24 for midnight in some engines; normalise.
-  const hour = map.hour === 24 ? 0 : map.hour;
-  const asUtc = Date.UTC(
-    map.year,
-    map.month - 1,
-    map.day,
-    hour,
-    map.minute,
-    map.second,
-  );
-  return asUtc - instant;
 }
 
 /**
