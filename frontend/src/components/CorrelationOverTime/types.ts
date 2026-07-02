@@ -29,6 +29,14 @@ export interface SignalDef {
   /** Optional grouping shown in the selector, e.g. "PV", "Grid", "Battery". */
   group?: string;
   /**
+   * When true, the query is expected to emit rows with a valid `localtime` but
+   * a null value where a calculation could not be performed (e.g. a computed
+   * power series whose current factor is missing at that instant). Those rows
+   * are surfaced as "gaps" (✕ markers) instead of being dropped, so the chart
+   * never fabricates a value. Plain telemetry signals leave this false.
+   */
+  markMissing?: boolean;
+  /**
    * Build the KQL query for this signal. Reuses the existing kqlBuilders so the
    * card produces the same data as the dedicated widget for that signal.
    */
@@ -45,6 +53,12 @@ export interface SignalSeries {
   dash?: string;
   /** Sorted ascending by t. May be empty (will render as "no data" in legend). */
   points: TimePoint[];
+  /**
+   * Timestamps (epoch ms, sorted ascending) where a value was expected but
+   * could not be computed because a required input was missing. Rendered as ✕
+   * markers on the chart. Only populated for signals with `markMissing`.
+   */
+  gaps?: number[];
   /** Convenience min/max of v for the independent y-axis (undefined when empty). */
   vMin?: number;
   vMax?: number;

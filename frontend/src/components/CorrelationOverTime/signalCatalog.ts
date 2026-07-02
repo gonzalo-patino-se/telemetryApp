@@ -145,9 +145,22 @@ function resolveBuildQuery(cfg: WidgetConfig): WidgetConfig['buildQuery'] {
   return cfg.buildQuery;
 }
 
+/**
+ * Computed power signals (P = V × I). Their queries LEFT-join on voltage, so a
+ * missing current/phase input yields a null value at that timestamp. We flag
+ * them with `markMissing` so the data hook surfaces those as ✕ markers instead
+ * of fabricating a value.
+ */
+const POWER_SIGNAL_IDS: ReadonlySet<string> = new Set([
+  'pv1_p', 'pv2_p', 'pv3_p', 'pv4_p',
+  'grid_p', 'load_p',
+  'batt1_p', 'batt2_p', 'batt3_p',
+]);
+
 /** Adapter: WidgetConfig + palette entry -> SignalDef. */
 function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
   const buildQuery = resolveBuildQuery(cfg);
+  const markMissing = POWER_SIGNAL_IDS.has(id);
   const p = PALETTE[id];
   if (!p) {
     return {
@@ -156,6 +169,7 @@ function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
       unit: cfg.unit,
       color: '#94a3b8',
       group,
+      markMissing,
       buildQuery,
     };
   }
@@ -166,6 +180,7 @@ function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
     color: p.color,
     dash: p.dash,
     group,
+    markMissing,
     buildQuery,
   };
 }

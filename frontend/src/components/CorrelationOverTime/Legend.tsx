@@ -132,6 +132,26 @@ export const Legend: React.FC<LegendProps> = ({ series, events }) => {
         </span>
         <span style={{ color: 'var(--text-primary)' }}>Overlap</span>
       </span>
+
+      {/* No-data legend chip — explains the series-colored ✕ markers used
+          where a computed value (e.g. power) could not be produced because an
+          input was missing. */}
+      <span
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        title="A required input was missing, so no value was computed at that time (shown as ✕ instead of a plotted point)"
+      >
+        <span
+          aria-hidden
+          style={{
+            color: 'var(--text-tertiary)',
+            fontWeight: 700,
+            fontSize: 11,
+          }}
+        >
+          ✕
+        </span>
+        <span style={{ color: 'var(--text-primary)' }}>No data</span>
+      </span>
     </div>
   );
 };

@@ -331,7 +331,10 @@ interface ProductPowerParams {
 
 /**
  * Build KQL for single-channel power: P = V × I.
- * Only samples that share the exact same localtime contribute a point.
+ * Anchored on the voltage series via a LEFT-OUTER join: every voltage sample
+ * yields a row. Where the matching current sample is missing, `value_double`
+ * is null (a "gap") — the caller renders these as ✕ markers rather than
+ * fabricating a value.
  */
 export function buildProductPowerQuery(params: ProductPowerParams): string {
   const { serial, startDate, endDate, voltageName, currentName } = params;
@@ -353,7 +356,7 @@ export function buildProductPowerQuery(params: ProductPowerParams): string {
         | where localtime between (start .. finish)
         | project localtime, i = value_double;
     vSeries
-    | join kind=inner iSeries on localtime
+    | join kind=leftouter iSeries on localtime
     | project localtime, value_double = v * i
     | order by localtime asc
   `.trim();
@@ -371,8 +374,9 @@ interface DualProductPowerParams {
 
 /**
  * Build KQL for two-phase power: P = (V1 × I1) + (V2 × I2).
- * All four series are inner-joined on localtime so each summed sample uses
- * voltage and current captured at the same instant.
+ * Anchored on the L1 voltage series via LEFT-OUTER joins: every anchor sample
+ * yields a row, and if any of the other three factors is missing at that
+ * instant the sum is null (a "gap") rather than a fabricated partial value.
  */
 export function buildDualProductPowerQuery(params: DualProductPowerParams): string {
   const { serial, startDate, endDate, voltageName1, currentName1, voltageName2, currentName2 } = params;
@@ -404,9 +408,9 @@ export function buildDualProductPowerQuery(params: DualProductPowerParams): stri
         | where localtime between (start .. finish)
         | project localtime, i2 = value_double;
     v1
-    | join kind=inner i1 on localtime
-    | join kind=inner v2 on localtime
-    | join kind=inner i2 on localtime
+    | join kind=leftouter i1 on localtime
+    | join kind=leftouter v2 on localtime
+    | join kind=leftouter i2 on localtime
     | project localtime, value_double = (v1 * i1) + (v2 * i2)
     | order by localtime asc
   `.trim();
