@@ -70,21 +70,21 @@ const PALETTE: Record<string, PaletteEntry> = {
 
   // PV Voltage  (4 distinct hues — no shared family color)
   pv1_v: { color: '#10b981', dash: DASH_SOLID },     // emerald
-  pv2_v: { color: '#14b8a6', dash: DASH_SOLID },     // teal
+  pv2_v: { color: '#c3d408', dash: DASH_SOLID },     // teal
   pv3_v: { color: '#a855f7', dash: DASH_SOLID },     // purple
   pv4_v: { color: '#db2777', dash: DASH_SOLID },     // magenta
   // PV Current  (4 distinct hues, separate from PV-Voltage colors)
   pv1_i: { color: '#ca8a04', dash: DASH_SOLID },     // gold
-  pv2_i: { color: '#f97316', dash: DASH_SOLID },     // orange
+  pv2_i: { color: '#2916f9', dash: DASH_SOLID },     // orange
   pv3_i: { color: '#15803d', dash: DASH_SOLID },     // forest green
   pv4_i: { color: '#be123c', dash: DASH_SOLID },     // crimson
 
   // Grid
   grid_v_l1: { color: '#f5130bff', dash: DASH_SOLID },   // amber solid
-  grid_v_l2: { color: '#f59e0b', dash: DASH_DASHED },  // amber dashed
-  grid_i_l1: { color: '#ef44d0ff', dash: DASH_SOLID },   // red solid
+  grid_v_l2: { color: '#c6f50b', dash: DASH_DASHED },  // amber dashed
+  grid_i_l1: { color: 'rgb(68, 230, 239)', dash: DASH_SOLID },   // red solid
   grid_i_l2: { color: '#44ef5bff', dash: DASH_DASHED },  // red dashed
-  grid_freq: { color: '#c8ff00ff', dash: DASH_SOLID },   // yellow solid
+  grid_freq: { color: 'rgb(208, 0, 255)', dash: DASH_SOLID },   // yellow solid
   grid_p:    { color: '#a16207', dash: DASH_SOLID },   // brown solid
 
   // Load
@@ -116,8 +116,26 @@ const PALETTE: Record<string, PaletteEntry> = {
   batt_heater: { color: '#f94016ff', dash: DASH_DOTTED },
 };
 
+/**
+ * Resolve the query builder that matches what the standalone widget / history
+ * chart actually uses. BaseTimeSeriesWidget picks:
+ *   telemetryMode === 'fast' && buildFastQuery ? buildFastQuery : buildQuery
+ * with telemetryMode defaulting to cfg.defaultMode ?? 'normal'.
+ *
+ * Some signals (e.g. Load Current L1/L2) default to fast telemetry and only
+ * return data from the fast query. Using cfg.buildQuery unconditionally made
+ * those overlays come back empty, so we mirror the widget's selection here.
+ */
+function resolveBuildQuery(cfg: WidgetConfig): WidgetConfig['buildQuery'] {
+  if (cfg.defaultMode === 'fast' && cfg.buildFastQuery) {
+    return cfg.buildFastQuery;
+  }
+  return cfg.buildQuery;
+}
+
 /** Adapter: WidgetConfig + palette entry -> SignalDef. */
 function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
+  const buildQuery = resolveBuildQuery(cfg);
   const p = PALETTE[id];
   if (!p) {
     return {
@@ -126,7 +144,7 @@ function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
       unit: cfg.unit,
       color: '#94a3b8',
       group,
-      buildQuery: cfg.buildQuery,
+      buildQuery,
     };
   }
   return {
@@ -136,7 +154,7 @@ function toSignal(id: string, group: string, cfg: WidgetConfig): SignalDef {
     color: p.color,
     dash: p.dash,
     group,
-    buildQuery: cfg.buildQuery,
+    buildQuery,
   };
 }
 
