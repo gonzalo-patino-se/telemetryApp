@@ -230,8 +230,12 @@ def search_serial(request):
         print(f"Executing KQL Query: {kql_query}")
         data = query_adx(kql_query)
         print(f"Query Response: {data}")
-        if not data:
-            return Response({"message": "No serial number found"}, status=404)
+        # query_adx returns table.to_dict(), i.e. a dict like
+        # {"name": ..., "kind": ..., "data": [...]} that is always truthy.
+        # Inspect the actual rows to determine whether the serial exists.
+        rows = data.get('data', []) if isinstance(data, dict) else data
+        if not rows:
+            return Response({"error": "Serial number not found"}, status=404)
         return Response(data)
         
     except Exception as e:
