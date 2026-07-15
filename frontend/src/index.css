@@ -1667,6 +1667,34 @@ a:hover {
 }
 
 /* ============================================================================
+   SYSTEM OPERATING MODE BADGE STYLES
+   ============================================================================ */
+
+.sys-mode-body {
+  fill: rgba(15, 23, 42, 0.85);
+}
+
+.sys-mode-title {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.sys-mode-value {
+  font-size: 16px;
+  font-weight: 700;
+  fill: #ffffff;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.sys-mode-label {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* ============================================================================
    WIFI SIGNAL INDICATOR STYLES
    ============================================================================ */
 

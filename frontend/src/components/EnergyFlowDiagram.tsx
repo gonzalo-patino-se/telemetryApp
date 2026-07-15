@@ -116,6 +116,19 @@ const BGCS_CONFIG: TelemetryConfig = {
 };
 
 // ============================================================================
+// System Operating Mode Configuration
+// ============================================================================
+
+const SYSTEM_MODE_CONFIG: TelemetryConfig = {
+  id: 'sysMode',
+  label: 'System Mode',
+  telemetryName: '/SSM/MODE/CTRL/SYS_OPERATING_MODE',
+  unit: '',
+  category: 'system',
+  decimals: 0
+};
+
+// ============================================================================
 // WiFi Signal Strength Configuration
 // ============================================================================
 
@@ -129,7 +142,7 @@ const WIFI_CONFIG: TelemetryConfig = {
 };
 
 // Combined configs for fetching
-const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG, WIFI_CONFIG];
+const ALL_CONFIGS: TelemetryConfig[] = [...SOLAR_CONFIGS, ...GRID_CONFIGS, ...BATTERY_CONFIGS, ...LOAD_CONFIGS, BGCS_CONFIG, SYSTEM_MODE_CONFIG, WIFI_CONFIG];
 
 // IDs that use Alarms table (not Telemetry table)
 // All battery relay statuses are in the Alarms table
@@ -423,6 +436,57 @@ const Inverter: React.FC<InverterProps> = ({ x, y, isActive, wifiSignal, wifiLoa
           Cellular
         </text>
       </g>
+    </g>
+  );
+};
+
+// ============================================================================
+// System Operating Mode SVG Component
+// ============================================================================
+
+// Map /SSM/MODE/CTRL/SYS_OPERATING_MODE numeric value to a label + color.
+const SYS_MODE_MAP: Record<number, { label: string; color: string }> = {
+  [-1]: { label: 'Invalid', color: '#6b7280' },
+  0: { label: 'Grid Tied', color: '#22c55e' },
+  1: { label: 'Backup', color: '#3b82f6' },
+  2: { label: 'Gen Tied', color: '#f59e0b' },
+  3: { label: 'Standby', color: '#94a3b8' },
+  4: { label: 'Faulted', color: '#ef4444' },
+  5: { label: 'E-Stop', color: '#b91c1c' },
+};
+
+const getSysModeInfo = (value: number | null): { label: string; color: string } => {
+  if (value === null) return { label: '--', color: '#6b7280' };
+  return SYS_MODE_MAP[value] ?? { label: 'Unknown', color: '#6b7280' };
+};
+
+interface SystemOperatingModeProps {
+  x: number;
+  y: number;
+  value: number | null;
+  loading: boolean;
+}
+
+const SystemOperatingMode: React.FC<SystemOperatingModeProps> = ({ x, y, value, loading }) => {
+  const { label, color } = getSysModeInfo(value);
+  const displayValue = loading ? '...' : value !== null ? String(value) : '--';
+
+  return (
+    <g transform={`translate(${x}, ${y})`} className="sys-mode-group">
+      {/* Badge body */}
+      <rect x={0} y={0} width={150} height={62} rx={8} className="sys-mode-body" stroke={color} strokeWidth={2} />
+
+      {/* Title */}
+      <text x={75} y={16} textAnchor="middle" className="sys-mode-title">System Operating Mode</text>
+
+      {/* Numeric value chip */}
+      <rect x={10} y={24} width={34} height={28} rx={6} fill={color} />
+      <text x={27} y={43} textAnchor="middle" className="sys-mode-value">{displayValue}</text>
+
+      {/* Mapped label */}
+      <text x={52} y={43} textAnchor="start" className="sys-mode-label" fill={color}>
+        {loading ? '...' : label}
+      </text>
     </g>
   );
 };
@@ -1245,7 +1309,6 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   // WiFi signal strength
   const wifiSignal = telemetryData.wifiSignal?.value ?? null;
   const wifiLoading = telemetryData.wifiSignal?.loading ?? true;
-
   // Cellular Low-Signal-Strength alarm (binary 0/1; 1 = LOW = BAD)
   const cellularSignal = telemetryData[CELLULAR_ID]?.value ?? null;
   const cellularLoading = telemetryData[CELLULAR_ID]?.loading ?? true;
@@ -1266,6 +1329,10 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
   const gridIsActive = (gridValues.voltageL1 ?? 0) > 100 || (gridValues.voltageL2 ?? 0) > 100;
   
   const anyProducing = Object.values(pvValues).some(v => v.voltage > PRODUCING_THRESHOLD);
+
+  // System operating mode (/SSM/MODE/CTRL/SYS_OPERATING_MODE)
+  const sysModeValue = telemetryData.sysMode?.value ?? null;
+  const sysModeLoading = telemetryData.sysMode?.loading ?? true;
 
   return (
     <div className="energy-flow-container">
@@ -1404,8 +1471,7 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           current={pvValues.pv1.current}
           loading={telemetryData.pv1V?.loading ?? true}
           isProducing={pvValues.pv1.voltage > PRODUCING_THRESHOLD}
-        />
-        <SolarPanel
+        />        <SolarPanel
           x={125}
           y={30}
           label="PV2"
@@ -1557,6 +1623,14 @@ const EnergyFlowDiagram: React.FC<EnergyFlowDiagramProps> = ({ serial }) => {
           frequency={gridValues.frequency}
           loading={telemetryData.gridVL1?.loading ?? true}
           isActive={gridIsActive}
+        />
+        
+        {/* System Operating Mode badge - value + mapping (/SSM/MODE/CTRL/SYS_OPERATING_MODE) */}
+        <SystemOperatingMode
+          x={505}
+          y={30}
+          value={sysModeValue}
+          loading={sysModeLoading}
         />
         
         {/* ==================== BATTERY SECTION ==================== */}
