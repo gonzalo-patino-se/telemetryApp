@@ -32,24 +32,13 @@ def get_cookie_settings():
     """Get secure cookie settings based on environment."""
     is_production = getattr(settings, 'IS_PRODUCTION', False)
     
-    if is_production:
-        # Production: Secure cookies with Lax SameSite
-        return {
-            'httponly': True,
-            'secure': True,  # HTTPS only
-            'samesite': 'Lax',
-            'path': '/',
-        }
-    else:
-        # Development: Allow cross-origin cookies between localhost ports
-        # SameSite=None requires Secure in modern browsers, but we're on localhost
-        # So we use Lax with domain explicitly set
-        return {
-            'httponly': True,
-            'secure': False,
-            'samesite': 'Lax',
-            'path': '/',
-        }
+    # `secure` tracks DJANGO_SESSION_COOKIE_SECURE so HTTP-only deployments still authenticate.
+    return {
+        'httponly': True,
+        'secure': settings.SESSION_COOKIE_SECURE,
+        'samesite': 'Lax',
+        'path': '/',
+    }
 
 
 def set_auth_cookies(response, access_token, refresh_token):

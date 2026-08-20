@@ -214,7 +214,7 @@ SIMPLE_JWT = {
     # Cookie settings (used by custom authentication)
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_REFRESH': 'refresh_token',
-    'AUTH_COOKIE_SECURE': IS_PRODUCTION,
+    'AUTH_COOKIE_SECURE': SESSION_COOKIE_SECURE,
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_PATH': '/',
     'AUTH_COOKIE_SAMESITE': 'Lax',
