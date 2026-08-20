@@ -1289,12 +1289,10 @@ export function buildCellularSignalLatestKql(serial: string): string {
  */
 export function buildFirmwareHistoryQuery(
   serial: string,
-  startDate: Date,
-  endDate: Date
+  _startDate: Date,
+  _endDate: Date
 ): string {
   const escapedSerial = escapeKqlString(serial);
-  const startLocal = formatDateForKql(startDate);
-  const endLocal = formatDateForKql(endDate);
 
   return `
     let s = '${escapedSerial}';

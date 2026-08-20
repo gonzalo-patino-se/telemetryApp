@@ -2,11 +2,9 @@
 # mysite Docker Compose Configuration
 # =============================================================================
 # Usage:
-#   Development: docker-compose up
-#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   docker compose build
+#   docker compose up -d
 # =============================================================================
-
-version: '3.8'
 
 services:
   # ===========================================================================
@@ -54,8 +52,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: backend
     container_name: mysite-backend
     restart: unless-stopped
+    env_file:
+      - .env
     volumes:
       - static_files:/app/backend/staticfiles
       - media_files:/app/backend/media
@@ -65,13 +66,17 @@ services:
       - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
       - DJANGO_ENVIRONMENT=${DJANGO_ENVIRONMENT:-production}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost}
+      - DJANGO_SECURE_SSL_REDIRECT=${DJANGO_SECURE_SSL_REDIRECT:-False}
+      - DJANGO_SESSION_COOKIE_SECURE=${DJANGO_SESSION_COOKIE_SECURE:-False}
+      - DJANGO_CSRF_COOKIE_SECURE=${DJANGO_CSRF_COOKIE_SECURE:-False}
       - DB_ENGINE=django.db.backends.postgresql
       - DB_HOST=db
       - DB_NAME=${DB_NAME:-mysite_db}
       - DB_USER=${DB_USER:-mysite_user}
       - DB_PASSWORD=${DB_PASSWORD:-changeme}
       - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
+      - CACHE_BACKEND=redis
+      - REDIS_URL=redis://redis:6379/1
       - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
@@ -90,22 +95,25 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 30s
       timeout: 10s
+      start_period: 60s
       retries: 3
     networks:
       - mysite-network
 
   # ===========================================================================
-  # Nginx Reverse Proxy
+  # Nginx Reverse Proxy + SPA
   # ===========================================================================
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx
     container_name: mysite-nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./deploy/config/nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
       - static_files:/app/backend/staticfiles:ro
       - media_files:/app/backend/media:ro
       # Uncomment for SSL

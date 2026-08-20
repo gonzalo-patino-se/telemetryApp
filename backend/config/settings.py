@@ -83,6 +83,10 @@ SECURE_SSL_REDIRECT = os.getenv('DJANGO_SECURE_SSL_REDIRECT', 'False') == 'True'
 SESSION_COOKIE_SECURE = os.getenv('DJANGO_SESSION_COOKIE_SECURE', 'False') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('DJANGO_CSRF_COOKIE_SECURE', 'False') == 'True'
 
+# Required when running behind the nginx reverse proxy, otherwise
+# SECURE_SSL_REDIRECT causes an infinite redirect loop.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Additional security for production
 if IS_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -329,9 +333,6 @@ if CACHE_BACKEND == 'redis':
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
             'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
             'KEY_PREFIX': 'telemetry',
             'TIMEOUT': 30,  # Default cache timeout of 30 seconds
         }
