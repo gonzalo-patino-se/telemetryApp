@@ -56,16 +56,15 @@ fi
 usermod -aG docker $SUDO_USER 2>/dev/null || true
 
 # =============================================================================
-# Install Docker Compose
+# Install Docker Compose (v2 plugin)
 # =============================================================================
 echo ""
-echo ">>> Installing Docker Compose..."
-if ! command -v docker-compose &> /dev/null; then
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    print_status "Docker Compose installed"
+echo ">>> Installing Docker Compose plugin..."
+if ! docker compose version &> /dev/null; then
+    apt-get install -y docker-compose-plugin
+    print_status "Docker Compose plugin installed"
 else
-    print_warning "Docker Compose already installed"
+    print_warning "Docker Compose plugin already installed"
 fi
 
 # =============================================================================

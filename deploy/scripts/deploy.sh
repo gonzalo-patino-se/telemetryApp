@@ -58,45 +58,25 @@ if [ -d ".git" ]; then
 fi
 
 # =============================================================================
-# Build Containers
+# Build & Start Containers
 # =============================================================================
+# Migrations and collectstatic run automatically in the backend entrypoint.
 echo ""
 echo ">>> Building containers..."
-docker-compose build --no-cache
+docker compose build
 print_status "Containers built"
 
-# =============================================================================
-# Run Database Migrations
-# =============================================================================
 echo ""
-echo ">>> Running database migrations..."
-docker-compose exec backend python manage.py migrate --noinput
-print_status "Migrations complete"
-
-# =============================================================================
-# Collect Static Files
-# =============================================================================
-echo ""
-echo ">>> Collecting static files..."
-docker-compose exec backend python manage.py collectstatic --noinput
-docker-compose run --rm backend python manage.py collectstatic --noinput
-print_status "Static files collected"
-
-# =============================================================================
-# Restart Services
-# =============================================================================
-echo ""
-echo ">>> Restarting services..."
-docker-compose down
-docker-compose up -d
-print_status "Services restarted"
+echo ">>> Starting services..."
+docker compose up -d
+print_status "Services started"
 
 # =============================================================================
 # Health Check
 # =============================================================================
 echo ""
 echo ">>> Running health check..."
-sleep 10  # Wait for services to start
+sleep 20  # Wait for migrations + gunicorn startup
 
 HEALTH_URL="http://localhost/api/health/"
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL || echo "000")
@@ -105,15 +85,15 @@ if [ "$HTTP_STATUS" = "200" ]; then
     print_status "Health check passed (HTTP $HTTP_STATUS)"
 else
     print_warning "Health check returned HTTP $HTTP_STATUS"
-    echo "Check logs with: docker-compose logs -f"
+    echo "Check logs with: docker compose logs -f"
 fi
 
 # =============================================================================
-# Cleanup
+# Cleanup (images only - never prune volumes, they hold the database)
 # =============================================================================
 echo ""
-echo ">>> Cleaning up unused Docker resources..."
-docker system prune -f --volumes 2>/dev/null || true
+echo ">>> Cleaning up dangling images..."
+docker image prune -f 2>/dev/null || true
 print_status "Cleanup complete"
 
 # =============================================================================
@@ -125,8 +105,8 @@ echo "  Deployment Complete!"
 echo "=============================================="
 echo ""
 echo "Useful commands:"
-echo "  View logs:     docker-compose logs -f"
-echo "  Check status:  docker-compose ps"
-echo "  Restart:       docker-compose restart"
-echo "  Stop:          docker-compose down"
+echo "  View logs:     docker compose logs -f"
+echo "  Check status:  docker compose ps"
+echo "  Restart:       docker compose restart"
+echo "  Stop:          docker compose down"
 echo ""

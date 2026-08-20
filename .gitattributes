@@ -1,0 +1,7 @@
+# Shell scripts and Docker-related files must keep LF endings so they run
+# correctly inside Linux containers and on the Azure VM.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf
+docker-compose*.yml text eol=lf
+requirements*.txt text eol=lf

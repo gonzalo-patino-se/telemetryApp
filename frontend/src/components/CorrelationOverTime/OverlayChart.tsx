@@ -252,10 +252,11 @@ export const OverlayChart: React.FC<OverlayChartProps> = ({
   const handleMouseDown = React.useCallback(
     (
       state: { activeLabel?: number | string; chartX?: number },
-      e?: React.MouseEvent,
+      e?: React.SyntheticEvent,
     ) => {
       // Shift-drag pans (only meaningful while zoomed); plain drag zooms.
-      if (e?.shiftKey && zoomDomain && typeof state?.chartX === 'number') {
+      const shiftKey = (e as React.MouseEvent | undefined)?.shiftKey;
+      if (shiftKey && zoomDomain && typeof state?.chartX === 'number') {
         isPanningRef.current = true;
         panStartPxRef.current = state.chartX;
         panStartDomainRef.current = [xDomain[0], xDomain[1]];
