@@ -31,6 +31,14 @@ import 'chartjs-adapter-date-fns';
 
 import { parseAdxLocaltime, getLastHours } from '../../utils/dateHelpers';
 import { formatFullInZone, zoneDisplayShiftMs } from '../../utils/timezone';
+import { useThresholdsOptional } from '../../context/ThresholdContext';
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  THRESHOLD_LINE_COLOR,
+  classifyValue,
+  formatThreshold,
+} from '../../services/thresholds';
 import { 
   chartColorSchemes, 
   getPointStyles, 
@@ -82,6 +90,11 @@ export interface WidgetConfig {
   offlineLabel?: string;
   /** File prefix for CSV export */
   csvPrefix: string;
+  /**
+   * Key used to look up the configured threshold (FR-015). Defaults to
+   * `csvPrefix`, which already matches the backend metric catalog.
+   */
+  metricKey?: string;
   /** Function to build KQL query (normal telemetry - default) */
   buildQuery: (serial: string, startDate: Date, endDate: Date) => string;
   /** Function to build fast telemetry KQL query (optional - enables toggle) */
@@ -194,7 +207,13 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
   // widget can still be rendered in tests / stories without a provider.
   const refreshContext = useRefreshIntervalOptional();
   const refreshSignal = refreshContext?.refreshSignal ?? 0;
+  // Configured lower/upper limits for this metric (FR-015). Optional so the
+  // widget still renders without the provider.
+  const thresholdContext = useThresholdsOptional();
   const { label, unit, colorScheme, offlineValue, offlineLabel, csvPrefix, buildQuery, buildFastQuery, defaultMode, valueMapping, integerYAxis } = config;
+  const metricKey = config.metricKey ?? csvPrefix;
+  const threshold = thresholdContext?.getThreshold(metricKey);
+  const thresholdVisible = Boolean(threshold) && (thresholdContext?.isVisible(metricKey) ?? false);
   const colors = chartColorSchemes[colorScheme];
   
   // Determine if fast telemetry is supported
@@ -405,6 +424,39 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
     return getPointStyles(points, colors, isSpecialValue);
   }, [points, colors, isSpecialValue]);
 
+  // Latest sample and its Passed / Failed / Unknown classification (FR-015).
+  const latestValue = points.length > 0 ? points[points.length - 1].y : null;
+  const thresholdStatus = useMemo(
+    () => classifyValue(latestValue, threshold),
+    [latestValue, threshold],
+  );
+
+  // Flat dashed datasets that render the limits as reference lines. Chart.js has
+  // no native annotation support, so a two-point dataset spanning the x-domain
+  // is used instead of pulling in an extra plugin.
+  const thresholdDatasets = useMemo(() => {
+    if (!thresholdVisible || !threshold || displayPoints.length === 0) return [];
+    const first = displayPoints[0].x ?? 0;
+    const last = displayPoints[displayPoints.length - 1].x ?? first;
+    const buildLine = (limitLabel: string, limit: number) => ({
+      label: `${limitLabel} (${limit} ${unit})`.trim(),
+      data: [{ x: first, y: limit }, { x: last, y: limit }] as ScatterDataPoint[],
+      borderColor: THRESHOLD_LINE_COLOR,
+      backgroundColor: 'transparent',
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      pointHitRadius: 0,
+      fill: false,
+      tension: 0,
+    });
+    const lines = [];
+    if (threshold.lower_limit !== null) lines.push(buildLine('Lower threshold', threshold.lower_limit));
+    if (threshold.upper_limit !== null) lines.push(buildLine('Upper threshold', threshold.upper_limit));
+    return lines;
+  }, [thresholdVisible, threshold, displayPoints, unit]);
+
   // Chart configuration
   const chartData: ChartData<'line', ScatterDataPoint[]> = useMemo(() => ({
     datasets: [{
@@ -424,8 +476,10 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
       pointHoverBorderWidth: 2,
       borderWidth: 1.5,
       tension: 0.2,
-    }],
-  }), [displayPoints, colors, label, unit, pointStylesData]);
+    },
+    ...thresholdDatasets,
+    ],
+  }), [displayPoints, colors, label, unit, pointStylesData, thresholdDatasets]);
 
   const chartOptions: ChartOptions<'line'> = useMemo(() => ({
     responsive: true,
@@ -874,27 +928,78 @@ export const BaseTimeSeriesWidget: React.FC<BaseTimeSeriesWidgetProps> = ({
 
       {!error && rows.length > 0 && (
         <>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-text-secondary">
-              Returned rows: <span className="font-semibold text-text-primary">{rows.length}</span>
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-text-secondary">
+                Returned rows: <span className="font-semibold text-text-primary">{rows.length}</span>
+              </div>
+
+              {/* Threshold evaluation of the most recent sample (FR-015) */}
+              <span
+                title={
+                  threshold
+                    ? `Latest value evaluated against ${formatThreshold(threshold)}`
+                    : (thresholdContext?.missingThresholdText ?? 'Threshold needs to be defined.')
+                }
+                className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide"
+                style={{
+                  color: STATUS_COLORS[thresholdStatus],
+                  border: `1px solid ${STATUS_COLORS[thresholdStatus]}`,
+                  background: 'transparent',
+                }}
+              >
+                {STATUS_LABELS[thresholdStatus]}
+              </span>
             </div>
-            <button
-              onClick={() => downloadCsv(
-                rows, 
-                `${csvPrefix}_${serial}_${new Date().toISOString().slice(0, 10)}.csv`,
-                unit,
-                offlineValue
+
+            <div className="flex items-center gap-2">
+              {threshold && (
+                <button
+                  onClick={() => thresholdContext?.toggleVisibility(metricKey)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs border rounded-md transition-colors"
+                  style={{
+                    borderColor: thresholdVisible ? THRESHOLD_LINE_COLOR : 'var(--border-default, rgba(148,163,184,0.3))',
+                    color: thresholdVisible ? THRESHOLD_LINE_COLOR : 'var(--text-secondary, #94a3b8)',
+                  }}
+                  title={`${thresholdVisible ? 'Hide' : 'Show'} threshold lines (${formatThreshold(threshold)})`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3">
+                    <line x1="2" y1="8" x2="22" y2="8" />
+                    <line x1="2" y1="16" x2="22" y2="16" />
+                  </svg>
+                  Thresholds
+                </button>
               )}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
-              title="Download data as CSV"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              CSV
-            </button>
+              <button
+                onClick={() => downloadCsv(
+                  rows, 
+                  `${csvPrefix}_${serial}_${new Date().toISOString().slice(0, 10)}.csv`,
+                  unit,
+                  offlineValue
+                )}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-border-default rounded-md text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                title="Download data as CSV"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Threshold band summary */}
+          <div className="text-[11px] mb-2" style={{ color: 'var(--text-tertiary, #94a3b8)' }}>
+            {threshold ? (
+              <>
+                Threshold: <span className="font-mono">{formatThreshold(threshold)}</span>
+                {thresholdVisible && <span> &middot; shown as red dotted reference lines</span>}
+              </>
+            ) : (
+              thresholdContext?.missingThresholdText ?? 'Threshold needs to be defined.'
+            )}
           </div>
 
           {/* Statistics Panel */}

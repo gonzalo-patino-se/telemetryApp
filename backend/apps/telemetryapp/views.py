@@ -84,6 +84,21 @@ def register_view(request):
 
 
 #Custom Login - returns JWT in httpOnly cookies (XSS-safe)
+def _user_payload(user):
+    # Local import keeps app loading order independent of adminconfig.
+    from adminconfig.thresholds import is_platform_admin, resolve_tenant
+
+    tenant = resolve_tenant(user)
+    return {
+        'username': user.username,
+        'email': user.email,
+        'is_admin': is_platform_admin(user),
+        'is_staff': user.is_staff,
+        'tenant': tenant.slug if tenant else None,
+        'groups': list(user.groups.values_list('name', flat=True)),
+    }
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
 def login_view(request):
@@ -99,10 +114,7 @@ def login_view(request):
         # Create response with user info (but NOT the tokens in body)
         response = Response({
             'detail': 'Login successful',
-            'user': {
-                'username': user.username,
-                'email': user.email,
-            }
+            'user': _user_payload(user),
         })
         
         # Set tokens in httpOnly cookies (not accessible via JavaScript)
@@ -178,10 +190,7 @@ def token_refresh_view(request):
 def auth_me_view(request):
     """Return current user information. Used to verify authentication on page load."""
     return Response({
-        'user': {
-            'username': request.user.username,
-            'email': request.user.email,
-        }
+        'user': _user_payload(request.user),
     })
 
 

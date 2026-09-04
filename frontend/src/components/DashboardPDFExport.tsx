@@ -5,6 +5,17 @@
 import React, { useState, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import api from '../services/api';
+import {
+  MISSING_THRESHOLD_TEXT,
+  STATUS_LABELS,
+  classifyValue,
+  fetchEffectiveThresholds,
+  fetchMetricCatalog,
+  formatThreshold,
+  type Threshold,
+  type ThresholdMap,
+  type ThresholdStatus,
+} from '../services/thresholds';
 
 interface DeviceInfo {
   serial: string;
@@ -17,6 +28,7 @@ interface DeviceInfo {
 interface TelemetryValue {
   label: string;
   value: number | string | null;
+  numeric: number | null;       // raw value used for threshold classification
   unit: string;
   localtime: string | null;  // KQL timestamp
 }
@@ -118,6 +130,32 @@ function buildTelemetryKql(serial: string, telemetryName: string): string {
   `.trim();
 }
 
+interface ThresholdConfig {
+  thresholds: ThresholdMap;
+  signalToKey: Map<string, string>;
+  missingText: string;
+}
+
+// Resolves the administrator-configured thresholds and the ADX signal -> metric
+// key index so PDF rows can be evaluated exactly like the history charts.
+async function loadThresholdConfig(): Promise<ThresholdConfig> {
+  try {
+    const [effective, catalog] = await Promise.all([fetchEffectiveThresholds(), fetchMetricCatalog()]);
+    const signalToKey = new Map<string, string>();
+    catalog.forEach(entry => {
+      if (entry.telemetry_name) signalToKey.set(entry.telemetry_name.toLowerCase(), entry.key);
+    });
+    return {
+      thresholds: effective.thresholds ?? {},
+      signalToKey,
+      missingText: effective.missing_threshold_text || MISSING_THRESHOLD_TEXT,
+    };
+  } catch (err) {
+    console.warn('Threshold configuration unavailable for PDF export:', err);
+    return { thresholds: {}, signalToKey: new Map(), missingText: MISSING_THRESHOLD_TEXT };
+  }
+}
+
 const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
   deviceInfo,
   filename = 'dashboard-report',
@@ -133,6 +171,7 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       results.set(config.name, {
         label: config.label,
         value: null,
+        numeric: null,
         unit: config.unit,
         localtime: null
       });
@@ -150,10 +189,12 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
           const row = dataArray[0];
           
           let displayValue: string | number | null = null;
+          let numericValue: number | null = null;
           const localtime = row?.localtime ?? null;
           
           if (row?.value_double !== undefined && row?.value_double !== null) {
             const numValue = Number(row.value_double);
+            numericValue = Number.isFinite(numValue) ? numValue : null;
             
             // Special handling for inverter mode
             if (config.name.includes('OPERATING_STATE')) {
@@ -173,6 +214,7 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
           results.set(config.name, {
             label: config.label,
             value: displayValue,
+            numeric: numericValue,
             unit: config.unit,
             localtime: localtime
           });
@@ -203,9 +245,27 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
     setProgress('Fetching telemetry data...');
 
     try {
-      // Fetch current telemetry values
-      const telemetryData = await fetchTelemetryData(deviceInfo.serial);
-      
+      // Fetch current telemetry values plus the configured thresholds. The PDF
+      // is evaluated against exactly the same thresholds as the history charts
+      // (FR-017); if the configuration cannot be read we fall back to an empty
+      // map so every metric reports "Threshold needs to be defined.".
+      const [telemetryData, thresholdConfig] = await Promise.all([
+        fetchTelemetryData(deviceInfo.serial),
+        loadThresholdConfig(),
+      ]);
+      const { thresholds, signalToKey, missingText } = thresholdConfig;
+
+      const thresholdFor = (telemetryName: string): Threshold | null => {
+        const key = signalToKey.get(telemetryName.toLowerCase());
+        return (key && thresholds[key]) || null;
+      };
+
+      const evaluation = { passed: 0, failed: 0, unknown: 0 } as Record<ThresholdStatus, number>;
+      TELEMETRY_NAMES.forEach(config => {
+        const status = classifyValue(telemetryData.get(config.name)?.numeric ?? null, thresholdFor(config.name));
+        evaluation[status] += 1;
+      });
+
       setProgress('Generating PDF...');
 
       // Create PDF in portrait A4
@@ -294,9 +354,32 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       yPos += 10;
 
       // ============================================
+      // Threshold evaluation summary
+      // ============================================
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(80, 80, 80);
+      pdf.text('Thresholds:', col1X, yPos);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(40, 40, 40);
+      pdf.text(
+        `${evaluation.passed} passed  /  ${evaluation.failed} failed  /  ${evaluation.unknown} unknown`,
+        col2X,
+        yPos,
+      );
+
+      yPos += 10;
+
+      // ============================================
       // Helper function to draw a data table
       // ============================================
-      const drawDataTable = (title: string, data: { label: string; value: string | number | null; unit: string }[], color: string) => {
+      interface TableRow {
+        label: string;
+        value: string | number | null;
+        unit: string;
+        telemetryName?: string;
+      }
+
+      const drawDataTable = (title: string, data: TableRow[], color: string) => {
         // Section header
         pdf.setFillColor(parseInt(color.slice(1, 3), 16), parseInt(color.slice(3, 5), 16), parseInt(color.slice(5, 7), 16));
         pdf.rect(margin, yPos - 3, contentWidth, 7, 'F');
@@ -309,16 +392,18 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
         // Data rows
         pdf.setFontSize(9);
         const colWidth = contentWidth / 4;
+        const rowHeight = 17;
         let colIndex = 0;
 
         data.forEach((item) => {
           const x = margin + (colIndex * colWidth);
           
-          if (colIndex === 0 && yPos > pageHeight - 20) {
+          if (colIndex === 0 && yPos > pageHeight - 28) {
             pdf.addPage();
             yPos = 20;
           }
 
+          pdf.setFontSize(9);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(100, 100, 100);
           pdf.text(item.label + ':', x, yPos);
@@ -332,17 +417,47 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
             pdf.text('N/A', x, yPos + 4);
           }
 
+          // Threshold band and Passed / Failed / Unknown verdict (FR-017)
+          const threshold = item.telemetryName ? thresholdFor(item.telemetryName) : null;
+          const numeric = item.telemetryName ? telemetryData.get(item.telemetryName)?.numeric ?? null : null;
+          const status = classifyValue(numeric, threshold);
+
+          pdf.setFontSize(6.5);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(120, 120, 120);
+          pdf.text(formatThreshold(threshold, missingText).slice(0, 34), x, yPos + 8);
+
+          const statusColor = status === 'passed'
+            ? [34, 197, 94]
+            : status === 'failed'
+              ? [239, 68, 68]
+              : [148, 163, 184];
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(7);
+          pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+          pdf.text(STATUS_LABELS[status].toUpperCase(), x, yPos + 12);
+
           colIndex++;
           if (colIndex >= 4) {
             colIndex = 0;
-            yPos += 12;
+            yPos += rowHeight;
           }
         });
 
         if (colIndex !== 0) {
-          yPos += 12;
+          yPos += rowHeight;
         }
         yPos += 3;
+      };
+
+      const toTableRow = (telemetryName: string): TableRow => {
+        const item = telemetryData.get(telemetryName);
+        return {
+          label: item?.label || '',
+          value: item?.value ?? null,
+          unit: item?.unit || '',
+          telemetryName,
+        };
       };
 
       // ============================================
@@ -381,9 +496,9 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       ? new Date(latestLocaltime).toLocaleString('en-US', { timeZone: 'America/New_York' })
       : 'N/A';
       drawDataTable('System Status', [
-        { label: 'WiFi Signal', value: wifiSignal?.value ?? null, unit: wifiSignal?.unit || 'dBm' },
-        { label: 'Inverter Mode', value: invMode?.value ?? null, unit: '' },
-        { label: 'BGCS Relay', value: bgcsRelay?.value ?? null, unit: '' },
+        { label: 'WiFi Signal', value: wifiSignal?.value ?? null, unit: wifiSignal?.unit || 'dBm', telemetryName: '/SCC/WIFI/STAT/SIGNAL_STRENGTH' },
+        { label: 'Inverter Mode', value: invMode?.value ?? null, unit: '', telemetryName: 'INV/DEV/STAT/OPERATING_STATE' },
+        { label: 'BGCS Relay', value: bgcsRelay?.value ?? null, unit: '', telemetryName: '/BGCS/GRID/STAT/RELAY_STATUS' },
         { label: 'Connection', value: connectionStatus, unit: '' },
         { label: 'Data Timestamp', value: dataTimestamp, unit: '' },
       ], '#3b82f6');
@@ -392,15 +507,15 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Solar PV
       // ============================================
       const pvData = [
-        telemetryData.get('/INV/DCPORT/STAT/PV1/V'),
-        telemetryData.get('/INV/DCPORT/STAT/PV2/V'),
-        telemetryData.get('/INV/DCPORT/STAT/PV3/V'),
-        telemetryData.get('/INV/DCPORT/STAT/PV4/V'),
-        telemetryData.get('/INV/DCPORT/STAT/PV1/I'),
-        telemetryData.get('/INV/DCPORT/STAT/PV2/I'),
-        telemetryData.get('/INV/DCPORT/STAT/PV3/I'),
-        telemetryData.get('/INV/DCPORT/STAT/PV4/I'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/INV/DCPORT/STAT/PV1/V',
+        '/INV/DCPORT/STAT/PV2/V',
+        '/INV/DCPORT/STAT/PV3/V',
+        '/INV/DCPORT/STAT/PV4/V',
+        '/INV/DCPORT/STAT/PV1/I',
+        '/INV/DCPORT/STAT/PV2/I',
+        '/INV/DCPORT/STAT/PV3/I',
+        '/INV/DCPORT/STAT/PV4/I',
+      ].map(toTableRow);
       
       drawDataTable('Solar PV Inputs', pvData, '#f59e0b');
 
@@ -408,12 +523,12 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Grid Measurements
       // ============================================
       const gridData = [
-        telemetryData.get('/INV/ACPORT/STAT/VRMS_L1N'),
-        telemetryData.get('/INV/ACPORT/STAT/VRMS_L2N'),
-        telemetryData.get('/INV/ACPORT/STAT/IRMS_L1'),
-        telemetryData.get('/INV/ACPORT/STAT/IRMS_L2'),
-        telemetryData.get('/INV/ACPORT/STAT/FREQ_TOTAL'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/INV/ACPORT/STAT/VRMS_L1N',
+        '/INV/ACPORT/STAT/VRMS_L2N',
+        '/INV/ACPORT/STAT/IRMS_L1',
+        '/INV/ACPORT/STAT/IRMS_L2',
+        '/INV/ACPORT/STAT/FREQ_TOTAL',
+      ].map(toTableRow);
       
       drawDataTable('Grid Measurements', gridData, '#10b981');
 
@@ -421,11 +536,11 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Battery Module 1
       // ============================================
       const bat1Data = [
-        telemetryData.get('/BMS/MODULE1/STAT/V'),
-        telemetryData.get('/BMS/MODULE1/STAT/I'),
-        telemetryData.get('/BMS/MODULE1/STAT/USER_SOC'),
-        telemetryData.get('/BMS/MODULE1/STAT/TEMP'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/BMS/MODULE1/STAT/V',
+        '/BMS/MODULE1/STAT/I',
+        '/BMS/MODULE1/STAT/USER_SOC',
+        '/BMS/MODULE1/STAT/TEMP',
+      ].map(toTableRow);
       
       drawDataTable('Battery Module 1', bat1Data, '#ef4444');
 
@@ -433,11 +548,11 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Battery Module 2
       // ============================================
       const bat2Data = [
-        telemetryData.get('/BMS/MODULE2/STAT/V'),
-        telemetryData.get('/BMS/MODULE2/STAT/I'),
-        telemetryData.get('/BMS/MODULE2/STAT/USER_SOC'),
-        telemetryData.get('/BMS/MODULE2/STAT/TEMP'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/BMS/MODULE2/STAT/V',
+        '/BMS/MODULE2/STAT/I',
+        '/BMS/MODULE2/STAT/USER_SOC',
+        '/BMS/MODULE2/STAT/TEMP',
+      ].map(toTableRow);
       
       drawDataTable('Battery Module 2', bat2Data, '#dc2626');
 
@@ -445,11 +560,11 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Battery Module 3
       // ============================================
       const bat3Data = [
-        telemetryData.get('/BMS/MODULE3/STAT/V'),
-        telemetryData.get('/BMS/MODULE3/STAT/I'),
-        telemetryData.get('/BMS/MODULE3/STAT/USER_SOC'),
-        telemetryData.get('/BMS/MODULE3/STAT/TEMP'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/BMS/MODULE3/STAT/V',
+        '/BMS/MODULE3/STAT/I',
+        '/BMS/MODULE3/STAT/USER_SOC',
+        '/BMS/MODULE3/STAT/TEMP',
+      ].map(toTableRow);
       
       drawDataTable('Battery Module 3', bat3Data, '#b91c1c');
 
@@ -457,12 +572,12 @@ const DashboardPDFExport: React.FC<DashboardPDFExportProps> = ({
       // Load Measurements (using correct telemetry names from InstantaneousGauges)
       // ============================================
       const loadData = [
-        telemetryData.get('/SYS/MEAS/STAT/PANEL/VRMS_L1N'),
-        telemetryData.get('/SYS/MEAS/STAT/PANEL/VRMS_L2N'),
-        telemetryData.get('/SYS/MEAS/STAT/LOAD/IRMS_L1'),
-        telemetryData.get('/SYS/MEAS/STAT/LOAD/IRMS_L2'),
-        telemetryData.get('/SYS/MEAS/STAT/PANEL/FREQ_TOTAL'),
-      ].map(d => ({ label: d?.label || '', value: d?.value ?? null, unit: d?.unit || '' }));
+        '/SYS/MEAS/STAT/PANEL/VRMS_L1N',
+        '/SYS/MEAS/STAT/PANEL/VRMS_L2N',
+        '/SYS/MEAS/STAT/LOAD/IRMS_L1',
+        '/SYS/MEAS/STAT/LOAD/IRMS_L2',
+        '/SYS/MEAS/STAT/PANEL/FREQ_TOTAL',
+      ].map(toTableRow);
       
       drawDataTable('Load Measurements', loadData, '#8b5cf6');
 

@@ -6,6 +6,7 @@ import { SerialProvider } from './context/SerialContext';
 import { TimeRangeProvider } from './context/TimeRangeContext';
 import { RefreshIntervalProvider } from './context/RefreshIntervalContext';
 import { TimezoneProvider } from './context/TimezoneContext';
+import { ThresholdProvider } from './context/ThresholdContext';
 
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
@@ -17,6 +18,8 @@ const Events   = React.lazy(() => import('./pages/Events'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const About    = React.lazy(() => import('./pages/About'));
 const StyleGuide = React.lazy(() => import('./pages/StyleGuide'));
+const Admin = React.lazy(() => import('./pages/Admin'));
+const ValidationReport = React.lazy(() => import('./pages/ValidationReport'));
 
 export default function App() {
   return (
@@ -25,6 +28,7 @@ export default function App() {
         <TimeRangeProvider>
           <RefreshIntervalProvider>
             <TimezoneProvider>
+            <ThresholdProvider>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-bg-primary"><div className="text-text-secondary">Loading…</div></div>}>
               <Routes>
                 {/* Public */}
@@ -44,6 +48,8 @@ export default function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/styleguide" element={<StyleGuide />} />
+                  <Route path="/validation-report" element={<ValidationReport />} />
+                  <Route path="/admin" element={<Admin />} />
                 </Route>
 
                 {/* Default to login */}
@@ -51,6 +57,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </Suspense>
+            </ThresholdProvider>
             </TimezoneProvider>
           </RefreshIntervalProvider>
         </TimeRangeProvider>
