@@ -4,14 +4,18 @@ import { NavLink } from 'react-router-dom';
 import LogoutButton from '../LogoutButton';
 import ThemeToggle from '../ThemeToggle';
 import Logo from '../common/Logo';
+import { useAuth } from '../../context/AuthContext';
 import { spacing } from '../../styles/tokens';
 
 const tabs = [
   { label: 'Dashboard', to: '/dashboard', end: true },
   { label: 'Events', to: '/events' },
+  { label: 'Validation', to: '/validation-report' },
   { label: 'Settings', to: '/settings' },
   { label: 'About', to: '/about' },
 ];
+
+const adminTab = { label: 'Administration', to: '/admin', end: false };
 
 // Styles using design tokens for consistency
 const styles = {
@@ -91,6 +95,8 @@ const styles = {
 
 const NavBar: React.FC = () => {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
+  const visibleTabs = isAdmin ? [...tabs, adminTab] : tabs;
 
   return (
     <header style={styles.header}>
@@ -107,7 +113,7 @@ const NavBar: React.FC = () => {
         {/* Tabs row */}
         <nav aria-label="Primary navigation" style={styles.tabsNav}>
           <ul style={styles.tabs}>
-            {tabs.map(({ label, to, end }) => (
+            {visibleTabs.map(({ label, to, end }) => (
               <li key={to}>
                 <NavLink
                   to={to}

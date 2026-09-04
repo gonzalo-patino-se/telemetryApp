@@ -3,8 +3,12 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import NavBar from './NavBar';
 import Footer from './Footer';
+import { useSessionPolicy } from '../../hooks/useSessionPolicy';
 
 const ProtectedAppShell: React.FC = () => {
+    // Enforces the administrator-configured inactivity timeout.
+    useSessionPolicy();
+
     return (
     <div className="min-h-dvh flex flex-col bg-bg-primary theme-transition">
       {/* Global header */}

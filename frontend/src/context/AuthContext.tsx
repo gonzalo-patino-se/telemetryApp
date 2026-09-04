@@ -7,9 +7,20 @@ import api from '../services/api';
 
 
 // Define the shape of the authentication context
+export interface AuthUser {
+    username: string;
+    email: string;
+    /** True for superusers, staff, and members of AdminGroup. */
+    is_admin?: boolean;
+    is_staff?: boolean;
+    tenant?: string | null;
+    groups?: string[];
+}
+
 interface AuthContextType {
     isAuthenticated: boolean;
-    user: { username: string; email: string } | null;
+    user: AuthUser | null;
+    isAdmin: boolean;
     accessToken: string | null;
     login: (username: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -23,7 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -107,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     return (
-    <AuthContext.Provider value={{ isAuthenticated, user, accessToken, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, isAdmin: Boolean(user?.is_admin), accessToken, login, logout, isLoading }}>
             {children}
         </AuthContext.Provider>
     );
