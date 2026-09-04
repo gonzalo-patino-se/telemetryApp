@@ -68,6 +68,76 @@ class MetricThresholdSerializer(serializers.ModelSerializer):
         if value not in METRICS_BY_KEY:
             raise serializers.ValidationError(f"'{value}' is not a supported metric.")
         return value
+    def _validate_limits(self, attrs):
+        lower = attrs.get(
+            'lower_limit',
+            getattr(self.instance, 'lower_limit', None),
+        )
+        upper = attrs.get(
+            'upper_limit',
+            getattr(self.instance, 'upper_limit', None),
+        )
+
+        if lower is None and upper is None:
+            raise serializers.ValidationError({
+                'lower_limit': 'At least one numeric limit is required.',
+            })
+
+        if lower is not None and upper is not None and lower > upper:
+            raise serializers.ValidationError({
+                'upper_limit': 'Upper limit must be greater than or equal to the lower limit.',
+            })
+
+        # Numeric metrics must not contain state-based configuration.
+        attrs['passed_states'] = []
+        attrs['failed_states'] = []
+
+    def _validate_states(self, attrs, metric_key):
+        passed_states = attrs.get(
+            'passed_states',
+            getattr(self.instance, 'passed_states', []),
+        ) or []
+
+        failed_states = attrs.get(
+            'failed_states',
+            getattr(self.instance, 'failed_states', []),
+        ) or []
+
+        supported_states = set(
+            METRICS_BY_KEY.get(metric_key, {}).get('states', [])
+        )
+
+        invalid_states = (
+            set(passed_states) | set(failed_states)
+        ) - supported_states
+
+        if invalid_states:
+            raise serializers.ValidationError({
+                'states': (
+                    'Unsupported states: '
+                    + ', '.join(sorted(str(state) for state in invalid_states))
+                ),
+            })
+
+        duplicated_states = set(passed_states) & set(failed_states)
+
+        if duplicated_states:
+            raise serializers.ValidationError({
+                'states': (
+                    'States cannot be both passed and failed: '
+                    + ', '.join(sorted(str(state) for state in duplicated_states))
+                ),
+            })
+
+        if not passed_states and not failed_states:
+            raise serializers.ValidationError({
+                'states': 'At least one passed or failed state is required.',
+            })
+
+        # State metrics must not contain numeric limits.
+        attrs['lower_limit'] = None
+        attrs['upper_limit'] = None
+    
 
     def validate(self, attrs):
         metric_key = attrs.get('metric_key', getattr(self.instance, 'metric_key', None))
